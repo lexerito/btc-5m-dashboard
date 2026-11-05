@@ -398,30 +398,27 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     return {label:score>0?"UP":"DOWN",side:score>0?"UP":"DOWN",cls:score>0?"up":"down",strength:Math.min(99,Math.round(Math.abs(score)*100))};
   }
   function updateForecasts(){
-    const now=Date.now(),latest=state.prices[state.prices.length-1];
-    const priceFresh=!!latest&&now-latest.ts<3500;
-    const upBook=poly.books[poly.upId],downBook=poly.books[poly.downId];
-    const polyFresh=!!upBook&&!!downBook&&now-(upBook.updatedAt||0)<9000&&now-(downBook.updatedAt||0)<9000&&poly.upMid!==null&&poly.downMid!==null;
-    const odds=Math.max(-1,Math.min(1,((poly.upMid??.5)-(poly.downMid??.5))/.24));
-    const book=Math.max(-1,Math.min(1,(poly.imbalance||0)/.18));
-    const momentum=state.momentumScore||0;
-    const flow=.65*(state.fastTradeFlow||0)+.35*(state.tradeFlow||0);
-    // CLOB pricing/depth lead; live BTC impulse, taker flow and exhaustion act as confirmation.
-    const raw=Math.max(-1,Math.min(1,odds*.43+book*.17+momentum*.25+flow*.15));
-    const score=raw*(1-(state.exhaustionRisk||0)*.42);
-    const priceConflict=Math.abs(momentum)>.42&&Math.abs(odds)>.35&&Math.sign(momentum)!==Math.sign(odds);
-    const bookConflict=Math.abs(book)>.45&&Math.abs(odds)>.30&&Math.sign(book)!==Math.sign(odds);
-    const label=forecastLabel(score,.30);
-    const ready=polyFresh&&priceFresh;
-    const side=!ready?"WAIT":(priceConflict||bookConflict)?"WAIT":label.side;
+    // Primary signal is the live Polymarket CLOB only. Secondary BTC feeds must
+    // never block or veto an UP/DOWN order-book callout.
+    const now=Date.now(),upBook=poly.books[poly.upId],downBook=poly.books[poly.downId];
+    const upAge=upBook?now-(upBook.updatedAt||0):Infinity;
+    const downAge=downBook?now-(downBook.updatedAt||0):Infinity;
+    const polyFresh=!!upBook&&!!downBook&&upAge<15000&&downAge<15000&&poly.upMid!==null&&poly.downMid!==null;
+    const oddsRaw=(poly.upMid??.5)-(poly.downMid??.5);
+    const odds=Math.max(-1,Math.min(1,oddsRaw/.18));
+    const depth=Math.max(-1,Math.min(1,(poly.imbalance||0)/.30));
+    // Contract prices carry most of the weight; displayed bid/ask depth is confirmation.
+    const score=Math.max(-1,Math.min(1,odds*.78+depth*.22));
+    const label=forecastLabel(score,.18);
+    const side=!polyFresh?"WAIT":label.side;
     const el=$("polyVerdict");
     if(el){
-      el.textContent=!polyFresh?"WAIT · ORDER BOOK STALE":!priceFresh?"WAIT · BTC MOMENTUM FEED STALE":priceConflict?"WAIT · BTC MOMENTUM CONFLICT":bookConflict?"WAIT · ORDER BOOK DEPTH CONFLICT":side==="WAIT"?"WAIT · NO CLEAR EDGE":side+" · MOMENTUM + ORDER BOOK AGREE";
+      el.textContent=!upBook||!downBook?"WAIT · SYNCING BOTH BOOKS":!polyFresh?"WAIT · ORDER BOOK SNAPSHOT STALE":side==="WAIT"?"WAIT · BOOKS SHOW NO CLEAR EDGE":side+" · LIVE ORDER-BOOK SIGNAL";
       el.className="poly-verdict "+(side==="UP"?"up":side==="DOWN"?"down":"");
     }
-    const strength=ready&&!priceConflict&&!bookConflict&&side!=="WAIT"?label.strength:"—";
-    polyText("polyDetail",!ready?"Waiting for fresh Polymarket books and live BTC trades":priceConflict?"BTC impulse conflicts with contract pricing":bookConflict?"Displayed book depth conflicts with contract pricing":"BTC impulse "+(momentum>=0?"UP ":"DOWN ")+Math.round(Math.abs(momentum)*100)+"/100 · 15s taker flow "+(flow>=0?"BUY ":"SELL ")+Math.round(Math.abs(flow)*100)+"% · order-book edge "+Math.round(Math.abs(score)*100)+"/100 · not a calibrated probability");
-    polyText("polyMomentum",!priceFresh?"WAIT":(momentum>=0?"UP ":"DOWN ")+Math.round(Math.abs(momentum)*100)+"/100");
+    const edge=polyFresh?Math.round(Math.abs(score)*100):null;
+    polyText("polyDetail",!polyFresh?"Waiting for fresh UP and DOWN CLOB books · UP age "+(Number.isFinite(upAge)?(upAge/1000).toFixed(1)+"s":"—")+" · DOWN age "+(Number.isFinite(downAge)?(downAge/1000).toFixed(1)+"s":"—"):"CLOB-only edge "+edge+"/100 · contract price gap "+(oddsRaw>=0?"+":"")+(oddsRaw*100).toFixed(1)+"¢ · depth confirmation "+(depth>=0?"UP ":"DOWN ")+Math.round(Math.abs(depth)*100)+"/100 · not a calibrated probability");
+    polyText("polyMomentum",polyFresh?(score>=0?"UP ":"DOWN ")+edge+"/100":"WAIT");
     captureCheckpoint(score,side);
   }
 
@@ -769,7 +766,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       if(!poly.wsConnected||!u||!dn||now-(u.updatedAt||0)>5000||now-(dn.updatedAt||0)>5000)refreshPolyBooks();
     },8000);
     poly.watchdog=setInterval(()=>{
-      if(poly.wsConnected&&poly.lastMsg&&Date.now()-poly.lastMsg>90000&&Date.now()-poly.restAt>12000){
+      if(poly.wsConnected&&poly.lastMsg&&Date.now()-poly.lastMsg>30000&&Date.now()-poly.restAt>12000){
         connectPolyBook();
       }
       if(poly.lastDataAt&&Date.now()-poly.lastDataAt>10000)polyBadge("BOOK DATA STALE · RECOVERING","bad");

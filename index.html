@@ -194,7 +194,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,twapHistory:[],journal:[],activeRecord:null,lastTwapPersist:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,twapHistory:[],journal:[],activeRecord:null,lastTwapPersist:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -221,10 +221,10 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       // RTDS sends a short replay snapshot in payload.data on subscription,
       // followed by individual updates. Process both so a recently opened page
       // can still recover the exact market-boundary TWAP observation.
-      const rows=Array.isArray(payload.data)?payload.data:[payload];
+      let replay=payload.data;if(typeof replay==="string"){try{replay=JSON.parse(replay)}catch(_){replay=null}}const rows=Array.isArray(replay)?replay:[payload];
       rows.forEach(p=>{
         const symbol=String(p.symbol||payload.symbol||"").toLowerCase();
-        const value=Number(p.value),ts=Number(p.timestamp||p.observed_at||msg.timestamp||Date.now());
+        const value=Number(p.value),ts=Number(p.timestamp||p.observed_at);
         if(!Number.isFinite(value)||!Number.isFinite(ts))return;
         if(msg.topic==="crypto_prices_twap_sixty"&&symbol==="btc/usd"){
           state.twap=value;state.twapTs=ts;
@@ -360,13 +360,14 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
   }
   function updateForecasts(){
     const momentum=state.momentumScore,flow=state.tradeFlow;
-    const targetReady=state.target!==null&&state.twap!==null&&state.targetTs===boundaryAtOrBefore(Date.now());
+    const twapFresh=state.twapTs!==null&&Date.now()-state.twapTs<5000;
+    const targetReady=state.target!==null&&state.twap!==null&&state.targetTs===boundaryAtOrBefore(Date.now())&&twapFresh&&state.crossFresh&&state.crossConfirmed;
     const normalizedGap=targetReady?Math.max(-1,Math.min(1,(state.twap-state.target)/Math.max(state.target*.00035,1))):0;
     const currentScore=Math.max(-1,Math.min(1,normalizedGap*.48+momentum*.22+flow*.10+state.crossScore*.20));
     const cur=forecastLabel(currentScore,.22);
-    $("currentCallout").textContent=!targetReady?"WAIT · EXACT TARGET REQUIRED":cur.side==="WAIT"?"NO CLEAR EDGE":cur.label;
+    $("currentCallout").textContent=!targetReady?(!twapFresh?"WAIT · TWAP FEED STALE":state.target===null||state.targetTs!==boundaryAtOrBefore(Date.now())?"WAIT · EXACT TARGET REQUIRED":!state.crossFresh?"WAIT · CROSS-VENUE FEED STALE":"WAIT · VENUES DISAGREE"):cur.side==="WAIT"?"NO CLEAR EDGE":cur.label;
     $("currentCallout").className="prediction-callout "+(targetReady?cur.cls:"");
-    $("currentReason").textContent=!targetReady?"Waiting for exact Chainlink TWAP60 start observation":cur.side==="WAIT"?"Price distance, momentum and cross-venue flow are not strong enough":"Exact settlement-reference distance + BTC momentum + trade flow + cross-venue confirmation · heuristic only";
+    $("currentReason").textContent=!targetReady?"A fresh exact TWAP60 target and agreeing independent venue feeds are required":cur.side==="WAIT"?"Price distance, momentum and cross-venue flow are not strong enough":"Exact settlement-reference distance + BTC momentum + trade flow + cross-venue confirmation · heuristic only";
     $("currentConfidence").textContent=!targetReady?"—":cur.side==="WAIT"?"WEAK":cur.confidence+"/100 · raw score";
     $("currentMomentum").textContent=(momentum>0?"UP ":momentum<0?"DOWN ":"FLAT ")+Math.round(Math.abs(momentum)*100)+"/100";
     $("currentMomentum").className=momentum>0?"up":momentum<0?"down":"";
@@ -394,6 +395,13 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     state.twapHistory.sort((a,b)=>a.ts-b.ts);
     const cutoff=Date.now()-900000;state.twapHistory=state.twapHistory.filter(x=>x.ts>=cutoff);
     const start=boundaryAtOrBefore(ts);
+    // At a five-minute boundary, first close the previous market using its
+    // exact start observation, then initialize the new market record.
+    const endingStart=start-300000;
+    if(ts===start&&endingStart>=0){
+      const prior=state.twapHistory.find(x=>x.ts===endingStart);
+      if(prior)finalizeMarket(endingStart,prior.value,value,ts);
+    }
     if(ts===start){
       state.target=value;state.targetTs=start;
       $("targetLarge").textContent="$"+fmt(value);
@@ -403,11 +411,6 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       updateDirection();
     }
     if(ts%5000<1000)persistTwapHistory();
-    const endingStart=start-300000;
-    if(ts===start&&endingStart>=0){
-      const prior=state.twapHistory.find(x=>x.ts===endingStart);
-      if(prior)finalizeMarket(endingStart,prior.value,value,ts);
-    }
   }
   function captureCheckpoint(score,side){
     const r=state.activeRecord;if(!r||r.start!==boundaryAtOrBefore(state.twapTs||0)||state.target===null||state.targetTs!==r.start)return;
@@ -521,12 +524,14 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     crossText("crossAgreement",signs.length?Math.round(Math.abs(agreement)*100)+"% "+(agreement>.25?"UP":agreement<-.25?"DOWN":"MIXED"):"COLLECTING");
     crossText("crossFlow",combined?(flow>=0?"BUY ":"SELL ")+Math.round(Math.abs(flow)*100)+"%":"COLLECTING");
     crossText("crossFlow",combined?(flow>=0?"BUY ":"SELL ")+Math.round(Math.abs(flow)*100)+"%":"COLLECTING");
-    const fresh=(cbAge!==null&&cbAge<8&&hlAge!==null&&hlAge<8);
+    const fresh=(cbAge!==null&&cbAge<8&&hlAge!==null&&hlAge<8&&bookTotal>0);
     const score=Math.max(-1,Math.min(1,agreement*.55+flow*.25+bookImb*.20));
+    const votes=[Math.abs(agreement)>.20?Math.sign(agreement):0,Math.abs(flow)>.08?Math.sign(flow):0,Math.abs(bookImb)>.08?Math.sign(bookImb):0].filter(x=>x!==0);
+    const voteSum=votes.reduce((a,b)=>a+b,0),direction=votes.length>=2&&Math.abs(voteSum)>=1?Math.sign(voteSum):0;
+    state.crossFresh=fresh;state.crossDirection=direction;state.crossConfirmed=fresh&&direction!==0;
     state.crossScore=fresh?score:0;
-    const sign=Math.sign(score),agree=sign!==0&&Math.abs(agreement)>.35&&Math.sign(agreement)===sign&&Math.sign(flow)===sign&&Math.sign(bookImb)===sign;
     const v=$("crossVerdict");
-    if(v){v.textContent=!fresh?"WAIT · one or more independent feeds are stale":agree?(sign>0?"CROSS-VENUE BULLISH CONFIRMATION":"CROSS-VENUE BEARISH CONFIRMATION"):Math.abs(score)<.12?"NO CLEAR CROSS-VENUE EDGE":"MIXED CROSS-VENUE SIGNAL · REDUCE CONFIDENCE";v.className="cross-verdict "+(agree?(sign>0?"up":"down"):"")}
+    if(v){v.textContent=!fresh?"WAIT · one or more independent feeds / order books are stale":direction>0?"CROSS-VENUE BULLISH · "+Math.abs(voteSum)+"/"+votes.length+" votes":direction<0?"CROSS-VENUE BEARISH · "+Math.abs(voteSum)+"/"+votes.length+" votes":"NO MULTI-VENUE CONSENSUS";v.className="cross-verdict "+(direction>0?"up":direction<0?"down":"")}
     crossStatus(fresh?"COINBASE + HYPERLIQUID LIVE":"WAITING / STALE FEED",fresh?"ok":"bad");
     updateForecasts();
   }

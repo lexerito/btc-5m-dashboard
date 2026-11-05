@@ -34,7 +34,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:13px}
 .metric-value{font-size:21px;font-weight:800;margin-top:8px}
 .bar{height:6px;background:#242747;border-radius:10px;margin-top:12px;overflow:hidden}.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#5574ff,#35d9ff);border-radius:10px;transition:width .2s}
-.game-card{margin-top:15px;padding:17px;background:linear-gradient(135deg,#11142d,#100d24 70%);border:1px solid #443d8e;border-radius:19px;box-shadow:0 0 26px #4d39c522}
+.momentum-card{margin-top:13px}.horizon-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:13px}.horizon-grid>div{padding:11px 9px;border:1px solid #293b68;border-radius:11px;background:#0b1024}.horizon-grid span{display:block;font-size:9px;letter-spacing:.12em;color:#8fa5d0;font-weight:800}.horizon-grid b{display:block;margin-top:7px;font-size:15px;font-variant-numeric:tabular-nums}.momentum-grid{margin-top:13px}.momentum-card .small{margin-top:12px}.game-card{margin-top:15px;padding:17px;background:linear-gradient(135deg,#11142d,#100d24 70%);border:1px solid #443d8e;border-radius:19px;box-shadow:0 0 26px #4d39c522}
 .game-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .game-title{font-weight:850;letter-spacing:-.02em;font-size:16px}.game-score{font-size:11px;color:#a9b7d9;font-variant-numeric:tabular-nums}
 .game-wrap{position:relative;border:1px solid #303c72;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,#111e43,#15102f)}
@@ -48,7 +48,7 @@ button:hover{filter:brightness(1.16)}
 .note{margin-top:15px;padding:13px 15px;background:#0e1024;border:1px solid #29365f;border-radius:13px;color:#aebcda;font-size:11px;line-height:1.6}
 .actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
 @media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}.focus-main{grid-template-columns:1fr}.direction-pill{width:100%}}
-@media(max-width:480px){body{padding:17px 12px 28px}.grid,.metrics{grid-template-columns:1fr 1fr}.card{padding:14px}.market-focus{padding:17px}.timer{font-size:39px}.focus-foot{gap:10px}.grid .card:last-child{grid-column:1/-1}}
+@media(max-width:600px){.horizon-grid{grid-template-columns:repeat(3,minmax(0,1fr))}} @media(max-width:480px){body{padding:17px 12px 28px}.grid,.metrics{grid-template-columns:1fr 1fr}.card{padding:14px}.market-focus{padding:17px}.timer{font-size:39px}.focus-foot{gap:10px}.grid .card:last-child{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -78,10 +78,23 @@ button:hover{filter:brightness(1.16)}
   <div class="card"><div class="label">Feed freshness</div><div id="freshness" class="metric-value">WAIT</div><div id="freshnessDetail" class="small">Waiting for live updates</div></div>
 </section>
 
+<section class="metrics momentum-grid">
+  <div class="card"><div class="label">Momentum signal</div><div id="momentumSignal" class="metric-value">COLLECTING</div><div id="momentumExplain" class="small">Building live price and trade-flow history</div></div>
+  <div class="card"><div class="label">Directional agreement</div><div id="agreement" class="metric-value">—</div><div class="bar"><span id="agreementBar"></span></div><div id="agreementDetail" class="small">Short and longer horizons</div></div>
+  <div class="card"><div class="label">Trade pressure · 60s</div><div id="tradePressure" class="metric-value">—</div><div id="tradePressureDetail" class="small">Binance aggressor buy vs sell volume</div></div>
+</section>
+<section class="card momentum-card">
+  <div class="label">LIVE MOMENTUM · PRICE CHANGE BY HORIZON</div>
+  <div class="horizon-grid">
+    <div><span>5 SEC</span><b id="mom5">—</b></div><div><span>15 SEC</span><b id="mom15">—</b></div><div><span>30 SEC</span><b id="mom30">—</b></div><div><span>1 MIN</span><b id="mom60">—</b></div><div><span>3 MIN</span><b id="mom180">—</b></div>
+  </div>
+  <div class="small" id="momentumUpdated">Updates as new BTC trades arrive · Binance trade stream</div>
+</section>
+
 <section class="game-card">
-  <div class="game-head"><div><div class="game-title">🐤 Market Flap · Positive vs Negative</div><div class="small">Fly through the gates. Each gate shows the side currently leading.</div></div><div id="gameScore" class="game-score">SCORE 0</div></div>
-  <div class="game-wrap"><canvas id="birdGame" aria-label="Flappy Bird style market game"></canvas><div class="game-overlay" id="gameOverlay"><div class="game-message" id="gameMessage">TAP / SPACE TO FLAP</div></div></div>
-  <div class="game-controls"><span class="game-hint">Click or press SPACE to flap · avoid the gates</span><button id="gameStart">Start game</button></div>
+  <div class="game-head"><div><div class="game-title">🐤 Live Market Lead · Auto Pilot</div><div class="small">The bird automatically tracks the leading side. Gate labels update with the live lead — this is a visual signal, not a game.</div></div><div id="gameScore" class="game-score">LEAD FLIPS 0</div></div>
+  <div class="game-wrap"><canvas id="birdGame" aria-label="Automated visual indicator of the current BTC market leader"></canvas></div>
+  <div class="game-controls"><span class="game-hint" id="birdStatus">Autopilot tracking live price momentum</span><span class="game-hint">Green = positive · Pink = negative</span></div>
 </section>
 
 <div class="actions"><button id="reconnect">↻ Reconnect live feeds</button><span class="small">Live data connection · No API key required</span></div>
@@ -91,7 +104,7 @@ button:hover{filter:brightness(1.16)}
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastSignal:"WAIT",lastLeader:"WAITING",flipCount:0,lastCallout:""};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -126,6 +139,7 @@ button:hover{filter:brightness(1.16)}
         state.chainlink=value;$("chainlink").textContent="$"+fmt(value);
       }else if(msg.topic==="crypto_prices"&&symbol==="btcusdt"){
         state.binance=value;$("binance").textContent="$"+fmt(value);
+        addPriceSample(ts,value);updateMomentum();
         if(state.chainlink!==null){
           const diff=value-state.chainlink;
           $("binanceDiff").textContent="Binance vs Chainlink: "+(diff>=0?"+":"−")+"$"+fmt(Math.abs(diff));
@@ -172,7 +186,103 @@ button:hover{filter:brightness(1.16)}
     }
   }
 
-  // Lightweight Flappy-style mini-game. It animates independently of the market feed.
+  // Binance public aggregate-trade stream provides granular price and aggressor-volume flow.
+  function connectTrades(){
+    if(state.tradeWs){try{state.tradeWs.close()}catch(e){}}
+    const ws=new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@aggTrade");state.tradeWs=ws;
+    ws.onmessage=e=>{let t;try{t=JSON.parse(e.data)}catch(_){return}
+      const ts=Number(t.T||Date.now()),q=Number(t.q||0),price=Number(t.p||0);
+      if(!Number.isFinite(q)||!Number.isFinite(price))return;
+      state.trades.push({ts,q,buy:!t.m,price});pruneHistory(ts);updateMomentum();
+    };
+    ws.onclose=()=>{setTimeout(()=>{if(state.tradeWs===ws)connectTrades()},2500)};
+    ws.onerror=()=>{try{ws.close()}catch(_){}};
+  }
+  function pruneHistory(now){
+    state.prices=state.prices.filter(x=>now-x.ts<=190000);
+    state.trades=state.trades.filter(x=>now-x.ts<=65000);
+  }
+  function addPriceSample(ts,price){
+    state.prices.push({ts,price});pruneHistory(ts);
+    if(state.prices.length>2500)state.prices=state.prices.slice(-2000);
+  }
+  function priceChange(seconds){
+    if(!state.prices.length)return null;
+    const latest=state.prices[state.prices.length-1],cut=latest.ts-seconds*1000;
+    let base=null;
+    for(let i=state.prices.length-1;i>=0;i--){if(state.prices[i].ts<=cut){base=state.prices[i];break}}
+    if(!base&&latest.ts-state.prices[0].ts>=seconds*1000)base=state.prices[0];
+    return base?latest.price-base.price:null;
+  }
+  function setHorizon(id,delta){
+    const el=$(id);if(delta===null){el.textContent="—";el.className="";return}
+    el.textContent=(delta>=0?"+":"−")+"$"+fmt(Math.abs(delta));el.className=delta>0?"up":delta<0?"down":"";
+  }
+  function updateMomentum(){
+    const now=Date.now();pruneHistory(now);
+    const deltas=[5,15,30,60,180].map(priceChange);
+    ["mom5","mom15","mom30","mom60","mom180"].forEach((id,i)=>setHorizon(id,deltas[i]));
+    const available=deltas.filter(x=>x!==null),votes=available.map(x=>Math.sign(x)).filter(x=>x!==0);
+    const score=votes.length?votes.reduce((a,b)=>a+b,0)/votes.length:0;
+    const buy=state.trades.filter(t=>t.buy).reduce((a,t)=>a+t.q*t.price,0);
+    const sell=state.trades.filter(t=>!t.buy).reduce((a,t)=>a+t.q*t.price,0);
+    const flow=buy+sell?(buy-sell)/(buy+sell):0;
+    const blended=Math.max(-1,Math.min(1,score*.72+flow*.28));
+    const pct=Math.round(Math.abs(blended)*100);
+    let signal="MIXED",cls="";
+    if(blended>=.48){signal="STRONG UP";cls="up"}else if(blended>=.20){signal="UP BIAS";cls="up"}
+    else if(blended<=-.48){signal="STRONG DOWN";cls="down"}else if(blended<=-.20){signal="DOWN BIAS";cls="down"}
+    $("momentumSignal").textContent=signal;$("momentumSignal").className="metric-value "+cls;
+    $("momentumExplain").textContent="Momentum strength "+pct+"/100 · "+votes.length+"/5 horizons aligned";
+    $("agreement").textContent=pct+"%";$("agreement").className="metric-value "+cls;
+    $("agreementBar").style.width=pct+"%";
+    $("agreementDetail").textContent="Price direction blended with taker flow";
+    const flowPct=Math.round(Math.abs(flow)*100);
+    $("tradePressure").textContent=buy+sell?(flow>=0?"BUY ":"SELL ")+flowPct+"%":"WAITING";
+    $("tradePressure").className="metric-value "+(flow>0?"up":flow<0?"down":"");
+    $("tradePressureDetail").textContent=buy+sell?"Buy $"+fmt(buy)+" · Sell $"+fmt(sell):"Waiting for Binance trade data";
+    $("momentumUpdated").textContent="Last update "+new Date().toLocaleTimeString()+" · "+state.prices.length+" price samples · "+state.trades.length+" trades in rolling window";
+    const leader=state.twap!==null&&state.target!==null?(state.twap>=state.target?"POSITIVE":"NEGATIVE"):"WAITING";
+    if(leader!==state.lastLeader&&leader!=="WAITING"&&state.lastLeader!=="WAITING"){state.flipCount++;$("gameScore").textContent="LEAD FLIPS "+state.flipCount}
+    state.lastLeader=leader;
+    if(signal!==state.lastSignal&&signal!=="MIXED"&&signal!=="WAIT"){
+      const text=signal+" · "+pct+"/100 momentum";
+      $("birdStatus").textContent="CALL OUT: "+text+" · "+new Date().toLocaleTimeString();
+      state.lastSignal=signal;
+    }
+    if(!votes.length)$("birdStatus").textContent="Collecting enough live samples for a directional read";
+    drawGame();
+  }
+
+  // Autopilot bird: automatically follows the live directional lead through labelled gates.
+  const canvas=$("birdGame"),ctx=canvas.getContext("2d");
+  let game={birdY:95,targetY:95,pipes:[],last:0,spawn:0},frame=0,raf=0;
+  function leader(){return state.twap!==null&&state.target!==null?(state.twap>=state.target?"POSITIVE":"NEGATIVE"):"WAITING"}
+  function resizeGame(){const dpr=Math.min(window.devicePixelRatio||1,2),r=canvas.getBoundingClientRect();canvas.width=Math.max(1,Math.floor(r.width*dpr));canvas.height=Math.max(1,Math.floor(r.height*dpr));ctx.setTransform(dpr,0,0,dpr,0,0);drawGame()}
+  function drawGame(){
+    const r=canvas.getBoundingClientRect(),w=r.width||600,h=r.height||190;ctx.clearRect(0,0,w,h);
+    const bg=ctx.createLinearGradient(0,0,0,h);bg.addColorStop(0,"#101e42");bg.addColorStop(1,"#21123c");ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+    ctx.globalAlpha=.2;ctx.fillStyle="#9abaff";for(let i=0;i<24;i++)ctx.fillRect((i*83+19)%w,(i*47+23)%h,2,2);ctx.globalAlpha=1;
+    const win=leader(),positive=win==="POSITIVE",color=positive?"#43efae":win==="NEGATIVE"?"#ff7099":"#a9b9d9",ground=h-12;
+    ctx.fillStyle=color;ctx.font="800 11px system-ui";ctx.fillText("LIVE LEAD: "+win,12,18);
+    ctx.fillStyle="#1b2850";ctx.fillRect(0,ground,w,12);
+    for(const p of game.pipes){const c=p.side==="POSITIVE"?"#24c98e":p.side==="NEGATIVE"?"#f05c91":"#8998bd";ctx.fillStyle=c;ctx.shadowColor=c;ctx.shadowBlur=9;ctx.fillRect(p.x,0,34,p.top);ctx.fillRect(p.x,p.top+p.gap,34,ground-p.top-p.gap);ctx.shadowBlur=0;ctx.fillStyle="#071020";ctx.font="900 8px system-ui";ctx.textAlign="center";ctx.fillText(p.side,p.x+17,Math.max(12,p.top-6));ctx.fillText(p.side,p.x+17,Math.min(ground-4,p.top+p.gap+13));ctx.textAlign="left"}
+    const bx=Math.min(100,w*.22),by=game.birdY;ctx.save();ctx.translate(bx,by);ctx.rotate(Math.max(-.25,Math.min(.3,(game.targetY-by)*.01)));ctx.fillStyle="#ffd45e";ctx.shadowColor="#ffc94a";ctx.shadowBlur=12;ctx.beginPath();ctx.ellipse(0,0,13,10,0,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(5,-3,4,0,Math.PI*2);ctx.fill();ctx.fillStyle="#14213d";ctx.beginPath();ctx.arc(6,-3,1.8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#ff8b55";ctx.beginPath();ctx.moveTo(11,1);ctx.lineTo(19,4);ctx.lineTo(11,6);ctx.closePath();ctx.fill();ctx.restore();
+  }
+  function loop(ts){
+    const r=canvas.getBoundingClientRect(),w=r.width,h=r.height,dt=game.last?Math.min((ts-game.last)/16.67,2):1;game.last=ts;frame++;
+    const win=leader(),want=win==="POSITIVE"?h*.34:win==="NEGATIVE"?h*.66:h*.5;
+    game.targetY=want;game.birdY+=(want-game.birdY)*Math.min(.12*dt,.24);
+    game.spawn+=dt;if(game.spawn>82){game.spawn=0;const gap=90,top=20+Math.random()*Math.max(10,h-gap-42);game.pipes.push({x:w+12,top,gap,side:win})}
+    for(const p of game.pipes)p.x-=2.15*dt;game.pipes=game.pipes.filter(p=>p.x>-45);
+    // The gates are a live visualization, not obstacles; the bird never crashes or needs input.
+    game.pipes.forEach(p=>{if(leader()!=="WAITING")p.side=leader()});
+    drawGame();raf=requestAnimationFrame(loop);
+  }
+  window.addEventListener("resize",resizeGame);
+
+  $("reconnect").addEventListener("click",connect);
+  resizeGame();connect();connectTrades();tick();updateMomentum();state.timer=setInterval(tick,500);
   const canvas=$("birdGame"),ctx=canvas.getContext("2d");
   let game={running:false,over:false,score:0,birdY:90,velocity:0,pipes:[],last:0,spawn:0};
   let frame=0,raf=0;

@@ -34,7 +34,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:13px}
 .metric-value{font-size:21px;font-weight:800;margin-top:8px}
 .bar{height:6px;background:#242747;border-radius:10px;margin-top:12px;overflow:hidden}.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#5574ff,#35d9ff);border-radius:10px;transition:width .2s}
-.momentum-card{margin-top:13px}.horizon-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:13px}.horizon-grid>div{padding:11px 9px;border:1px solid #293b68;border-radius:11px;background:#0b1024}.horizon-grid span{display:block;font-size:9px;letter-spacing:.12em;color:#8fa5d0;font-weight:800}.horizon-grid b{display:block;margin-top:7px;font-size:15px;font-variant-numeric:tabular-nums}.momentum-grid{margin-top:13px}.momentum-card .small{margin-top:12px}.game-card{margin-top:15px;padding:17px;background:linear-gradient(135deg,#11142d,#100d24 70%);border:1px solid #443d8e;border-radius:19px;box-shadow:0 0 26px #4d39c522}
+.prediction-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:12px 0}.prediction-panel{min-width:0;border:1px solid #35457b;border-radius:15px;padding:13px 15px;background:linear-gradient(145deg,#12152e,#0b1022 80%);box-shadow:inset 0 0 22px #3145a018}.next-panel{border-color:#55418a;background:linear-gradient(145deg,#17132f,#0d1024 80%)}.prediction-heading{display:flex;justify-content:space-between;align-items:center;gap:7px}.prediction-live{font-size:8px;font-weight:900;letter-spacing:.12em;color:#9fb5ff;border:1px solid #465b9a;border-radius:20px;padding:4px 7px}.prediction-callout{font-size:clamp(17px,2.5vw,23px);font-weight:900;letter-spacing:-.025em;margin-top:10px;color:#a9b9d9}.prediction-callout.up{color:#43efae}.prediction-callout.down{color:#ff6b96}.prediction-reason{font-size:10px;color:#93a6cb;line-height:1.4;margin-top:5px;min-height:27px}.prediction-stack{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}.prediction-stack>div{background:#080d1d;border:1px solid #27345b;border-radius:9px;padding:7px 8px}.prediction-stack span{display:block;font-size:8px;color:#8198c3;letter-spacing:.1em;font-weight:800}.prediction-stack b{display:block;font-size:12px;margin-top:4px;font-variant-numeric:tabular-nums}.momentum-card{margin-top:13px}.horizon-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:13px}.horizon-grid>div{padding:11px 9px;border:1px solid #293b68;border-radius:11px;background:#0b1024}.horizon-grid span{display:block;font-size:9px;letter-spacing:.12em;color:#8fa5d0;font-weight:800}.horizon-grid b{display:block;margin-top:7px;font-size:15px;font-variant-numeric:tabular-nums}.momentum-grid{margin-top:13px}.momentum-card .small{margin-top:12px}.game-card{margin-top:15px;padding:17px;background:linear-gradient(135deg,#11142d,#100d24 70%);border:1px solid #443d8e;border-radius:19px;box-shadow:0 0 26px #4d39c522}
 .game-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .game-title{font-weight:850;letter-spacing:-.02em;font-size:16px}.game-score{font-size:11px;color:#a9b7d9;font-variant-numeric:tabular-nums}
 .game-wrap{position:relative;border:1px solid #303c72;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,#111e43,#15102f)}
@@ -48,7 +48,7 @@ button:hover{filter:brightness(1.16)}
 .note{margin-top:15px;padding:13px 15px;background:#0e1024;border:1px solid #29365f;border-radius:13px;color:#aebcda;font-size:11px;line-height:1.6}
 .actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
 @media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}.focus-main{grid-template-columns:1fr}.direction-pill{width:100%}}
-@media(max-width:600px){.horizon-grid{grid-template-columns:repeat(3,minmax(0,1fr))}} @media(max-width:480px){body{padding:17px 12px 28px}.grid,.metrics{grid-template-columns:1fr 1fr}.card{padding:14px}.market-focus{padding:17px}.timer{font-size:39px}.focus-foot{gap:10px}.grid .card:last-child{grid-column:1/-1}}
+@media(max-width:650px){.prediction-board{grid-template-columns:1fr}.horizon-grid{grid-template-columns:repeat(3,minmax(0,1fr))}} @media(max-width:480px){body{padding:17px 12px 28px}.grid,.metrics{grid-template-columns:1fr 1fr}.card{padding:14px}.market-focus{padding:17px}.timer{font-size:39px}.focus-foot{gap:10px}.grid .card:last-child{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -70,6 +70,27 @@ button:hover{filter:brightness(1.16)}
     <div id="directionPill" class="direction-pill">WAITING FOR TARGET</div>
   </div>
   <div class="focus-foot"><span>Live TWAP: <b id="liveTwapInline">—</b></span><span>Distance: <b id="distance">—</b></span><span>Next reset: <b>every 5 minutes UTC</b></span></div>
+</section>
+
+<section class="prediction-board">
+  <div class="prediction-panel">
+    <div class="prediction-heading"><span class="label">CURRENT MARKET · WINNER FORECAST</span><span class="prediction-live">LIVE</span></div>
+    <div id="currentCallout" class="prediction-callout">COLLECTING DATA</div>
+    <div id="currentReason" class="prediction-reason">Waiting for target and momentum</div>
+    <div class="prediction-stack">
+      <div><span>CONFIDENCE</span><b id="currentConfidence">—</b></div>
+      <div><span>MOMENTUM</span><b id="currentMomentum">—</b></div>
+    </div>
+  </div>
+  <div class="prediction-panel next-panel">
+    <div class="prediction-heading"><span class="label">NEXT 5-MIN MARKET · EARLY FORECAST</span><span class="prediction-live">PREVIEW</span></div>
+    <div id="nextCallout" class="prediction-callout">COLLECTING DATA</div>
+    <div id="nextReason" class="prediction-reason">Using live momentum as an early estimate</div>
+    <div class="prediction-stack">
+      <div><span>CONFIDENCE</span><b id="nextConfidence">—</b></div>
+      <div><span>MOMENTUM</span><b id="nextMomentum">—</b></div>
+    </div>
+  </div>
 </section>
 
 <section class="metrics">
@@ -104,7 +125,7 @@ button:hover{filter:brightness(1.16)}
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastSignal:"WAIT",lastLeader:"WAITING",flipCount:0,lastCallout:""};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastSignal:"WAIT",lastLeader:"WAITING",flipCount:0,lastCallout:"",momentumScore:0,momentumStrength:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -228,6 +249,7 @@ button:hover{filter:brightness(1.16)}
     const sell=state.trades.filter(t=>!t.buy).reduce((a,t)=>a+t.q*t.price,0);
     const flow=buy+sell?(buy-sell)/(buy+sell):0;
     const blended=Math.max(-1,Math.min(1,score*.72+flow*.28));
+    state.momentumScore=blended;state.momentumStrength=Math.round(Math.abs(blended)*100);
     const pct=Math.round(Math.abs(blended)*100);
     let signal="MIXED",cls="";
     if(blended>=.48){signal="STRONG UP";cls="up"}else if(blended>=.20){signal="UP BIAS";cls="up"}
@@ -242,6 +264,7 @@ button:hover{filter:brightness(1.16)}
     $("tradePressure").className="metric-value "+(flow>0?"up":flow<0?"down":"");
     $("tradePressureDetail").textContent=buy+sell?"Buy $"+fmt(buy)+" · Sell $"+fmt(sell):"Waiting for Binance trade data";
     $("momentumUpdated").textContent="Last update "+new Date().toLocaleTimeString()+" · "+state.prices.length+" price samples · "+state.trades.length+" trades in rolling window";
+    updateForecasts(pct,flow);
     const leader=state.twap!==null&&state.target!==null?(state.twap>=state.target?"POSITIVE":"NEGATIVE"):"WAITING";
     if(leader!==state.lastLeader&&leader!=="WAITING"&&state.lastLeader!=="WAITING"){state.flipCount++;$("gameScore").textContent="LEAD FLIPS "+state.flipCount}
     state.lastLeader=leader;
@@ -252,6 +275,31 @@ button:hover{filter:brightness(1.16)}
     }
     if(!votes.length)$("birdStatus").textContent="Collecting enough live samples for a directional read";
     drawGame();
+  }
+
+  function forecastLabel(score,minimum=.14){
+    if(Math.abs(score)<minimum)return {label:"NO CLEAR EDGE",side:"WAIT",cls:"",confidence:Math.round(Math.abs(score)*100)};
+    return {label:score>0?"UP · POSITIVE FAVORED":"DOWN · NEGATIVE FAVORED",side:score>0?"POSITIVE":"NEGATIVE",cls:score>0?"up":"down",confidence:Math.min(95,Math.round(50+Math.abs(score)*45))};
+  }
+  function updateForecasts(pct,flow){
+    const momentum=state.momentumScore;
+    const currentDiff=state.twap!==null&&state.target!==null?(state.twap-state.target)/Math.max(state.target*.00035,1):0;
+    const displacement=Math.max(-1,Math.min(1,currentDiff));
+    const currentScore=Math.max(-1,Math.min(1,displacement*.58+momentum*.42));
+    const nextScore=Math.max(-1,Math.min(1,momentum*.82+flow*.18));
+    const cur=forecastLabel(currentScore,.18),nxt=forecastLabel(nextScore,.16);
+    $("currentCallout").textContent=state.target===null?"WAITING FOR TARGET":cur.label;
+    $("currentCallout").className="prediction-callout "+(state.target===null?"":cur.cls);
+    $("currentReason").textContent=state.target===null?"Current-market forecast activates after the new target is captured":(cur.side==="WAIT"?"Price position and momentum are mixed":(cur.side+" lead · target distance weighted with short-term momentum"));
+    $("currentConfidence").textContent=state.target===null?"—":(cur.side==="WAIT"?"LOW EDGE":cur.confidence+"% · estimate");
+    $("currentMomentum").textContent=(momentum>=0?"UP ":"DOWN ")+Math.round(Math.abs(momentum)*100)+"/100";
+    $("currentMomentum").className=momentum>0?"up":momentum<0?"down":"";
+    $("nextCallout").textContent=nxt.label;
+    $("nextCallout").className="prediction-callout "+nxt.cls;
+    $("nextReason").textContent=nxt.side==="WAIT"?"Recent momentum has no reliable directional agreement":"Early estimate from live price speed and aggressive buy/sell flow";
+    $("nextConfidence").textContent=nxt.side==="WAIT"?"LOW EDGE":nxt.confidence+"% · estimate";
+    $("nextMomentum").textContent=(momentum>=0?"UP ":"DOWN ")+Math.round(Math.abs(momentum)*100)+"/100";
+    $("nextMomentum").className=momentum>0?"up":momentum<0?"down":"";
   }
 
   // Autopilot bird: automatically follows the live directional lead through labelled gates.

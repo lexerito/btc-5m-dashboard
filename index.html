@@ -349,7 +349,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       }else{health="STEADY";healthDetail="No strong acceleration or exhaustion pattern";}
     }
     state.exhaustionRisk=exhaustion;
-    $("exhaustionSignal").textContent=health;$("exhaustionSignal").className="metric-value "+(exhaustion>.6?"down":exhaustion>.2?"":"up");
+    $("exhaustionSignal").textContent=health;$("exhaustionSignal").className="metric-value "+(exhaustion>.6?"down":health==="ACCELERATING"||health==="STEADY"?"up":"");
     $("exhaustionDetail").textContent=healthDetail;
     state.momentumScore=blended;state.momentumStrength=Math.round(Math.abs(blended)*100);
     const pct=Math.round(Math.abs(blended)*100);
@@ -465,8 +465,8 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     $("labDetail").textContent=done.length?"Accuracy is shown separately by decision time. WAIT calls are excluded from directional hit rate; no untested score is presented as a probability.":"No completed exact-reference markets yet. Keep the page open through market boundaries to build a real sample.";
   }
   function exportMarketLab(){
-    const rows=[["start_utc","target_twap60","final_twap60","outcome","checkpoint_60s","checkpoint_180s","checkpoint_240s"]];
-    state.journal.forEach(r=>rows.push([new Date(r.start).toISOString(),r.target,r.final,r.outcome,...[60,180,240].map(m=>r.checkpoints&&r.checkpoints[String(m)]?r.checkpoints[String(m)].side:"")]));
+    const rows=[["start_utc","target_twap60","final_twap60","outcome","checkpoint_60s_side","checkpoint_60s_score","checkpoint_180s_side","checkpoint_180s_score","checkpoint_240s_side","checkpoint_240s_score"]];
+    state.journal.forEach(r=>rows.push([new Date(r.start).toISOString(),r.target,r.final,r.outcome,...[60,180,240].flatMap(m=>r.checkpoints&&r.checkpoints[String(m)]?[r.checkpoints[String(m)].side,r.checkpoints[String(m)].score] : ["",""])]));
     const csv=rows.map(row=>row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\n");
     const url=URL.createObjectURL(new Blob([csv],{type:"text/csv"})),a=document.createElement("a");a.href=url;a.download="btc-5m-market-results.csv";a.click();URL.revokeObjectURL(url);
   }

@@ -414,7 +414,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     $("timeAdjustedGap").textContent=expectedMove===null?"COLLECTING":(gapScore>=0?"+":"")+Math.round(gapScore*100)+" pressure · ±$"+fmt(expectedMove);
     $("polySignalRead").textContent=!polyFresh?"STALE":(polyScore>.12?"UP ":polyScore<-.12?"DOWN ":"MIXED ")+Math.round(Math.abs(polyScore)*100)+"/100";
     $("polySignalRead").className=polyFresh?(polyScore>.12?"up":polyScore<-.12?"down":""):"";
-    captureCheckpoint(currentScore,finalSide);
+    captureCheckpoint(currentScore,targetReady?finalSide:"WAIT");
   }
 
   const LAB_KEY="btc5m-market-lab-v2",TWAP_KEY="btc5m-twap-history-v2";

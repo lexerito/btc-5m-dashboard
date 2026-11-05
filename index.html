@@ -439,9 +439,10 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const done=state.journal.filter(x=>x.outcome);
     $("labMarkets").textContent=String(done.length);
     [60,180,240].forEach(mark=>{
-      const rows=done.filter(x=>x.checkpoints&&x.checkpoints[String(mark)]&&x.checkpoints[String(mark)].side!=="WAIT");
-      const hits=rows.filter(x=>x.checkpoints[String(mark)].side===x.outcome).length;
-      $( "lab"+mark).textContent=rows.length?Math.round(hits/rows.length*100)+"% · "+hits+"/"+rows.length:"—";
+      const observed=done.filter(x=>x.checkpoints&&x.checkpoints[String(mark)]);
+      const calls=observed.filter(x=>x.checkpoints[String(mark)].side!=="WAIT");
+      const hits=calls.filter(x=>x.checkpoints[String(mark)].side===x.outcome).length;
+      $("lab"+mark).textContent=calls.length?Math.round(hits/calls.length*100)+"% · "+hits+"/"+calls.length+" calls · "+calls.length+"/"+observed.length+" active":"—";
     });
     $("labStatus").textContent=done.length?"TRACKING · "+done.length+" SETTLED":"COLLECTING";
     $("labDetail").textContent=done.length?"Accuracy is shown separately by decision time. WAIT calls are excluded from directional hit rate; no untested score is presented as a probability.":"No completed exact-reference markets yet. Keep the page open through market boundaries to build a real sample.";
@@ -523,7 +524,6 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const agreement=signs.length?signs.reduce((a,b)=>a+b,0)/signs.length:0;
     crossText("crossAgreement",signs.length?Math.round(Math.abs(agreement)*100)+"% "+(agreement>.25?"UP":agreement<-.25?"DOWN":"MIXED"):"COLLECTING");
     crossText("crossFlow",combined?(flow>=0?"BUY ":"SELL ")+Math.round(Math.abs(flow)*100)+"%":"COLLECTING");
-    crossText("crossFlow",combined?(flow>=0?"BUY ":"SELL ")+Math.round(Math.abs(flow)*100)+"%":"COLLECTING");
     const fresh=(cbAge!==null&&cbAge<8&&hlAge!==null&&hlAge<8&&bookTotal>0);
     const score=Math.max(-1,Math.min(1,agreement*.55+flow*.25+bookImb*.20));
     const votes=[Math.abs(agreement)>.20?Math.sign(agreement):0,Math.abs(flow)>.08?Math.sign(flow):0,Math.abs(bookImb)>.08?Math.sign(bookImb):0].filter(x=>x!==0);
@@ -538,7 +538,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
   function startCrossVenue(){connectCoinbase();connectHyperliquid();setInterval(renderCrossVenue,1000)}
 
   // Polymarket live data: exact current 5m slug + CLOB WebSocket + REST book fallback.
-  const poly={event:null,market:null,upId:null,downId:null,ws:null,books:{},lastTrade:null,lastMsg:0,ping:null,refresh:null,poll:null,watchdog:null,imbalance:0,upMid:null,downMid:null,wsConnected:false,restAt:0,discovering:false,retry:0};
+  const poly={event:null,market:null,upId:null,downId:null,ws:null,books:{},lastTrade:null,lastMsg:0,ping:null,wsReconnect:null,refresh:null,poll:null,watchdog:null,imbalance:0,upMid:null,downMid:null,wsConnected:false,wsBookSeen:false,restAt:0,restBusy:false,discovering:false,retry:0};
   const polyApi="https://gamma-api.polymarket.com";
   const clobApi="https://clob.polymarket.com";
   function polyText(id,value){const el=$(id);if(el)el.textContent=value}
@@ -591,6 +591,8 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
   function connectPolyBook(){
     if(poly.ws){try{poly.ws.close()}catch(_){}}
     if(poly.ping){clearInterval(poly.ping);poly.ping=null}
+    if(poly.wsReconnect){clearTimeout(poly.wsReconnect);poly.wsReconnect=null}
+    poly.wsBookSeen=false;
     if(!poly.upId||!poly.downId)return;
     polyBadge("CONNECTING LIVE STREAM");
     const ws=new WebSocket("wss://ws-subscriptions-clob.polymarket.com/ws/market");poly.ws=ws;
@@ -603,12 +605,25 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     ws.onmessage=e=>{
       if(e.data==="PONG")return;
       let data;try{data=JSON.parse(e.data)}catch(_){return}
-      let gotBook=false;
-      (Array.isArray(data)?data:[data]).forEach(m=>{if(m&&m.event_type){handlePolyEvent(m);gotBook=true}});
-      if(gotBook){poly.lastMsg=Date.now();renderPolyBooks()}
+      let gotEvent=false,gotBook=false;
+      (Array.isArray(data)?data:[data]).forEach(m=>{
+        if(m&&m.event_type){
+          handlePolyEvent(m);gotEvent=true;
+          if(["book","price_change","best_bid_ask"].includes(m.event_type))gotBook=true;
+        }
+      });
+      if(gotEvent){poly.lastMsg=Date.now();renderPolyBooks()}
+      if(gotBook)poly.wsBookSeen=true;
     };
     ws.onerror=()=>{polyBadge("WS ERROR · REST BACKUP ACTIVE","bad")};
-    ws.onclose=()=>{poly.wsConnected=false;if(poly.ping){clearInterval(poly.ping);poly.ping=null}polyBadge("WS RECONNECTING · REST ACTIVE","bad")};
+    ws.onclose=()=>{
+      if(poly.ws!==ws)return;
+      poly.wsConnected=false;
+      if(poly.ping){clearInterval(poly.ping);poly.ping=null}
+      polyBadge("WS RECONNECTING · REST ACTIVE","bad");
+      if(poly.wsReconnect)clearTimeout(poly.wsReconnect);
+      poly.wsReconnect=setTimeout(()=>{if(poly.ws===ws&&poly.upId)connectPolyBook()},3000);
+    };
   }
   function handlePolyEvent(msg){
     if(msg.event_type==="book"){
@@ -645,16 +660,19 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     }
   }
   async function refreshPolyBooks(){
-    if(!poly.upId||!poly.downId)return;
+    if(!poly.upId||!poly.downId||poly.restBusy)return;
+    poly.restBusy=true;
     const ids=[poly.upId,poly.downId];
     try{
       const books=await Promise.all(ids.map(id=>fetchJson(clobApi+"/book?token_id="+encodeURIComponent(id),4000)));
       ids.forEach((id,i)=>{if(books[i]&&Array.isArray(books[i].bids)&&Array.isArray(books[i].asks))poly.books[id]=normalizeBook(books[i])});
       poly.restAt=Date.now();renderPolyBooks();
-      if(poly.wsConnected)polyBadge("LIVE · WS + REST VERIFIED","ok");else polyBadge("REST LIVE · WS RECONNECTING","bad");
+      if(poly.wsConnected&&poly.wsBookSeen)polyBadge("LIVE · WS BOOK + REST","ok");else if(poly.wsConnected)polyBadge("REST BOOK LIVE · WS CONNECTED","");else polyBadge("REST LIVE · WS RECONNECTING","bad");
     }catch(err){
       if(!poly.restAt)polyBadge("WAITING FOR ORDER BOOK","bad");
       polyText("polyDetail","REST book refresh failed: "+String(err.message||err)+" · waiting for next retry");
+    }finally{
+      poly.restBusy=false;
     }
   }
   function bookMetrics(book){

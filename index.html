@@ -3,253 +3,258 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BTC 5M Chainlink Reference</title>
+<meta name="theme-color" content="#090817">
+<title>BTC 5M Market Dashboard</title>
 <style>
-:root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:#070510;color:#eef3ff}
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:#080713;color:#eef3ff}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;padding:28px 22px;max-width:1200px;margin-inline:auto;background:radial-gradient(ellipse at 12% 0%,#24104b 0,transparent 38%),radial-gradient(ellipse at 100% 20%,#071d50 0,transparent 34%),linear-gradient(145deg,#070510,#09091b 58%,#10051d)}
-h1{font-size:clamp(24px,4vw,34px);margin:0 0 5px;letter-spacing:.02em;text-shadow:0 0 22px #4b8dff88}
-.sub{color:#9daed0;margin:0 0 20px;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-.card{position:relative;overflow:hidden;background:linear-gradient(145deg,#10142bdf,#0b0b1ceF 70%);border:1px solid #315bba;border-radius:16px;padding:18px;box-shadow:0 0 18px #145dff20,inset 0 0 24px #1a2c6820}
-.card:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,#6526b51a,transparent 70%)}
-.label{font-size:11px;color:#9caed4;text-transform:uppercase;letter-spacing:.12em}
-.value{font-size:clamp(23px,4vw,31px);font-weight:750;margin-top:9px;overflow-wrap:anywhere;text-shadow:0 0 16px #328aff35}
-.small{font-size:12px;color:#91a2c5;margin-top:8px}
-.status{display:inline-flex;gap:9px;align-items:center;padding:8px 13px;border-radius:24px;background:#111b35;border:1px solid #315bba;font-size:13px;box-shadow:0 0 16px #126bff22}
-.dot{width:8px;height:8px;border-radius:50%;background:#f4b942;box-shadow:0 0 9px currentColor}
-.ok .dot{background:#36f0a0}.bad .dot{background:#ff668d}
-.up{color:#38efa0}.down{color:#ff648e}
-button{margin-top:16px;background:linear-gradient(135deg,#173d9a,#39206d);color:#fff;border:1px solid #438bff;border-radius:10px;padding:10px 15px;font-weight:650;cursor:pointer;box-shadow:0 0 15px #126bff35}
-button:hover{filter:brightness(1.2)}
-.note{margin-top:18px;padding:15px 17px;background:#101329;border:1px solid #293b70;border-radius:12px;color:#b8c6e2;font-size:13px;line-height:1.55}
-.chart-card{margin-top:14px;background:linear-gradient(145deg,#0d1329,#0b0a1b);border:1px solid #315bba;border-radius:16px;padding:16px;box-shadow:0 0 22px #174cff20}
-.chart-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
-.chart-title{font-weight:700;color:#e9f1ff}
-.controls{display:flex;gap:6px;flex-wrap:wrap}
-.controls button{margin:0;padding:6px 11px;font-size:12px;background:#11152c;border-color:#303d70}
-.controls button.active{background:linear-gradient(135deg,#075eea,#5524bd);border-color:#45a5ff;box-shadow:0 0 13px #087cff80}
-canvas{display:block;width:100%;height:240px;border-radius:10px;background:linear-gradient(180deg,#07142b,#080b1b)}
-@media(max-width:600px){body{padding:18px 12px}.card{padding:15px}canvas{height:190px}}
+body{margin:0;min-height:100vh;padding:24px 20px 36px;max-width:1160px;margin-inline:auto;background:radial-gradient(ellipse at 12% -5%,#32145c 0,transparent 37%),radial-gradient(ellipse at 95% 10%,#09275a 0,transparent 34%),linear-gradient(145deg,#080713,#0b0b1c 58%,#12071e)}
+header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.brand{display:flex;align-items:center;gap:13px}.coin{width:44px;height:44px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(145deg,#5726a5,#087bdf);font-size:25px;font-weight:900;box-shadow:0 0 24px #5b39ff66}
+h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4px 0 0;color:#9baed0;font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+.status{display:inline-flex;align-items:center;gap:9px;padding:9px 13px;border:1px solid #34466f;border-radius:30px;background:#10142a;color:#c7d6f4;font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:#f5bb50;box-shadow:0 0 10px currentColor}.ok .dot{background:#36efa4}.bad .dot{background:#ff638b}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px}
+.card{position:relative;overflow:hidden;border:1px solid #2b3e70;border-radius:17px;padding:17px;background:linear-gradient(145deg,#11162deF,#0b0b1ceF 75%);box-shadow:0 10px 32px #0004,inset 0 0 25px #263d7818}
+.card:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,#6526b51a,transparent 72%)}
+.label{font-size:10px;color:#9aadd2;text-transform:uppercase;letter-spacing:.15em;font-weight:750}
+.value{font-size:clamp(22px,3vw,29px);font-weight:800;margin-top:9px;letter-spacing:-.025em;overflow-wrap:anywhere;text-shadow:0 0 18px #328aff35}
+.small{font-size:11px;color:#8fa2c8;margin-top:7px;line-height:1.45}
+.up{color:#43efae!important}.down{color:#ff6b96!important}.muted{color:#a9b9d9}
+.market-focus{margin:15px 0 14px;padding:21px 22px;background:linear-gradient(115deg,#15133b,#101b3c 56%,#211044);border:1px solid #5b54c5;border-radius:20px;box-shadow:0 0 32px #4539d833,inset 0 0 34px #4d3db522}
+.focus-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.focus-tag{display:inline-flex;align-items:center;gap:8px;padding:6px 11px;border:1px solid #6564dd;border-radius:30px;background:#22215a;color:#d8ddff;font-size:11px;font-weight:800;letter-spacing:.14em}
+.focus-tag span{width:7px;height:7px;border-radius:50%;background:#70b9ff;box-shadow:0 0 10px #70b9ff}
+.timer{font-variant-numeric:tabular-nums;font-size:clamp(34px,6vw,52px);font-weight:900;letter-spacing:-.06em;color:#fff;text-shadow:0 0 24px #598dff75}
+.focus-main{display:grid;grid-template-columns:1fr auto;align-items:end;gap:18px;margin-top:12px}
+.target-number{font-size:clamp(25px,4vw,38px);font-weight:850;letter-spacing:-.04em;margin-top:7px}
+.direction-pill{min-width:185px;text-align:center;padding:14px 18px;border-radius:15px;border:1px solid #ff7198;background:#42152f;color:#ff8dab;font-size:15px;font-weight:900;letter-spacing:.08em;box-shadow:0 0 22px #ff477722}
+.direction-pill.above{border-color:#39d99b;background:#10372f;color:#61f2b4;box-shadow:0 0 22px #39d99b22}
+.focus-foot{display:flex;gap:20px;flex-wrap:wrap;margin-top:15px;padding-top:13px;border-top:1px solid #ffffff17;color:#aebde0;font-size:11px}
+.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:13px}
+.metric-value{font-size:21px;font-weight:800;margin-top:8px}
+.bar{height:6px;background:#242747;border-radius:10px;margin-top:12px;overflow:hidden}.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#5574ff,#35d9ff);border-radius:10px;transition:width .2s}
+.game-card{margin-top:15px;padding:17px;background:linear-gradient(135deg,#11142d,#100d24 70%);border:1px solid #443d8e;border-radius:19px;box-shadow:0 0 26px #4d39c522}
+.game-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.game-title{font-weight:850;letter-spacing:-.02em;font-size:16px}.game-score{font-size:11px;color:#a9b7d9;font-variant-numeric:tabular-nums}
+.game-wrap{position:relative;border:1px solid #303c72;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,#111e43,#15102f)}
+#birdGame{display:block;width:100%;height:190px;touch-action:manipulation}
+.game-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.game-message{padding:9px 14px;border:1px solid #7a73d8;border-radius:12px;background:#0b0d21dd;color:#e4eaff;font-size:12px;font-weight:750;letter-spacing:.03em;text-align:center;backdrop-filter:blur(8px)}
+.game-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px}
+.game-hint{font-size:11px;color:#91a4ca}
+button{border:1px solid #4d82ff;border-radius:10px;padding:9px 14px;color:#fff;background:linear-gradient(135deg,#1758c6,#5725a4);font-weight:750;font-size:12px;cursor:pointer;box-shadow:0 0 14px #126bff25}
+button:hover{filter:brightness(1.16)}
+.note{margin-top:15px;padding:13px 15px;background:#0e1024;border:1px solid #29365f;border-radius:13px;color:#aebcda;font-size:11px;line-height:1.6}
+.actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
+@media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}.focus-main{grid-template-columns:1fr}.direction-pill{width:100%}}
+@media(max-width:480px){body{padding:17px 12px 28px}.grid,.metrics{grid-template-columns:1fr 1fr}.card{padding:14px}.market-focus{padding:17px}.timer{font-size:39px}.focus-foot{gap:10px}.grid .card:last-child{grid-column:1/-1}}
 </style>
 </head>
 <body>
 <header>
-  <div class="brand"><div class="coin">₿</div><div><h1>BTC Chainlink Dashboard</h1><p class="sub">Polymarket · 5-minute market reference</p></div></div>
-  <div id="status" class="status"><span class="dot"></span><span>Connecting to Polymarket RTDS…</span></div>
+  <div class="brand"><div class="coin">₿</div><div><h1>BTC Market Dashboard</h1><p class="sub">Polymarket · live 5-minute reference</p></div></div>
+  <div id="status" class="status"><span class="dot"></span><span>Connecting to live feeds…</span></div>
 </header>
-<div class="grid">
-  <section class="card"><div class="label">Chainlink BTC/USD spot</div><div id="chainlink" class="value">—</div><div class="small">Oracle spot reference</div></section>
-  <section class="card"><div class="label">Chainlink TWAP60</div><div id="twap" class="value">Waiting…</div><div id="twapTime" class="small">Waiting for feed</div></section>
-  <section class="card"><div class="label">Binance BTCUSDT</div><div id="binance" class="value">—</div><div id="binanceDiff" class="small">Momentum reference feed</div></section>
-  <section class="card purple"><div class="label">Official target · captured TWAP60</div><div id="target" class="value">Waiting…</div><div id="targetTime" class="small">Waiting for next 5-minute boundary</div></section>
-</div>
-<div class="chart-wrap">
-  <section class="card chart-card">
-    <div class="chart-head"><div class="chart-title">◈ Live BTC Price Monitor</div><div class="timeframes" id="timeframes"><button class="active" data-window="60">1m</button><button data-window="300">5m</button><button data-window="900">15m</button><button data-window="3600">1h</button><button data-window="14400">4h</button><button data-window="86400">1D</button></div></div>
-    <canvas id="priceChart" aria-label="Live Chainlink TWAP60 chart"></canvas>
-    <div class="small"><span class="feed-led"></span>Blue: TWAP60 · Purple: Binance samples · Chart history builds while this page is open</div>
-  </section>
-  <section class="card purple target-card">
-    <div class="label">5-minute market target</div><div id="targetLarge" class="value">—</div><div id="distance" class="value" style="font-size:23px">—</div><div id="direction" class="small">Waiting for target</div>
-    <div class="divider"></div><div class="count-label">TIME LEFT IN MARKET</div><div id="countdown" class="countdown">—:—</div><div class="small" style="text-align:center">Next UTC 5-minute boundary</div>
-  </section>
-</div>
-<div class="metrics">
-  <section class="card metric"><div class="label">Market direction · TWAP vs target</div><div id="marketDirection" class="value">WAIT</div><div class="small">Reference comparison only</div></section>
-  <section class="card metric"><div class="label">Distance from target</div><div id="distanceMetric" class="value">—</div><div class="bar"><span id="distanceBar"></span></div></section>
-  <section class="card metric"><div class="label">Binance vs Chainlink</div><div id="basis" class="value">—</div><div class="small">Spot price difference</div></section>
-  <section class="card metric"><div class="label">Feed freshness</div><div id="freshness" class="value">WAIT</div><div id="freshnessDetail" class="small">Waiting for live updates</div></section>
-</div>
-<div class="actions"><section class="chart-card">
-  <div class="chart-head"><div class="chart-title">▰ Live BTC Price Monitor</div>
-    <div class="controls" id="chartControls">
-      <button class="active" data-range="1m">1m</button><button data-range="5m">5m</button>
-      <button data-range="15m">15m</button><button data-range="1h">1h</button>
-      <button data-range="4h">4h</button><button data-range="1D">1D</button>
-    </div>
-  </div>
-  <canvas id="priceChart" width="1100" height="260"></canvas>
-  <div class="small" id="chartHint">Chart starts collecting live Binance updates when this page is open.</div>
+
+<section class="grid">
+  <div class="card"><div class="label">Chainlink BTC / USD</div><div id="chainlink" class="value">—</div><div class="small">Oracle spot price</div></div>
+  <div class="card"><div class="label">Chainlink TWAP60</div><div id="twap" class="value">Waiting…</div><div id="twapTime" class="small">Waiting for feed</div></div>
+  <div class="card"><div class="label">Binance BTCUSDT</div><div id="binance" class="value">—</div><div id="binanceDiff" class="small">Fast momentum reference</div></div>
 </section>
-<button id="reconnect">↻ Reconnect feeds</button><span class="small">Live data connection · No API key</span></div>
-<div class="note"><b>Important:</b> This is a separate reference dashboard; it does not inject data into TradingView or alter your Pine indicator. The chart's history starts when you open this page. The target capture is a browser-side approximation using the latest TWAP60 update around the five-minute UTC boundary, not a guaranteed exact oracle snapshot. Verify the target against the active Polymarket market before relying on it for trades. No trade signal or profitability is guaranteed.</div>
+
+<section class="market-focus">
+  <div class="focus-top"><div class="focus-tag"><span></span> ACTIVE MARKET · 5 MINUTES</div><div><div class="label">TIME LEFT</div><div id="countdown" class="timer">5:00</div></div></div>
+  <div class="focus-main">
+    <div><div class="label">PRICE TO BEAT · CAPTURED TWAP60</div><div id="targetLarge" class="target-number">Waiting for next market…</div><div id="targetTime" class="small">Target capture is a browser-side estimate</div></div>
+    <div id="directionPill" class="direction-pill">WAITING FOR TARGET</div>
+  </div>
+  <div class="focus-foot"><span>Live TWAP: <b id="liveTwapInline">—</b></span><span>Distance: <b id="distance">—</b></span><span>Next reset: <b>every 5 minutes UTC</b></span></div>
+</section>
+
+<section class="metrics">
+  <div class="card"><div class="label">Market direction · TWAP vs target</div><div id="marketDirection" class="metric-value">WAIT</div><div class="small">Above = positive · Below = negative</div></div>
+  <div class="card"><div class="label">Distance from target</div><div id="distanceMetric" class="metric-value">—</div><div class="bar"><span id="distanceBar"></span></div></div>
+  <div class="card"><div class="label">Feed freshness</div><div id="freshness" class="metric-value">WAIT</div><div id="freshnessDetail" class="small">Waiting for live updates</div></div>
+</section>
+
+<section class="game-card">
+  <div class="game-head"><div><div class="game-title">🐤 Market Flap · Positive vs Negative</div><div class="small">Fly through the gates. Each gate shows the side currently leading.</div></div><div id="gameScore" class="game-score">SCORE 0</div></div>
+  <div class="game-wrap"><canvas id="birdGame" aria-label="Flappy Bird style market game"></canvas><div class="game-overlay" id="gameOverlay"><div class="game-message" id="gameMessage">TAP / SPACE TO FLAP</div></div></div>
+  <div class="game-controls"><span class="game-hint">Click or press SPACE to flap · avoid the gates</span><button id="gameStart">Start game</button></div>
+</section>
+
+<div class="actions"><button id="reconnect">↻ Reconnect live feeds</button><span class="small">Live data connection · No API key required</span></div>
+<div class="note"><b>Important:</b> This dashboard is a separate reference tool; it does not inject data into TradingView. The target is a browser-side approximation using the latest TWAP60 update around each five-minute UTC boundary, not a guaranteed exact oracle snapshot. Always compare the target with the active Polymarket market before trading. Binance is a momentum reference; Chainlink TWAP is the relevant comparison shown here. No trade signal or profitability is guaranteed.</div>
+
 <script>
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null, twap:null, twapTs:null, chainlink:null, binance:null, target:null, targetTs:null, timer:null, samples:[], windowSec:60};
+  const state = {ws:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null};
   const endpoint = "wss://ws-live-data.polymarket.com";
+  const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
+  const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
 
-  function status(text, mode="") {
-    $("status").className = "status " + mode;
-    $("status").lastElementChild.textContent = text;
+  function status(message,mode="") {
+    $("status").className="status "+mode;
+    $("status").lastElementChild.textContent=message;
   }
-  function boundaryAtOrBefore(ms) {
-    return Math.floor(ms / 300000) * 300000;
-  }
-  function nextBoundary(ms) {
-    return boundaryAtOrBefore(ms) + 300000;
-  }
-  function sendSubscriptions(ws) {
-    const subs = [
-      {topic:"crypto_prices_twap_sixty", type:"*", filters:JSON.stringify({symbol:"btc/usd"})},
-      {topic:"crypto_prices_chainlink", type:"*", filters:JSON.stringify({symbol:"btc/usd"})},
-      {topic:"crypto_prices", type:"*", filters:JSON.stringify({symbol:"btcusdt"})}
-    ];
-    ws.send(JSON.stringify({action:"subscribe", subscriptions:subs}));
+  function subscribe(ws) {
+    ws.send(JSON.stringify({action:"subscribe",subscriptions:[
+      {topic:"crypto_prices_twap_sixty",type:"*",filters:JSON.stringify({symbol:"btc/usd"})},
+      {topic:"crypto_prices_chainlink",type:"*",filters:JSON.stringify({symbol:"btc/usd"})},
+      {topic:"crypto_prices",type:"*",filters:JSON.stringify({symbol:"btcusdt"})}
+    ]}));
   }
   function connect() {
-    if (state.ws) { try { state.ws.close(); } catch(e) {} }
+    if(state.ws){try{state.ws.close()}catch(e){}}
     status("Connecting to Polymarket RTDS…");
-    const ws = new WebSocket(endpoint);
-    state.ws = ws;
-    ws.onopen = () => {
-      status("Connected · subscribing to BTC feeds", "ok");
-      sendSubscriptions(ws);
-    };
-    ws.onmessage = ev => {
-      let msg;
-      try { msg = JSON.parse(ev.data); } catch(e) { return; }
-      const p = msg.payload || {};
-      const symbol = String(p.symbol || "").toLowerCase();
-      const value = Number(p.value);
-      const ts = Number(p.timestamp || msg.timestamp || Date.now());
-      if (!Number.isFinite(value)) return;
-
-      if (msg.topic === "crypto_prices_twap_sixty" && symbol === "btc/usd") {
-        state.twap = value; state.twapTs = ts;
-        state.samples.push({t:ts, twap:value, binance:state.binance});
-        if (state.samples.length > 12000) state.samples.splice(0, state.samples.length-12000);
-        drawChart();
-        $("twap").textContent = "$" + fmt(value);
-        $("twapTime").textContent = "Feed time: " + new Date(ts).toLocaleTimeString();
-        updateDistance();
-      } else if (msg.topic === "crypto_prices_chainlink" && symbol === "btc/usd") {
-        state.chainlink = value;
-        $("chainlink").textContent = "$" + fmt(value);
-      } else if (msg.topic === "crypto_prices" && symbol === "btcusdt") {
-        state.binance = value;
-        samples.push({t:ts,v:value}); if(samples.length>600)samples.shift(); drawChart();
-        $("binance").textContent = "$" + fmt(value);
-        if (state.chainlink !== null) {
-          const d = value - state.chainlink;
-          $("binanceDiff").textContent = "Binance − Chainlink spot: " + (d >= 0 ? "+" : "") + "$" + fmt(d);
+    const ws=new WebSocket(endpoint);state.ws=ws;
+    ws.onopen=()=>{status("Connected · listening for BTC feeds","ok");subscribe(ws)};
+    ws.onmessage=event=>{
+      let msg;try{msg=JSON.parse(event.data)}catch(e){return}
+      const p=msg.payload||{},symbol=String(p.symbol||"").toLowerCase();
+      const value=Number(p.value),ts=Number(p.timestamp||msg.timestamp||Date.now());
+      if(!Number.isFinite(value))return;
+      if(msg.topic==="crypto_prices_twap_sixty"&&symbol==="btc/usd"){
+        state.twap=value;state.twapTs=ts;
+        $("twap").textContent="$"+fmt(value);$("liveTwapInline").textContent="$"+fmt(value);
+        $("twapTime").textContent="Updated "+new Date(ts).toLocaleTimeString();
+        updateDirection();
+      }else if(msg.topic==="crypto_prices_chainlink"&&symbol==="btc/usd"){
+        state.chainlink=value;$("chainlink").textContent="$"+fmt(value);
+      }else if(msg.topic==="crypto_prices"&&symbol==="btcusdt"){
+        state.binance=value;$("binance").textContent="$"+fmt(value);
+        if(state.chainlink!==null){
+          const diff=value-state.chainlink;
+          $("binanceDiff").textContent="Binance vs Chainlink: "+(diff>=0?"+":"−")+"$"+fmt(Math.abs(diff));
         }
       }
     };
-    ws.onerror = () => status("Feed connection error · try reconnecting", "bad");
-    ws.onclose = () => status("Disconnected · press Reconnect feeds", "bad");
+    ws.onerror=()=>status("Feed connection error · reconnect","bad");
+    ws.onclose=()=>status("Disconnected · press reconnect","bad");
   }
-  function updateDistance() {
-    if (state.twap === null || state.target === null) return;
-    const d = state.twap - state.target;
-    $("distance").textContent = (d >= 0 ? "+" : "−") + "$" + fmt(Math.abs(d));
-    $("distance").className = "value " + (d >= 0 ? "up" : "down");
-    $("direction").textContent = d >= 0 ? "TWAP60 is above the target" : "TWAP60 is below the target";
-    $("target").textContent = "$" + fmt(state.target);
-    $("targetLarge").textContent = "$" + fmt(state.target);
-    $("distanceMetric").textContent = (d >= 0 ? "+$" : "−$") + fmt(Math.abs(d));
-    $("marketDirection").textContent = d >= 0 ? "ABOVE TARGET" : "BELOW TARGET";
-    $("marketDirection").className = "value " + (d >= 0 ? "up" : "down");
-    $("distanceBar").style.width = Math.min(100, Math.abs(d) / Math.max(state.target*0.001,1)*100) + "%";
+  function updateDirection(){
+    if(state.twap===null||state.target===null)return;
+    const diff=state.twap-state.target,above=diff>=0;
+    const sign=diff>=0?"+":"−",amount="$"+fmt(Math.abs(diff));
+    $("distance").textContent=sign+amount;
+    $("distance").className=above?"up":"down";
+    $("distanceMetric").textContent=sign+amount;
+    $("distanceMetric").className="metric-value "+(above?"up":"down");
+    $("marketDirection").textContent=above?"POSITIVE LEADING":"NEGATIVE LEADING";
+    $("marketDirection").className="metric-value "+(above?"up":"down");
+    $("directionPill").textContent=above?"POSITIVE · ABOVE TARGET":"NEGATIVE · BELOW TARGET";
+    $("directionPill").className="direction-pill"+(above?" above":"");
+    $("distanceBar").style.width=Math.min(100,Math.abs(diff)/Math.max(state.target*.001,1)*100)+"%";
   }
-  function tick() {
-    const now = Date.now();
-    if (state.binance !== null && state.chainlink !== null) {
-      const b=state.binance-state.chainlink;
-      $("basis").textContent=(b>=0?"+$":"−$")+fmt(Math.abs(b));
-      $("basis").className="value "+(b>=0?"up":"down");
-    }
-    if (state.twapTs !== null) {
+  function tick(){
+    const now=Date.now(),marketStart=boundaryAtOrBefore(now);
+    const left=Math.max(0,Math.ceil((nextBoundary(now)-now)/1000));
+    $("countdown").textContent=Math.floor(left/60)+":"+String(left%60).padStart(2,"0");
+    if(state.twapTs!==null){
       const age=Math.max(0,now-state.twapTs);
       $("freshness").textContent=age<5000?"LIVE":age<15000?"DELAYED":"STALE";
-      $("freshness").className="value "+(age<5000?"up":"down");
-      $("freshnessDetail").textContent="TWAP update age: "+(age/1000).toFixed(1)+"s";
+      $("freshness").className="metric-value "+(age<5000?"up":"down");
+      $("freshnessDetail").textContent="TWAP update age: "+(age/1000).toFixed(1)+" seconds";
     }
-    const next = nextBoundary(now);
-    const left = Math.max(0, Math.ceil((next-now)/1000));
-    $("countdown").textContent = Math.floor(left/60) + ":" + String(left%60).padStart(2,"0");
-
-    // Capture the latest TWAP update received at/just before the boundary.
-    // This is a practical browser-side approximation, not a guaranteed exact oracle boundary sample.
-    if (state.twap !== null && state.twapTs !== null) {
-      const currentMarketStart = boundaryAtOrBefore(now);
-      if (state.targetTs !== currentMarketStart && now >= currentMarketStart + 1200) {
-        const age = now - state.twapTs;
-        if (age >= 0 && age <= 5000) {
-          state.target = state.twap;
-          state.targetTs = currentMarketStart;
-          $("target").textContent = "$" + fmt(state.target);
-    $("targetLarge").textContent = "$" + fmt(state.target);
-    $("distanceMetric").textContent = (d >= 0 ? "+$" : "−$") + fmt(Math.abs(d));
-    $("marketDirection").textContent = d >= 0 ? "ABOVE TARGET" : "BELOW TARGET";
-    $("marketDirection").className = "value " + (d >= 0 ? "up" : "down");
-    $("distanceBar").style.width = Math.min(100, Math.abs(d) / Math.max(state.target*0.001,1)*100) + "%";
-          $("targetTime").textContent = "Market start: " + new Date(currentMarketStart).toLocaleTimeString() + " · feed age " + age + " ms";
-          updateDistance();
-        }
+    // Capture the newest fresh TWAP shortly after each UTC 5-minute boundary.
+    // This is intentionally labelled approximate; it is not an official oracle snapshot.
+    if(state.twap!==null&&state.twapTs!==null&&state.targetTs!==marketStart&&now>=marketStart+1200){
+      const age=now-state.twapTs;
+      if(age>=0&&age<=5000){
+        state.target=state.twap;state.targetTs=marketStart;
+        $("targetLarge").textContent="$"+fmt(state.target);
+        $("targetTime").textContent="Market start "+new Date(marketStart).toLocaleTimeString()+" · approx. capture";
+        updateDirection();
       }
     }
   }
-  function drawChart() {
-    const canvas = $("priceChart"); if (!canvas) return;
-    const rect = canvas.getBoundingClientRect(); const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.max(1, Math.floor(rect.width*dpr)); canvas.height = Math.max(1, Math.floor(rect.height*dpr));
-    const ctx = canvas.getContext("2d"); ctx.scale(dpr,dpr);
-    const w=rect.width,h=rect.height; ctx.clearRect(0,0,w,h);
-    const now=Date.now(), cutoff=now-state.windowSec*1000;
-    const pts=state.samples.filter(x=>x.t>=cutoff && Number.isFinite(x.twap));
-    ctx.strokeStyle="#17264a";ctx.lineWidth=1;
-    for(let i=1;i<=4;i++){const y=h*i/5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
-    if(pts.length<2){ctx.fillStyle="#8297bf";ctx.font="13px system-ui";ctx.fillText("Collecting live price samples…",14,h/2);return;}
-    const vals=pts.map(x=>x.twap);const min=Math.min(...vals),max=Math.max(...vals);const pad=Math.max((max-min)*.18,1);const lo=min-pad,hi=max+pad;
-    const x=i=>(pts[i].t-cutoff)/state.windowSec* w;const y=v=>h-((v-lo)/(hi-lo))*h;
-    const grad=ctx.createLinearGradient(0,0,0,h);grad.addColorStop(0,"rgba(25,145,255,.30)");grad.addColorStop(1,"rgba(25,145,255,0)");
-    ctx.beginPath();pts.forEach((p,i)=>{if(i===0)ctx.moveTo(x(i),y(p.twap));else ctx.lineTo(x(i),y(p.twap));});ctx.lineTo(x(pts.length-1),h);ctx.lineTo(x(0),h);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
-    ctx.beginPath();pts.forEach((p,i)=>{if(i===0)ctx.moveTo(x(i),y(p.twap));else ctx.lineTo(x(i),y(p.twap));});ctx.strokeStyle="#16a9ff";ctx.lineWidth=2.4;ctx.shadowColor="#078cff";ctx.shadowBlur=10;ctx.stroke();ctx.shadowBlur=0;
-    if(state.target!==null){const ty=y(state.target);if(ty>=0&&ty<=h){ctx.setLineDash([6,5]);ctx.strokeStyle="#b36cff";ctx.beginPath();ctx.moveTo(0,ty);ctx.lineTo(w,ty);ctx.stroke();ctx.setLineDash([]);}}
-    ctx.fillStyle="#9bb2da";ctx.font="11px system-ui";ctx.fillText("$"+fmt(hi),8,13);ctx.fillText("$"+fmt(lo),8,h-5);
-  }
-  $("timeframes").addEventListener("click",e=>{const b=e.target.closest("button[data-window]");if(!b)return;state.windowSec=Number(b.dataset.window);document.querySelectorAll("#timeframes button").forEach(x=>x.classList.toggle("active",x===b));drawChart();});
-  window.addEventListener("resize",drawChart);
-  const oldTick=tick;
 
-  const chart = $("priceChart");
-  const ctx = chart ? chart.getContext("2d") : null;
-  let samples = [];
-  let selectedRange = "1m";
-  function drawChart() {
-    if (!ctx || !chart) return;
-    const w = chart.width, h = chart.height;
+  // Lightweight Flappy-style mini-game. It animates independently of the market feed.
+  const canvas=$("birdGame"),ctx=canvas.getContext("2d");
+  let game={running:false,over:false,score:0,birdY:90,velocity:0,pipes:[],last:0,spawn:0};
+  let frame=0,raf=0;
+  function resizeGame(){
+    const dpr=Math.min(window.devicePixelRatio||1,2),r=canvas.getBoundingClientRect();
+    canvas.width=Math.max(1,Math.floor(r.width*dpr));canvas.height=Math.max(1,Math.floor(r.height*dpr));
+    ctx.setTransform(dpr,0,0,dpr,0,0);drawGame();
+  }
+  function leader(){
+    return state.twap!==null&&state.target!==null?(state.twap>=state.target?"POSITIVE":"NEGATIVE"):"WAITING";
+  }
+  function resetGame(){
+    const h=canvas.getBoundingClientRect().height||190;
+    game={running:true,over:false,score:0,birdY:h/2,velocity:0,pipes:[],last:0,spawn:0};
+    $("gameScore").textContent="SCORE 0";$("gameOverlay").style.display="none";$("gameStart").textContent="Restart";
+    if(!raf)raf=requestAnimationFrame(loop);
+  }
+  function flap(){
+    if(!game.running){resetGame();return}
+    game.velocity=-5.2;
+  }
+  function drawGame(){
+    const r=canvas.getBoundingClientRect(),w=r.width||600,h=r.height||190;
     ctx.clearRect(0,0,w,h);
-    ctx.strokeStyle = "#17294c"; ctx.lineWidth = 1;
-    for (let i=1;i<5;i++){const y=i*h/5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
-    const visible = samples.slice(-180);
-    if (visible.length < 2) {
-      ctx.fillStyle="#91a6d0";ctx.font="16px system-ui";ctx.fillText("Waiting for live Binance price updates…",24,42);return;
+    const bg=ctx.createLinearGradient(0,0,0,h);bg.addColorStop(0,"#101e42");bg.addColorStop(1,"#21123c");ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+    ctx.globalAlpha=.22;ctx.fillStyle="#9abaff";
+    for(let i=0;i<22;i++){const x=(i*83+19)%w,y=(i*47+23)%h;ctx.fillRect(x,y,2,2)}
+    ctx.globalAlpha=1;
+    const win=leader(),positive=win==="POSITIVE";
+    // Side badge in the playfield makes the live market leader visible even before a target is captured.
+    ctx.fillStyle=positive?"#43efae":win==="NEGATIVE"?"#ff7099":"#a9b9d9";
+    ctx.font="800 11px system-ui";ctx.fillText("LIVE LEADER: "+win,12,18);
+    const ground=h-13;ctx.fillStyle="#1b2850";ctx.fillRect(0,ground,w,13);
+    for(const pipe of game.pipes){
+      const color=pipe.side==="POSITIVE"?"#24c98e":"#f05c91";
+      ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=10;
+      const gap=pipe.gap,top=pipe.top,bottom=top+gap,pw=38;
+      ctx.fillRect(pipe.x,0,pw,top);ctx.fillRect(pipe.x,bottom,pw,ground-bottom);
+      ctx.shadowBlur=0;
+      ctx.fillStyle="#071020";ctx.font="900 8px system-ui";ctx.textAlign="center";
+      ctx.fillText(pipe.side,pipe.x+pw/2,Math.max(12,top-7));
+      ctx.fillText(pipe.side,pipe.x+pw/2,Math.min(ground-5,bottom+15));ctx.textAlign="left";
     }
-    const vals=visible.map(x=>x.v), min=Math.min(...vals), max=Math.max(...vals), span=Math.max(max-min,0.01);
-    const pts=visible.map((x,i)=>({x:i/(visible.length-1)*w,y:h-22-(x.v-min)/span*(h-44)}));
-    const grad=ctx.createLinearGradient(0,0,0,h);grad.addColorStop(0,"rgba(30,142,255,.30)");grad.addColorStop(1,"rgba(30,142,255,0)");
-    ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
-    ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.strokeStyle="#28a8ff";ctx.lineWidth=3;ctx.shadowColor="#168bff";ctx.shadowBlur=12;ctx.stroke();ctx.shadowBlur=0;
-    ctx.fillStyle="#b8c8e8";ctx.font="12px system-ui";ctx.fillText("$"+fmt(max),10,17);ctx.fillText("$"+fmt(min),10,h-7);
+    // Bird
+    const bx=Math.min(100,w*.22),by=game.birdY;
+    ctx.save();ctx.translate(bx,by);ctx.rotate(Math.max(-.35,Math.min(.65,game.velocity*.055)));
+    ctx.fillStyle="#ffd45e";ctx.shadowColor="#ffc94a";ctx.shadowBlur=13;
+    ctx.beginPath();ctx.ellipse(0,0,13,10,0,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(5,-3,4,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#14213d";ctx.beginPath();ctx.arc(6,-3,1.8,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#ff8b55";ctx.beginPath();ctx.moveTo(11,1);ctx.lineTo(19,4);ctx.lineTo(11,6);ctx.closePath();ctx.fill();
+    ctx.fillStyle="#f4a936";ctx.beginPath();ctx.ellipse(-4,4,7,3,-.3+Math.sin(frame*.3)*.25,0,Math.PI*2);ctx.fill();
+    ctx.restore();
   }
-  if (chart) {
-    $("chartControls").addEventListener("click", e => {
-      const b=e.target.closest("button[data-range]"); if(!b)return;
-      selectedRange=b.dataset.range;
-      $("chartControls").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));
-      $("chartHint").textContent=selectedRange+" view · live samples collected since dashboard opened (range controls are display presets; historical candles are not loaded).";
-      drawChart();
-    });
+  function endGame(){
+    game.running=false;game.over=true;
+    $("gameOverlay").style.display="flex";$("gameMessage").textContent="GAME OVER · SCORE "+game.score+" · TAP TO PLAY";
+    $("gameStart").textContent="Play again";
   }
+  function loop(ts){
+    raf=0;if(!game.running){drawGame();return}
+    const r=canvas.getBoundingClientRect(),w=r.width,h=r.height,dt=game.last?Math.min((ts-game.last)/16.67,2):1;
+    game.last=ts;frame++;
+    game.velocity+=.25*dt;game.birdY+=game.velocity*dt;
+    game.spawn+=dt;
+    if(game.spawn>90){game.spawn=0;const gap=92,top=24+Math.random()*Math.max(15,h-gap-55);game.pipes.push({x:w+10,top,gap,side:leader()==="WAITING"?(Math.random()>.5?"POSITIVE":"NEGATIVE"):leader(),passed:false});}
+    for(const p of game.pipes){p.x-=2.5*dt;const bx=Math.min(100,w*.22),birdR=9;
+      if(!p.passed&&p.x+38<bx){p.passed=true;game.score++;$("gameScore").textContent="SCORE "+game.score}
+      if(bx+birdR>p.x&&bx-birdR<p.x+38&&(game.birdY-birdR<p.top||game.birdY+birdR>p.top+p.gap)){endGame()}
+    }
+    game.pipes=game.pipes.filter(p=>p.x>-50);
+    if(game.birdY<8||game.birdY>h-22)endGame();
+    drawGame();if(game.running)raf=requestAnimationFrame(loop);
+  }
+  canvas.addEventListener("click",flap);
+  $("gameStart").addEventListener("click",resetGame);
+  document.addEventListener("keydown",e=>{if(e.code==="Space"&&document.activeElement.tagName!=="BUTTON"){e.preventDefault();flap()}});
+  $("gameOverlay").addEventListener("click",flap);
+  window.addEventListener("resize",resizeGame);
 
-  $("reconnect").addEventListener("click", connect);
-  connect();
-  tick();
-  state.timer = setInterval(tick, 250);
+  $("reconnect").addEventListener("click",connect);
+  resizeGame();connect();tick();state.timer=setInterval(tick,500);
 })();
 </script>
 </body>

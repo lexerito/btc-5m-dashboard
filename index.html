@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BTC 5M Chainlink Reference</title>
+<style>
+:root{color-scheme:dark;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:#070510;color:#eef3ff}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;padding:28px 22px;max-width:1200px;margin-inline:auto;background:radial-gradient(ellipse at 12% 0%,#24104b 0,transparent 38%),radial-gradient(ellipse at 100% 20%,#071d50 0,transparent 34%),linear-gradient(145deg,#070510,#09091b 58%,#10051d)}
+h1{font-size:clamp(24px,4vw,34px);margin:0 0 5px;letter-spacing:.02em;text-shadow:0 0 22px #4b8dff88}
+.sub{color:#9daed0;margin:0 0 20px;letter-spacing:.08em;text-transform:uppercase;font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.card{position:relative;overflow:hidden;background:linear-gradient(145deg,#10142bdf,#0b0b1ceF 70%);border:1px solid #315bba;border-radius:16px;padding:18px;box-shadow:0 0 18px #145dff20,inset 0 0 24px #1a2c6820}
+.card:before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 35%,#6526b51a,transparent 70%)}
+.label{font-size:11px;color:#9caed4;text-transform:uppercase;letter-spacing:.12em}
+.value{font-size:clamp(23px,4vw,31px);font-weight:750;margin-top:9px;overflow-wrap:anywhere;text-shadow:0 0 16px #328aff35}
+.small{font-size:12px;color:#91a2c5;margin-top:8px}
+.status{display:inline-flex;gap:9px;align-items:center;padding:8px 13px;border-radius:24px;background:#111b35;border:1px solid #315bba;font-size:13px;box-shadow:0 0 16px #126bff22}
+.dot{width:8px;height:8px;border-radius:50%;background:#f4b942;box-shadow:0 0 9px currentColor}
+.ok .dot{background:#36f0a0}.bad .dot{background:#ff668d}
+.up{color:#38efa0}.down{color:#ff648e}
+button{margin-top:16px;background:linear-gradient(135deg,#173d9a,#39206d);color:#fff;border:1px solid #438bff;border-radius:10px;padding:10px 15px;font-weight:650;cursor:pointer;box-shadow:0 0 15px #126bff35}
+button:hover{filter:brightness(1.2)}
+.note{margin-top:18px;padding:15px 17px;background:#101329;border:1px solid #293b70;border-radius:12px;color:#b8c6e2;font-size:13px;line-height:1.55}
+.chart-card{margin-top:14px;background:linear-gradient(145deg,#0d1329,#0b0a1b);border:1px solid #315bba;border-radius:16px;padding:16px;box-shadow:0 0 22px #174cff20}
+.chart-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.chart-title{font-weight:700;color:#e9f1ff}
+.controls{display:flex;gap:6px;flex-wrap:wrap}
+.controls button{margin:0;padding:6px 11px;font-size:12px;background:#11152c;border-color:#303d70}
+.controls button.active{background:linear-gradient(135deg,#075eea,#5524bd);border-color:#45a5ff;box-shadow:0 0 13px #087cff80}
+canvas{display:block;width:100%;height:240px;border-radius:10px;background:linear-gradient(180deg,#07142b,#080b1b)}
+@media(max-width:600px){body{padding:18px 12px}.card{padding:15px}canvas{height:190px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><div class="coin">₿</div><div><h1>BTC Chainlink Dashboard</h1><p class="sub">Polymarket · 5-minute market reference</p></div></div>
+  <div id="status" class="status"><span class="dot"></span><span>Connecting to Polymarket RTDS…</span></div>
+</header>
+<div class="grid">
+  <section class="card"><div class="label">Chainlink BTC/USD spot</div><div id="chainlink" class="value">—</div><div class="small">Oracle spot reference</div></section>
+  <section class="card"><div class="label">Chainlink TWAP60</div><div id="twap" class="value">Waiting…</div><div id="twapTime" class="small">Waiting for feed</div></section>
+  <section class="card"><div class="label">Binance BTCUSDT</div><div id="binance" class="value">—</div><div id="binanceDiff" class="small">Momentum reference feed</div></section>
+  <section class="card purple"><div class="label">Official target · captured TWAP60</div><div id="target" class="value">Waiting…</div><div id="targetTime" class="small">Waiting for next 5-minute boundary</div></section>
+</div>
+<div class="chart-wrap">
+  <section class="card chart-card">
+    <div class="chart-head"><div class="chart-title">◈ Live BTC Price Monitor</div><div class="timeframes" id="timeframes"><button class="active" data-window="60">1m</button><button data-window="300">5m</button><button data-window="900">15m</button><button data-window="3600">1h</button><button data-window="14400">4h</button><button data-window="86400">1D</button></div></div>
+    <canvas id="priceChart" aria-label="Live Chainlink TWAP60 chart"></canvas>
+    <div class="small"><span class="feed-led"></span>Blue: TWAP60 · Purple: Binance samples · Chart history builds while this page is open</div>
+  </section>
+  <section class="card purple target-card">
+    <div class="label">5-minute market target</div><div id="targetLarge" class="value">—</div><div id="distance" class="value" style="font-size:23px">—</div><div id="direction" class="small">Waiting for target</div>
+    <div class="divider"></div><div class="count-label">TIME LEFT IN MARKET</div><div id="countdown" class="countdown">—:—</div><div class="small" style="text-align:center">Next UTC 5-minute boundary</div>
+  </section>
+</div>
+<div class="metrics">
+  <section class="card metric"><div class="label">Market direction · TWAP vs target</div><div id="marketDirection" class="value">WAIT</div><div class="small">Reference comparison only</div></section>
+  <section class="card metric"><div class="label">Distance from target</div><div id="distanceMetric" class="value">—</div><div class="bar"><span id="distanceBar"></span></div></section>
+  <section class="card metric"><div class="label">Binance vs Chainlink</div><div id="basis" class="value">—</div><div class="small">Spot price difference</div></section>
+  <section class="card metric"><div class="label">Feed freshness</div><div id="freshness" class="value">WAIT</div><div id="freshnessDetail" class="small">Waiting for live updates</div></section>
+</div>
+<div class="actions"><section class="chart-card">
+  <div class="chart-head"><div class="chart-title">▰ Live BTC Price Monitor</div>
+    <div class="controls" id="chartControls">
+      <button class="active" data-range="1m">1m</button><button data-range="5m">5m</button>
+      <button data-range="15m">15m</button><button data-range="1h">1h</button>
+      <button data-range="4h">4h</button><button data-range="1D">1D</button>
+    </div>
+  </div>
+  <canvas id="priceChart" width="1100" height="260"></canvas>
+  <div class="small" id="chartHint">Chart starts collecting live Binance updates when this page is open.</div>
+</section>
+<button id="reconnect">↻ Reconnect feeds</button><span class="small">Live data connection · No API key</span></div>
+<div class="note"><b>Important:</b> This is a separate reference dashboard; it does not inject data into TradingView or alter your Pine indicator. The chart's history starts when you open this page. The target capture is a browser-side approximation using the latest TWAP60 update around the five-minute UTC boundary, not a guaranteed exact oracle snapshot. Verify the target against the active Polymarket market before relying on it for trades. No trade signal or profitability is guaranteed.</div>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
+  const state = {ws:null, twap:null, twapTs:null, chainlink:null, binance:null, target:null, targetTs:null, timer:null, samples:[], windowSec:60};
+  const endpoint = "wss://ws-live-data.polymarket.com";
+
+  function status(text, mode="") {
+    $("status").className = "status " + mode;
+    $("status").lastElementChild.textContent = text;
+  }
+  function boundaryAtOrBefore(ms) {
+    return Math.floor(ms / 300000) * 300000;
+  }
+  function nextBoundary(ms) {
+    return boundaryAtOrBefore(ms) + 300000;
+  }
+  function sendSubscriptions(ws) {
+    const subs = [
+      {topic:"crypto_prices_twap_sixty", type:"*", filters:JSON.stringify({symbol:"btc/usd"})},
+      {topic:"crypto_prices_chainlink", type:"*", filters:JSON.stringify({symbol:"btc/usd"})},
+      {topic:"crypto_prices", type:"*", filters:JSON.stringify({symbol:"btcusdt"})}
+    ];
+    ws.send(JSON.stringify({action:"subscribe", subscriptions:subs}));
+  }
+  function connect() {
+    if (state.ws) { try { state.ws.close(); } catch(e) {} }
+    status("Connecting to Polymarket RTDS…");
+    const ws = new WebSocket(endpoint);
+    state.ws = ws;
+    ws.onopen = () => {
+      status("Connected · subscribing to BTC feeds", "ok");
+      sendSubscriptions(ws);
+    };
+    ws.onmessage = ev => {
+      let msg;
+      try { msg = JSON.parse(ev.data); } catch(e) { return; }
+      const p = msg.payload || {};
+      const symbol = String(p.symbol || "").toLowerCase();
+      const value = Number(p.value);
+      const ts = Number(p.timestamp || msg.timestamp || Date.now());
+      if (!Number.isFinite(value)) return;
+
+      if (msg.topic === "crypto_prices_twap_sixty" && symbol === "btc/usd") {
+        state.twap = value; state.twapTs = ts;
+        state.samples.push({t:ts, twap:value, binance:state.binance});
+        if (state.samples.length > 12000) state.samples.splice(0, state.samples.length-12000);
+        drawChart();
+        $("twap").textContent = "$" + fmt(value);
+        $("twapTime").textContent = "Feed time: " + new Date(ts).toLocaleTimeString();
+        updateDistance();
+      } else if (msg.topic === "crypto_prices_chainlink" && symbol === "btc/usd") {
+        state.chainlink = value;
+        $("chainlink").textContent = "$" + fmt(value);
+      } else if (msg.topic === "crypto_prices" && symbol === "btcusdt") {
+        state.binance = value;
+        samples.push({t:ts,v:value}); if(samples.length>600)samples.shift(); drawChart();
+        $("binance").textContent = "$" + fmt(value);
+        if (state.chainlink !== null) {
+          const d = value - state.chainlink;
+          $("binanceDiff").textContent = "Binance − Chainlink spot: " + (d >= 0 ? "+" : "") + "$" + fmt(d);
+        }
+      }
+    };
+    ws.onerror = () => status("Feed connection error · try reconnecting", "bad");
+    ws.onclose = () => status("Disconnected · press Reconnect feeds", "bad");
+  }
+  function updateDistance() {
+    if (state.twap === null || state.target === null) return;
+    const d = state.twap - state.target;
+    $("distance").textContent = (d >= 0 ? "+" : "−") + "$" + fmt(Math.abs(d));
+    $("distance").className = "value " + (d >= 0 ? "up" : "down");
+    $("direction").textContent = d >= 0 ? "TWAP60 is above the target" : "TWAP60 is below the target";
+    $("target").textContent = "$" + fmt(state.target);
+    $("targetLarge").textContent = "$" + fmt(state.target);
+    $("distanceMetric").textContent = (d >= 0 ? "+$" : "−$") + fmt(Math.abs(d));
+    $("marketDirection").textContent = d >= 0 ? "ABOVE TARGET" : "BELOW TARGET";
+    $("marketDirection").className = "value " + (d >= 0 ? "up" : "down");
+    $("distanceBar").style.width = Math.min(100, Math.abs(d) / Math.max(state.target*0.001,1)*100) + "%";
+  }
+  function tick() {
+    const now = Date.now();
+    if (state.binance !== null && state.chainlink !== null) {
+      const b=state.binance-state.chainlink;
+      $("basis").textContent=(b>=0?"+$":"−$")+fmt(Math.abs(b));
+      $("basis").className="value "+(b>=0?"up":"down");
+    }
+    if (state.twapTs !== null) {
+      const age=Math.max(0,now-state.twapTs);
+      $("freshness").textContent=age<5000?"LIVE":age<15000?"DELAYED":"STALE";
+      $("freshness").className="value "+(age<5000?"up":"down");
+      $("freshnessDetail").textContent="TWAP update age: "+(age/1000).toFixed(1)+"s";
+    }
+    const next = nextBoundary(now);
+    const left = Math.max(0, Math.ceil((next-now)/1000));
+    $("countdown").textContent = Math.floor(left/60) + ":" + String(left%60).padStart(2,"0");
+
+    // Capture the latest TWAP update received at/just before the boundary.
+    // This is a practical browser-side approximation, not a guaranteed exact oracle boundary sample.
+    if (state.twap !== null && state.twapTs !== null) {
+      const currentMarketStart = boundaryAtOrBefore(now);
+      if (state.targetTs !== currentMarketStart && now >= currentMarketStart + 1200) {
+        const age = now - state.twapTs;
+        if (age >= 0 && age <= 5000) {
+          state.target = state.twap;
+          state.targetTs = currentMarketStart;
+          $("target").textContent = "$" + fmt(state.target);
+    $("targetLarge").textContent = "$" + fmt(state.target);
+    $("distanceMetric").textContent = (d >= 0 ? "+$" : "−$") + fmt(Math.abs(d));
+    $("marketDirection").textContent = d >= 0 ? "ABOVE TARGET" : "BELOW TARGET";
+    $("marketDirection").className = "value " + (d >= 0 ? "up" : "down");
+    $("distanceBar").style.width = Math.min(100, Math.abs(d) / Math.max(state.target*0.001,1)*100) + "%";
+          $("targetTime").textContent = "Market start: " + new Date(currentMarketStart).toLocaleTimeString() + " · feed age " + age + " ms";
+          updateDistance();
+        }
+      }
+    }
+  }
+  function drawChart() {
+    const canvas = $("priceChart"); if (!canvas) return;
+    const rect = canvas.getBoundingClientRect(); const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.max(1, Math.floor(rect.width*dpr)); canvas.height = Math.max(1, Math.floor(rect.height*dpr));
+    const ctx = canvas.getContext("2d"); ctx.scale(dpr,dpr);
+    const w=rect.width,h=rect.height; ctx.clearRect(0,0,w,h);
+    const now=Date.now(), cutoff=now-state.windowSec*1000;
+    const pts=state.samples.filter(x=>x.t>=cutoff && Number.isFinite(x.twap));
+    ctx.strokeStyle="#17264a";ctx.lineWidth=1;
+    for(let i=1;i<=4;i++){const y=h*i/5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+    if(pts.length<2){ctx.fillStyle="#8297bf";ctx.font="13px system-ui";ctx.fillText("Collecting live price samples…",14,h/2);return;}
+    const vals=pts.map(x=>x.twap);const min=Math.min(...vals),max=Math.max(...vals);const pad=Math.max((max-min)*.18,1);const lo=min-pad,hi=max+pad;
+    const x=i=>(pts[i].t-cutoff)/state.windowSec* w;const y=v=>h-((v-lo)/(hi-lo))*h;
+    const grad=ctx.createLinearGradient(0,0,0,h);grad.addColorStop(0,"rgba(25,145,255,.30)");grad.addColorStop(1,"rgba(25,145,255,0)");
+    ctx.beginPath();pts.forEach((p,i)=>{if(i===0)ctx.moveTo(x(i),y(p.twap));else ctx.lineTo(x(i),y(p.twap));});ctx.lineTo(x(pts.length-1),h);ctx.lineTo(x(0),h);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+    ctx.beginPath();pts.forEach((p,i)=>{if(i===0)ctx.moveTo(x(i),y(p.twap));else ctx.lineTo(x(i),y(p.twap));});ctx.strokeStyle="#16a9ff";ctx.lineWidth=2.4;ctx.shadowColor="#078cff";ctx.shadowBlur=10;ctx.stroke();ctx.shadowBlur=0;
+    if(state.target!==null){const ty=y(state.target);if(ty>=0&&ty<=h){ctx.setLineDash([6,5]);ctx.strokeStyle="#b36cff";ctx.beginPath();ctx.moveTo(0,ty);ctx.lineTo(w,ty);ctx.stroke();ctx.setLineDash([]);}}
+    ctx.fillStyle="#9bb2da";ctx.font="11px system-ui";ctx.fillText("$"+fmt(hi),8,13);ctx.fillText("$"+fmt(lo),8,h-5);
+  }
+  $("timeframes").addEventListener("click",e=>{const b=e.target.closest("button[data-window]");if(!b)return;state.windowSec=Number(b.dataset.window);document.querySelectorAll("#timeframes button").forEach(x=>x.classList.toggle("active",x===b));drawChart();});
+  window.addEventListener("resize",drawChart);
+  const oldTick=tick;
+
+  const chart = $("priceChart");
+  const ctx = chart ? chart.getContext("2d") : null;
+  let samples = [];
+  let selectedRange = "1m";
+  function drawChart() {
+    if (!ctx || !chart) return;
+    const w = chart.width, h = chart.height;
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle = "#17294c"; ctx.lineWidth = 1;
+    for (let i=1;i<5;i++){const y=i*h/5;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+    const visible = samples.slice(-180);
+    if (visible.length < 2) {
+      ctx.fillStyle="#91a6d0";ctx.font="16px system-ui";ctx.fillText("Waiting for live Binance price updates…",24,42);return;
+    }
+    const vals=visible.map(x=>x.v), min=Math.min(...vals), max=Math.max(...vals), span=Math.max(max-min,0.01);
+    const pts=visible.map((x,i)=>({x:i/(visible.length-1)*w,y:h-22-(x.v-min)/span*(h-44)}));
+    const grad=ctx.createLinearGradient(0,0,0,h);grad.addColorStop(0,"rgba(30,142,255,.30)");grad.addColorStop(1,"rgba(30,142,255,0)");
+    ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.lineTo(w,h);ctx.lineTo(0,h);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+    ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.strokeStyle="#28a8ff";ctx.lineWidth=3;ctx.shadowColor="#168bff";ctx.shadowBlur=12;ctx.stroke();ctx.shadowBlur=0;
+    ctx.fillStyle="#b8c8e8";ctx.font="12px system-ui";ctx.fillText("$"+fmt(max),10,17);ctx.fillText("$"+fmt(min),10,h-7);
+  }
+  if (chart) {
+    $("chartControls").addEventListener("click", e => {
+      const b=e.target.closest("button[data-range]"); if(!b)return;
+      selectedRange=b.dataset.range;
+      $("chartControls").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));
+      $("chartHint").textContent=selectedRange+" view · live samples collected since dashboard opened (range controls are display presets; historical candles are not loaded).";
+      drawChart();
+    });
+  }
+
+  $("reconnect").addEventListener("click", connect);
+  connect();
+  tick();
+  state.timer = setInterval(tick, 250);
+})();
+</script>
+</body>
+</html>

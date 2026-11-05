@@ -400,7 +400,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
   function updateForecasts(){
     const now=Date.now(),latest=state.prices[state.prices.length-1];
     const priceFresh=!!latest&&now-latest.ts<3500;
-    const polyFresh=poly.restAt>0&&now-poly.restAt<6500&&poly.upMid!==null&&poly.downMid!==null;
+    const polyFresh=poly.lastDataAt>0&&now-poly.lastDataAt<9000&&poly.upMid!==null&&poly.downMid!==null;
     const odds=Math.max(-1,Math.min(1,((poly.upMid??.5)-(poly.downMid??.5))/.24));
     const book=Math.max(-1,Math.min(1,(poly.imbalance||0)/.18));
     const momentum=state.momentumScore||0;
@@ -588,7 +588,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
   function startCrossVenue(){connectCoinbase();connectHyperliquid();setInterval(renderCrossVenue,1000)}
 
   // Polymarket live data: exact current 5m slug + CLOB WebSocket + REST book fallback.
-  const poly={event:null,market:null,upId:null,downId:null,ws:null,books:{},lastTrade:null,lastMsg:0,ping:null,wsReconnect:null,refresh:null,poll:null,watchdog:null,imbalance:0,upMid:null,downMid:null,wsConnected:false,wsBookSeen:false,restAt:0,restBusy:false,discovering:false,retry:0};
+  const poly={event:null,market:null,upId:null,downId:null,ws:null,books:{},lastTrade:null,lastMsg:0,lastDataAt:0,ping:null,wsReconnect:null,refresh:null,poll:null,watchdog:null,imbalance:0,upMid:null,downMid:null,wsConnected:false,wsBookSeen:false,restAt:0,restBusy:false,discovering:false,retry:0};
   const polyApi="https://gamma-api.polymarket.com";
   const clobApi="https://clob.polymarket.com";
   function polyText(id,value){const el=$(id);if(el)el.textContent=value}
@@ -625,7 +625,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       if(!upId||!downId){const ui=outs.indexOf("up"),di=outs.indexOf("down");upId=upId||ids[ui];downId=downId||ids[di]}
       if(!upId||!downId)throw new Error("Market found but UP/DOWN token IDs are missing");
       if(poly.event===slug&&poly.upId===String(upId)&&poly.downId===String(downId))return;
-      poly.event=slug;poly.market=market;poly.upId=String(upId);poly.downId=String(downId);poly.books={};poly.lastTrade=null;poly.restAt=0;
+      poly.event=slug;poly.market=market;poly.upId=String(upId);poly.downId=String(downId);poly.books={};poly.lastTrade=null;poly.restAt=0;poly.lastDataAt=0;
       const title=active.title||market.question||slug;
       const end=Date.parse(active.endDate||market.endDate||"");
       polyText("polyMarketName",title+(end?" · ends "+new Date(end).toLocaleTimeString():""));
@@ -662,7 +662,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
           if(["book","price_change","best_bid_ask"].includes(m.event_type))gotBook=true;
         }
       });
-      if(gotEvent){poly.lastMsg=Date.now();renderPolyBooks()}
+      if(gotEvent){poly.lastMsg=Date.now();poly.lastDataAt=poly.lastMsg;renderPolyBooks()}
       if(gotBook)poly.wsBookSeen=true;
     };
     ws.onerror=()=>{polyBadge("WS ERROR · REST BACKUP ACTIVE","bad")};
@@ -682,7 +682,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       poly.books[msg.asset_id].updatedAt=Date.now();
     }else if(msg.event_type==="price_change"){
       (msg.price_changes||[]).forEach(c=>{
-        const book=poly.books[c.asset_id];if(!book)return;
+        const book=poly.books[c.asset_id]||(poly.books[c.asset_id]={bids:[],asks:[],bestBid:null,bestAsk:null,updatedAt:0,source:"WS"});
         const side=String(c.side).toUpperCase()==="BUY"?book.bids:book.asks;
         const p=Number(c.price),s=Number(c.size);
         if(Number.isFinite(p)&&Number.isFinite(s)){
@@ -695,7 +695,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
         const bb=Number(c.best_bid),ba=Number(c.best_ask);
         if(c.best_bid!=null&&c.best_bid!==""&&Number.isFinite(bb))book.bestBid=bb;
         if(c.best_ask!=null&&c.best_ask!==""&&Number.isFinite(ba))book.bestAsk=ba;
-        book.updatedAt=Date.now();book.source="WS";
+        book.updatedAt=Date.now();book.source="WS";poly.lastDataAt=book.updatedAt;
         book.bids.sort((x,y)=>y.p-x.p);book.asks.sort((x,y)=>x.p-y.p);
       });
     }else if(msg.event_type==="last_trade_price"){
@@ -706,7 +706,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       const bb=Number(msg.best_bid),ba=Number(msg.best_ask);
       if(msg.best_bid!=null&&msg.best_bid!==""&&Number.isFinite(bb))book.bestBid=bb;
       if(msg.best_ask!=null&&msg.best_ask!==""&&Number.isFinite(ba))book.bestAsk=ba;
-      book.updatedAt=Date.now();book.source="WS";
+      book.updatedAt=Date.now();book.source="WS";poly.lastDataAt=book.updatedAt;
     }
   }
   async function refreshPolyBooks(){
@@ -715,9 +715,16 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const ids=[poly.upId,poly.downId];
     try{
       const books=await Promise.all(ids.map(id=>fetchJson(clobApi+"/book?token_id="+encodeURIComponent(id),4000)));
-      ids.forEach((id,i)=>{if(books[i]&&Array.isArray(books[i].bids)&&Array.isArray(books[i].asks))poly.books[id]=normalizeBook(books[i])});
-      poly.restAt=Date.now();renderPolyBooks();
-      if(poly.wsConnected&&poly.wsBookSeen)polyBadge("LIVE · WS BOOK + REST","ok");else if(poly.wsConnected)polyBadge("REST BOOK LIVE · WS CONNECTED","");else polyBadge("REST LIVE · WS RECONNECTING","bad");
+      const now=Date.now();
+      ids.forEach((id,i)=>{
+        const existing=poly.books[id];
+        // REST is a recovery snapshot only: never overwrite a newer WebSocket book.
+        if(books[i]&&Array.isArray(books[i].bids)&&Array.isArray(books[i].asks)&&(!existing||existing.source!=="WS"||now-(existing.updatedAt||0)>5000)){
+          poly.books[id]=normalizeBook(books[i]);poly.books[id].updatedAt=now;
+        }
+      });
+      poly.restAt=now;poly.lastDataAt=now;renderPolyBooks();
+      if(poly.wsConnected&&poly.wsBookSeen)polyBadge("LIVE · WEBSOCKET","ok");else if(poly.wsConnected)polyBadge("WS CONNECTED · SNAPSHOT SYNC","");else polyBadge("REST BACKUP · WS RECONNECTING","bad");
     }catch(err){
       if(!poly.restAt)polyBadge("WAITING FOR ORDER BOOK","bad");
       polyText("polyDetail","REST book refresh failed: "+String(err.message||err)+" · waiting for next retry");
@@ -755,13 +762,13 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
   function startPolymarketMarketData(){
     discoverPolyMarket();
     poly.refresh=setInterval(discoverPolyMarket,5000);
-    poly.poll=setInterval(refreshPolyBooks,1800);
+    // WebSocket is the primary feed. REST is only a startup/recovery snapshot, not a competing poll loop.
+    poly.poll=setInterval(()=>{if(!poly.wsConnected||Date.now()-poly.lastDataAt>5000)refreshPolyBooks()},8000);
     poly.watchdog=setInterval(()=>{
-      if(poly.wsConnected&&poly.lastMsg&&Date.now()-poly.lastMsg>45000){
-        // Silence can be normal in a static book; REST polling is the freshness check.
-        if(poly.restAt&&Date.now()-poly.restAt>6000)connectPolyBook();
+      if(poly.wsConnected&&poly.lastMsg&&Date.now()-poly.lastMsg>90000&&Date.now()-poly.restAt>12000){
+        connectPolyBook();
       }
-      if(poly.restAt&&Date.now()-poly.restAt>7000)polyBadge("BOOK DATA STALE · RETRYING","bad");
+      if(poly.lastDataAt&&Date.now()-poly.lastDataAt>10000)polyBadge("BOOK DATA STALE · RECOVERING","bad");
     },2500);
   }
 

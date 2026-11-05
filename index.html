@@ -69,6 +69,21 @@ button:hover{filter:brightness(1.16)}
 .poly-foot{font-size:10px;color:#8ea2c8;line-height:1.5;margin-top:9px}
 @media(max-width:520px){.poly-stats{grid-template-columns:1fr 1fr}.poly-side .odds{font-size:21px}}
 
+
+/* Cross-venue confirmation */
+.cross-card{margin-top:13px;border:1px solid #3b4c86;background:linear-gradient(145deg,#11172e,#0a1020)}
+.cross-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}
+.cross-cell{padding:11px;border:1px solid #2c3b64;border-radius:10px;background:#090f20;min-width:0}
+.cross-cell span{display:block;color:#8fa5d0;font-size:9px;font-weight:850;letter-spacing:.1em}
+.cross-cell b{display:block;margin-top:6px;font-size:17px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.cross-detail{font-size:10px;color:#9aadd0;margin-top:6px;line-height:1.45}
+.cross-verdict{margin-top:10px;padding:11px;border:1px solid #3a4d7e;border-radius:10px;background:#0a1022;font-size:12px;font-weight:850}
+.cross-verdict.up{color:#43efae;border-color:#26765b}.cross-verdict.down{color:#ff6b96;border-color:#803653}
+.intel-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.intel-links a{font-size:10px;color:#b7c9ff;text-decoration:none;border:1px solid #344875;background:#101832;border-radius:8px;padding:7px 9px}
+.intel-links a:hover{border-color:#6c83ff;color:#fff}
+@media(max-width:520px){.cross-grid{grid-template-columns:1fr 1fr}.cross-cell b{font-size:15px}}
+
 </style>
 </head>
 <body>
@@ -151,6 +166,29 @@ button:hover{filter:brightness(1.16)}
   <div id="polyDetail" class="poly-foot">Public Polymarket market data · no account connection or credentials · order-book pressure is not a guaranteed prediction</div>
 </section>
 
+
+<section class="card cross-card">
+  <div class="poly-head"><div><div class="label">MULTI-EXCHANGE TAPE · INDEPENDENT CONFIRMATION</div><div class="small">Coinbase spot + Hyperliquid perpetuals + Polymarket contracts</div></div><span id="crossStatus" class="poly-live">CONNECTING SOURCES</span></div>
+  <div class="cross-grid">
+    <div class="cross-cell"><span>COINBASE BTC-USD</span><b id="coinbasePrice">—</b><div id="coinbaseFlow" class="cross-detail">Waiting for spot tape</div></div>
+    <div class="cross-cell"><span>HYPERLIQUID BTC PERP</span><b id="hlPrice">—</b><div id="hlFlow" class="cross-detail">Waiting for perp tape</div></div>
+    <div class="cross-cell"><span>PERP ORDER-BOOK IMBALANCE</span><b id="hlBook">—</b><div id="hlBookDetail" class="cross-detail">Waiting for L2 depth</div></div>
+  </div>
+  <div class="cross-grid">
+    <div class="cross-cell"><span>SPOT / PERP BASIS</span><b id="crossBasis">—</b><div class="cross-detail">Perp minus Coinbase spot</div></div>
+    <div class="cross-cell"><span>5–15S PRICE AGREEMENT</span><b id="crossAgreement">—</b><div class="cross-detail">Direction across live venues</div></div>
+    <div class="cross-cell"><span>AGGRESSOR FLOW</span><b id="crossFlow">—</b><div class="cross-detail">Coinbase + Hyperliquid trades</div></div>
+  </div>
+  <div id="crossVerdict" class="cross-verdict">WAITING FOR INDEPENDENT VENUE CONFIRMATION</div>
+  <div class="cross-detail">External research tools (open separately):</div>
+  <div class="intel-links">
+    <a href="https://www.tradingview.com/chart/?symbol=BINANCE%3ABTCUSDT" target="_blank" rel="noopener">TradingView BTC chart ↗</a>
+    <a href="https://www.coinglass.com/pro/futures/LiquidationHeatMap" target="_blank" rel="noopener">CoinGlass liquidation heatmap ↗</a>
+    <a href="https://www.coinglass.com/FundingRate" target="_blank" rel="noopener">Funding rates ↗</a>
+    <a href="https://app.hyperliquid.xyz/trade/BTC" target="_blank" rel="noopener">Hyperliquid BTC ↗</a>
+  </div>
+</section>
+
 <section class="game-card">
   <div class="game-head"><div><div class="game-title">🐤 Live Market Lead · Auto Pilot</div><div class="small">The bird automatically tracks the leading side. Gate labels update with the live lead — this is a visual signal, not a game.</div></div><div id="gameScore" class="game-score">LEAD FLIPS 0</div></div>
   <div class="game-wrap"><canvas id="birdGame" aria-label="Automated visual indicator of the current BTC market leader"></canvas></div>
@@ -164,7 +202,7 @@ button:hover{filter:brightness(1.16)}
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastSignal:"WAIT",lastLeader:"WAITING",flipCount:0,lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastSignal:"WAIT",lastLeader:"WAITING",flipCount:0,lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -326,10 +364,10 @@ button:hover{filter:brightness(1.16)}
     const momentum=state.momentumScore,flow=state.tradeFlow;
     const targetReady=state.target!==null&&state.twap!==null;
     const normalizedGap=targetReady?Math.max(-1,Math.min(1,(state.twap-state.target)/Math.max(state.target*.00045,1))):0;
-    const currentScore=Math.max(-1,Math.min(1,normalizedGap*.62+momentum*.25+flow*.13));
+    const currentScore=Math.max(-1,Math.min(1,normalizedGap*.50+momentum*.22+flow*.10+state.crossScore*.18));
     const d60=priceChange(60),d180=priceChange(180);
     const trendAgreement=d60===null||d180===null?0:(Math.sign(d60)===Math.sign(d180)?Math.sign(d60)*.12:0);
-    const nextScore=Math.max(-1,Math.min(1,momentum*.72+flow*.18+trendAgreement));
+    const nextScore=Math.max(-1,Math.min(1,momentum*.52+flow*.13+trendAgreement+state.crossScore*.35));
     const cur=forecastLabel(currentScore,.20),nxt=forecastLabel(nextScore,.19);
     $("currentCallout").textContent=!targetReady?"WAITING FOR TARGET":cur.side==="WAIT"?"NO CLEAR WINNER EDGE":cur.label;
     $("currentCallout").className="prediction-callout "+(targetReady?cur.cls:"");
@@ -345,6 +383,88 @@ button:hover{filter:brightness(1.16)}
     $("nextMomentum").className=momentum>0?"up":momentum<0?"down":"";
   }
 
+
+
+  // Independent public feeds: Coinbase spot tape and Hyperliquid perp tape + L2.
+  function crossText(id,value){const el=$(id);if(el)el.textContent=value}
+  function crossStatus(label,mode=""){const el=$("crossStatus");if(el){el.textContent=label;el.className="poly-live "+mode}}
+  function addCrossPrice(arr,ts,price){if(!Number.isFinite(ts)||!Number.isFinite(price)||price<=0)return;arr.push({ts,price});const cutoff=Date.now()-180000;while(arr.length&&arr[0].ts<cutoff)arr.shift();if(arr.length>1200)arr.splice(0,arr.length-1000)}
+  function crossDelta(arr,secs){if(!arr.length)return null;const last=arr[arr.length-1],cut=last.ts-secs*1000;let base=null;for(let i=arr.length-1;i>=0;i--){if(arr[i].ts<=cut){base=arr[i];break}}return base?last.price-base.price:null}
+  function crossFlow(arr){const cutoff=Date.now()-60000;let buy=0,sell=0;for(const t of arr){if(t.ts<cutoff)continue;if(t.buy)buy+=t.price*t.size;else sell+=t.price*t.size}return {buy,sell,ratio:buy+sell?(buy-sell)/(buy+sell):0}}
+  function connectCoinbase(){
+    if(state.cbWs){try{state.cbWs.close()}catch(_){}}
+    const ws=new WebSocket("wss://advanced-trade-ws.coinbase.com");state.cbWs=ws;
+    ws.onopen=()=>{
+      ws.send(JSON.stringify({type:"subscribe",product_ids:["BTC-USD"],channel:"ticker"}));
+      ws.send(JSON.stringify({type:"subscribe",product_ids:["BTC-USD"],channel:"market_trades"}));
+      ws.send(JSON.stringify({type:"subscribe",channel:"heartbeats"}));
+    };
+    ws.onmessage=e=>{
+      let m;try{m=JSON.parse(e.data)}catch(_){return}
+      const now=Date.now();
+      if(m.channel==="ticker")for(const ev of (m.events||[]))for(const t of (ev.tickers||[])){
+        const p=Number(t.price);if(t.product_id==="BTC-USD"&&p>0){state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,now,p);crossText("coinbasePrice","$"+fmt(p));renderCrossVenue()}
+      }
+      if(m.channel==="market_trades")for(const ev of (m.events||[]))for(const t of (ev.trades||[])){
+        const p=Number(t.price),size=Number(t.size),ts=Date.parse(t.time)||now;
+        if(p>0&&size>0){state.coinbaseTrades.push({ts,price:p,size,buy:String(t.side||"").toUpperCase()==="BUY"});state.coinbaseTrades=state.coinbaseTrades.filter(x=>now-x.ts<65000);state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,ts,p);renderCrossVenue()}
+      }
+    };
+    ws.onerror=()=>crossStatus("COINBASE FEED ERROR","bad");
+    ws.onclose=()=>{if(state.cbReconnect)clearTimeout(state.cbReconnect);state.cbReconnect=setTimeout(connectCoinbase,3000)};
+  }
+  function connectHyperliquid(){
+    if(state.hlWs){try{state.hlWs.close()}catch(_){}}
+    const ws=new WebSocket("wss://api.hyperliquid.xyz/ws");state.hlWs=ws;
+    ws.onopen=()=>{
+      ws.send(JSON.stringify({method:"subscribe",subscription:{type:"trades",coin:"BTC"}}));
+      ws.send(JSON.stringify({method:"subscribe",subscription:{type:"l2Book",coin:"BTC"}}));
+      ws.send(JSON.stringify({method:"subscribe",subscription:{type:"allMids"}}));
+    };
+    ws.onmessage=e=>{
+      let m;try{m=JSON.parse(e.data)}catch(_){return}
+      const d=m.data||{},now=Date.now();
+      if(m.channel==="trades"&&Array.isArray(d)){
+        for(const t of d){const p=Number(t.px),size=Number(t.sz),ts=Number(t.time)||now;if(p>0&&size>0){state.hlPrice=p;state.hlTs=now;state.hlTrades.push({ts,price:p,size,buy:String(t.side).toUpperCase()==="B"});addCrossPrice(state.hlPrices,ts,p)}}
+        state.hlTrades=state.hlTrades.filter(x=>now-x.ts<65000);renderCrossVenue();
+      }else if(m.channel==="l2Book"&&d.levels){
+        const parse=xs=>(xs||[]).map(x=>({p:Number(x.px),s:Number(x.sz)})).filter(x=>x.p>0&&x.s>0);
+        state.hlBook={bids:parse(d.levels[0]),asks:parse(d.levels[1]),ts:now};renderCrossVenue();
+      }else if(m.channel==="allMids"&&d&&d.mids&&Number(d.mids.BTC)>0){
+        state.hlPrice=Number(d.mids.BTC);state.hlTs=now;addCrossPrice(state.hlPrices,now,state.hlPrice);renderCrossVenue();
+      }
+    };
+    ws.onerror=()=>crossStatus("HYPERLIQUID FEED ERROR","bad");
+    ws.onclose=()=>{if(state.hlReconnect)clearTimeout(state.hlReconnect);state.hlReconnect=setTimeout(connectHyperliquid,3000)};
+  }
+  function renderCrossVenue(){
+    const now=Date.now(),cbAge=state.coinbaseTs?((now-state.coinbaseTs)/1000):null,hlAge=state.hlTs?((now-state.hlTs)/1000):null;
+    if(state.hlPrice)crossText("hlPrice","$"+fmt(state.hlPrice));
+    const cbFlow=crossFlow(state.coinbaseTrades),hlFlow=crossFlow(state.hlTrades),combined=cbFlow.buy+cbFlow.sell+hlFlow.buy+hlFlow.sell;
+    const flow=combined?((cbFlow.buy+hlFlow.buy)-(cbFlow.sell+hlFlow.sell))/combined:0;
+    const bids=state.hlBook.bids.slice(0,5),asks=state.hlBook.asks.slice(0,5),bd=bids.reduce((s,x)=>s+x.s,0),ad=asks.reduce((s,x)=>s+x.s,0),bookTotal=bd+ad;
+    const bookImb=bookTotal?(bd-ad)/bookTotal:0;
+    crossText("coinbaseFlow",cbAge===null?"No Coinbase updates": "Feed age "+cbAge.toFixed(1)+"s · 60s tape");
+    crossText("hlFlow",hlAge===null?"No Hyperliquid updates":"Feed age "+hlAge.toFixed(1)+"s · 60s tape");
+    crossText("hlBook",bookTotal?(bookImb>=0?"+":"")+(bookImb*100).toFixed(1)+"% "+(bookImb>.08?"BID HEAVY":bookImb<-.08?"ASK HEAVY":"BALANCED"):"—");
+    crossText("hlBookDetail",bookTotal?"Top 5 levels each side · "+Math.round(bd+ad)+" BTC displayed":"Waiting for L2 snapshot");
+    if(state.coinbasePrice&&state.hlPrice)crossText("crossBasis",(state.hlPrice-state.coinbasePrice>=0?"+":"")+"$"+fmt(state.hlPrice-state.coinbasePrice));
+    const c5=crossDelta(state.coinbasePrices,5),h5=crossDelta(state.hlPrices,5),c15=crossDelta(state.coinbasePrices,15),h15=crossDelta(state.hlPrices,15);
+    const signs=[c5,h5,c15,h15].filter(x=>x!==null&&x!==0).map(Math.sign);
+    const agreement=signs.length?signs.reduce((a,b)=>a+b,0)/signs.length:0;
+    crossText("crossAgreement",signs.length?Math.round(Math.abs(agreement)*100)+"% "+(agreement>.25?"UP":agreement<-.25?"DOWN":"MIXED"):"COLLECTING");
+    crossText("crossFlow",combined?(flow>=0?"BUY ":"SELL ")+Math.round(Math.abs(flow)*100)+"%":"COLLECTING");
+    crossText("crossFlow",combined?(flow>=0?"BUY ":"SELL ")+Math.round(Math.abs(flow)*100)+"%":"COLLECTING");
+    const fresh=(cbAge!==null&&cbAge<8&&hlAge!==null&&hlAge<8);
+    const score=Math.max(-1,Math.min(1,agreement*.55+flow*.25+bookImb*.20));
+    state.crossScore=fresh?score:0;
+    const sign=Math.sign(score),agree=sign!==0&&Math.abs(agreement)>.35&&Math.sign(agreement)===sign&&Math.sign(flow)===sign&&Math.sign(bookImb)===sign;
+    const v=$("crossVerdict");
+    if(v){v.textContent=!fresh?"WAIT · one or more independent feeds are stale":agree?(sign>0?"CROSS-VENUE BULLISH CONFIRMATION":"CROSS-VENUE BEARISH CONFIRMATION"):Math.abs(score)<.12?"NO CLEAR CROSS-VENUE EDGE":"MIXED CROSS-VENUE SIGNAL · REDUCE CONFIDENCE";v.className="cross-verdict "+(agree?(sign>0?"up":"down"):"")}
+    crossStatus(fresh?"COINBASE + HYPERLIQUID LIVE":"WAITING / STALE FEED",fresh?"ok":"bad");
+    updateForecasts();
+  }
+  function startCrossVenue(){connectCoinbase();connectHyperliquid();setInterval(renderCrossVenue,1000)}
 
   // Polymarket live data: exact current 5m slug + CLOB WebSocket + REST book fallback.
   const poly={event:null,market:null,upId:null,downId:null,ws:null,books:{},lastTrade:null,lastMsg:0,ping:null,refresh:null,poll:null,watchdog:null,imbalance:0,upMid:null,downMid:null,wsConnected:false,restAt:0,discovering:false,retry:0};
@@ -551,7 +671,7 @@ button:hover{filter:brightness(1.16)}
   window.addEventListener("resize",resizeGame);
 
   $("reconnect").addEventListener("click",connect);
-  resizeGame();startBirdAnimation();connect();connectTrades();startPolymarketMarketData();tick();updateMomentum();state.timer=setInterval(tick,500);
+  resizeGame();startBirdAnimation();connect();connectTrades();startPolymarketMarketData();startCrossVenue();tick();updateMomentum();state.timer=setInterval(tick,500);
 })();
 
 </script>

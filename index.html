@@ -98,7 +98,7 @@ button:hover{filter:brightness(1.16)}
     <div id="currentCallout" class="prediction-callout">COLLECTING DATA</div>
     <div id="currentReason" class="prediction-reason">Waiting for target and momentum</div>
     <div class="prediction-stack">
-      <div><span>CONFIDENCE</span><b id="currentConfidence">—</b></div>
+      <div><span>SIGNAL SCORE</span><b id="currentConfidence">—</b></div>
       <div><span>MOMENTUM</span><b id="currentMomentum">—</b></div>
     </div>
   </div>
@@ -107,7 +107,7 @@ button:hover{filter:brightness(1.16)}
     <div id="nextCallout" class="prediction-callout">COLLECTING DATA</div>
     <div id="nextReason" class="prediction-reason">Using live momentum as an early estimate</div>
     <div class="prediction-stack">
-      <div><span>CONFIDENCE</span><b id="nextConfidence">—</b></div>
+      <div><span>SIGNAL SCORE</span><b id="nextConfidence">—</b></div>
       <div><span>MOMENTUM</span><b id="nextMomentum">—</b></div>
     </div>
   </div>
@@ -334,13 +334,13 @@ button:hover{filter:brightness(1.16)}
     $("currentCallout").textContent=!targetReady?"WAITING FOR TARGET":cur.side==="WAIT"?"NO CLEAR WINNER EDGE":cur.label;
     $("currentCallout").className="prediction-callout "+(targetReady?cur.cls:"");
     $("currentReason").textContent=!targetReady?"Waiting for this market's reference target":cur.side==="WAIT"?"Price vs target and momentum do not agree strongly":"Live target distance + momentum + aggressive trade flow · estimate only";
-    $("currentConfidence").textContent=!targetReady?"—":cur.side==="WAIT"?"LOW EDGE":cur.confidence+"% · estimate";
+    $("currentConfidence").textContent=!targetReady?"—":cur.side==="WAIT"?"LOW EDGE":cur.confidence+"/100 · heuristic";
     $("currentMomentum").textContent=(momentum>0?"UP ":momentum<0?"DOWN ":"FLAT ")+Math.round(Math.abs(momentum)*100)+"/100";
     $("currentMomentum").className=momentum>0?"up":momentum<0?"down":"";
     $("nextCallout").textContent=nxt.side==="WAIT"?"NO CLEAR EDGE":"NEXT: "+nxt.label.replace(" FAVORED TO WIN","");
     $("nextCallout").className="prediction-callout "+nxt.cls;
     $("nextReason").textContent=nxt.side==="WAIT"?"Recent momentum is mixed; no directional call for the next 5-minute market":"Preview from 5s–3m price momentum, trend agreement and buy/sell pressure";
-    $("nextConfidence").textContent=nxt.side==="WAIT"?"LOW EDGE":nxt.confidence+"% · estimate";
+    $("nextConfidence").textContent=nxt.side==="WAIT"?"LOW EDGE":nxt.confidence+"/100 · heuristic";
     $("nextMomentum").textContent=(momentum>0?"UP ":momentum<0?"DOWN ":"FLAT ")+Math.round(Math.abs(momentum)*100)+"/100";
     $("nextMomentum").className=momentum>0?"up":momentum<0?"down":"";
   }

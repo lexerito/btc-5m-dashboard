@@ -507,15 +507,24 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     updateLiveChartSeries(state.spotSeries,state.chainlinkHistory,second,value);
   }
 
+  function chartSeriesData(history,from=-Infinity){
+    const bySecond=new Map();
+    for(const x of history||[]){
+      if(x.ts<from||!Number.isFinite(x.value))continue;
+      bySecond.set(Math.floor(x.ts/1000),x.value);
+    }
+    return Array.from(bySecond.entries()).sort((a,b)=>a[0]-b[0]).map(([time,value])=>({time,value}));
+  }
+
   function updateLiveChartSeries(series,history,ts,value){
     if(!series)return;
     const point={time:Math.floor(ts/1000),value};
     const last=history.length?Math.floor(history[history.length-1].ts/1000):0;
     try{
       if(point.time>=last)series.update(point);
-      else series.setData(history.map(x=>({time:Math.floor(x.ts/1000),value:x.value})));
+      else series.setData(chartSeriesData(history));
     }catch(_){
-      try{series.setData(history.map(x=>({time:Math.floor(x.ts/1000),value:x.value})));}catch(__){}
+      try{series.setData(chartSeriesData(history));}catch(__){}
     }
   }
 
@@ -565,8 +574,8 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
         priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:true
       });
       const start=boundaryAtOrBefore(Date.now()),from=start-15000;
-      state.twapSeries.setData(state.twapHistory.filter(x=>x.ts>=from).map(x=>({time:Math.floor(x.ts/1000),value:x.value})));
-      state.spotSeries.setData(state.chainlinkHistory.filter(x=>x.ts>=from).map(x=>({time:Math.floor(x.ts/1000),value:x.value})));
+      state.twapSeries.setData(chartSeriesData(state.twapHistory,from));
+      state.spotSeries.setData(chartSeriesData(state.chainlinkHistory,from));
       if(state.target!==null)setChartTargetLine();
       setChartWindow(start);
       $("chartStatus").textContent="CHAINLINK STREAM · LIVE";

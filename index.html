@@ -346,84 +346,124 @@ button:hover{filter:brightness(1.16)}
   }
 
 
-  // Public Polymarket market discovery + live CLOB order books (no credentials).
-  const poly={event:null,market:null,upId:null,downId:null,ws:null,books:{},lastTrade:null,lastMsg:0,ping:null,refresh:null,imbalance:0,upMid:null,downMid:null};
+  // Polymarket live data: exact current 5m slug + CLOB WebSocket + REST book fallback.
+  const poly={event:null,market:null,upId:null,downId:null,ws:null,books:{},lastTrade:null,lastMsg:0,ping:null,refresh:null,poll:null,watchdog:null,imbalance:0,upMid:null,downMid:null,wsConnected:false,restAt:0,discovering:false,retry:0};
   const polyApi="https://gamma-api.polymarket.com";
+  const clobApi="https://clob.polymarket.com";
   function polyText(id,value){const el=$(id);if(el)el.textContent=value}
-  function polyBadge(text,mode=""){const el=$("polyConnection");el.textContent=text;el.className="poly-live "+mode}
+  function polyBadge(text,mode=""){const el=$("polyConnection");if(el){el.textContent=text;el.className="poly-live "+mode}}
   function parseArray(v){if(Array.isArray(v))return v;try{return JSON.parse(v||"[]")}catch(_){return []}}
-  function getEventTimes(ev){
-    const m=(ev.markets||[])[0]||{};
-    const start=Date.parse(ev.eventStartTime||ev.startDate||m.eventStartTime||m.startDate||"");
-    const end=Date.parse(ev.endDate||m.endDate||"");
-    return {start,end};
+  function currentFiveMinSlug(){return "btc-updown-5m-"+Math.floor(Date.now()/300000)*300}
+  function normalizeBook(raw){
+    const bids=(raw.bids||[]).map(x=>({p:Number(x.price),s:Number(x.size)})).filter(x=>x.p>0&&x.s>0);
+    const asks=(raw.asks||[]).map(x=>({p:Number(x.price),s:Number(x.size)})).filter(x=>x.p>0&&x.s>0);
+    bids.sort((a,b)=>b.p-a.p);asks.sort((a,b)=>a.p-b.p);
+    return {bids,asks,bestBid:bids[0]?.p??null,bestAsk:asks[0]?.p??null,updatedAt:Date.now(),source:"REST"};
+  }
+  async function fetchJson(url,timeout=4500){
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeout);
+    try{const r=await fetch(url,{cache:"no-store",signal:controller.signal,headers:{Accept:"application/json"}});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json()}
+    finally{clearTimeout(timer)}
   }
   async function discoverPolyMarket(){
+    if(poly.discovering)return;poly.discovering=true;
     try{
-      const url=polyApi+"/events?series_slug=btc-up-or-down-5m&closed=false&limit=100&order=endDate&ascending=true";
-      const res=await fetch(url,{cache:"no-store"});
-      if(!res.ok)throw new Error("Gamma HTTP "+res.status);
-      const events=await res.json(),now=Date.now();
-      const active=(Array.isArray(events)?events:[]).filter(ev=>{
-        const t=getEventTimes(ev);return t.start>0&&t.end>now&&t.start<=now&&Array.isArray(ev.markets)&&ev.markets.length;
-      }).sort((a,b)=>getEventTimes(b).start-getEventTimes(a).start)[0];
-      if(!active)throw new Error("Active BTC 5-minute event not found");
-      const market=(active.markets||[]).find(m=>m.enableOrderBook!==false)||active.markets[0];
-      const ids=parseArray(market.clobTokenIds||market.clob_token_ids);
-      const outs=parseArray(market.outcomes).map(x=>String(x).toLowerCase());
-      let upIndex=outs.findIndex(x=>x==="up"),downIndex=outs.findIndex(x=>x==="down");
-      if(upIndex<0||downIndex<0||!ids[upIndex]||!ids[downIndex])throw new Error("Could not identify UP/DOWN outcome tokens");
-      const key=String(active.slug||market.slug||"");
-      if(poly.event&&poly.event===key&&poly.upId===String(ids[upIndex])&&poly.downId===String(ids[downIndex]))return;
-      poly.event=key;poly.market=market;poly.upId=String(ids[upIndex]);poly.downId=String(ids[downIndex]);poly.books={};poly.lastTrade=null;
-      const times=getEventTimes(active);
-      polyText("polyMarketName",(active.title||market.question||key)+" · "+new Date(times.start).toLocaleTimeString()+"–"+new Date(times.end).toLocaleTimeString());
-      polyBadge("MARKET FOUND");
+      const slug=currentFiveMinSlug();
+      let active=null;
+      try{active=await fetchJson(polyApi+"/events/slug/"+encodeURIComponent(slug))}catch(_){}
+      if(!active||!Array.isArray(active.markets)||!active.markets.length){
+        const list=await fetchJson(polyApi+"/events?slug="+encodeURIComponent(slug));
+        active=Array.isArray(list)?list[0]:null;
+      }
+      if(!active||!Array.isArray(active.markets)||!active.markets.length)throw new Error("Current market not listed yet · retrying");
+      const market=active.markets.find(m=>m.enableOrderBook!==false)||active.markets[0];
+      const tokens=Array.isArray(market.tokens)?market.tokens:[];
+      let upId=tokens.find(t=>String(t.outcome||"").toLowerCase()==="up")?.token_id;
+      let downId=tokens.find(t=>String(t.outcome||"").toLowerCase()==="down")?.token_id;
+      const ids=parseArray(market.clobTokenIds||market.clob_token_ids),outs=parseArray(market.outcomes).map(x=>String(x).toLowerCase());
+      if(!upId||!downId){const ui=outs.indexOf("up"),di=outs.indexOf("down");upId=upId||ids[ui];downId=downId||ids[di]}
+      if(!upId||!downId)throw new Error("Market found but UP/DOWN token IDs are missing");
+      if(poly.event===slug&&poly.upId===String(upId)&&poly.downId===String(downId))return;
+      poly.event=slug;poly.market=market;poly.upId=String(upId);poly.downId=String(downId);poly.books={};poly.lastTrade=null;poly.restAt=0;
+      const title=active.title||market.question||slug;
+      const end=Date.parse(active.endDate||market.endDate||"");
+      polyText("polyMarketName",title+(end?" · ends "+new Date(end).toLocaleTimeString():""));
+      polyBadge("MARKET FOUND · SYNCING");
       connectPolyBook();
+      refreshPolyBooks();
     }catch(err){
-      polyBadge("DISCOVERY RETRY","bad");
+      poly.retry++;
+      polyBadge("MARKET DISCOVERY RETRY","bad");
       polyText("polyMarketName",String(err.message||err));
-    }
+    }finally{poly.discovering=false}
   }
   function connectPolyBook(){
     if(poly.ws){try{poly.ws.close()}catch(_){}}
     if(poly.ping){clearInterval(poly.ping);poly.ping=null}
     if(!poly.upId||!poly.downId)return;
-    polyBadge("CONNECTING CLOB");
+    polyBadge("CONNECTING LIVE STREAM");
     const ws=new WebSocket("wss://ws-subscriptions-clob.polymarket.com/ws/market");poly.ws=ws;
     ws.onopen=()=>{
-      polyBadge("CLOB LIVE","ok");
+      poly.wsConnected=true;
       ws.send(JSON.stringify({assets_ids:[poly.upId,poly.downId],type:"market",custom_feature_enabled:true}));
       poly.ping=setInterval(()=>{if(ws.readyState===WebSocket.OPEN)ws.send("PING")},10000);
+      polyBadge("WS CONNECTED · SYNCING");
     };
     ws.onmessage=e=>{
       if(e.data==="PONG")return;
       let data;try{data=JSON.parse(e.data)}catch(_){return}
-      (Array.isArray(data)?data:[data]).forEach(handlePolyEvent);
-      poly.lastMsg=Date.now();renderPolyBooks();
+      let gotBook=false;
+      (Array.isArray(data)?data:[data]).forEach(m=>{if(m&&m.event_type){handlePolyEvent(m);gotBook=true}});
+      if(gotBook){poly.lastMsg=Date.now();renderPolyBooks()}
     };
-    ws.onerror=()=>polyBadge("CLOB CONNECTION ERROR","bad");
-    ws.onclose=()=>{if(poly.ping){clearInterval(poly.ping);poly.ping=null}polyBadge("CLOB DISCONNECTED","bad")};
+    ws.onerror=()=>{polyBadge("WS ERROR · REST BACKUP ACTIVE","bad")};
+    ws.onclose=()=>{poly.wsConnected=false;if(poly.ping){clearInterval(poly.ping);poly.ping=null}polyBadge("WS RECONNECTING · REST ACTIVE","bad")};
   }
   function handlePolyEvent(msg){
-    if(!msg||typeof msg!=="object")return;
     if(msg.event_type==="book"){
-      poly.books[msg.asset_id]={bids:(msg.bids||[]).map(x=>({p:Number(x.price),s:Number(x.size)})).filter(x=>x.p>0&&x.s>0),asks:(msg.asks||[]).map(x=>({p:Number(x.price),s:Number(x.size)})).filter(x=>x.p>0&&x.s>0)};
+      poly.books[msg.asset_id]=normalizeBook(msg);
+      poly.books[msg.asset_id].source="WS";
+      poly.books[msg.asset_id].updatedAt=Date.now();
     }else if(msg.event_type==="price_change"){
-      (msg.price_changes||msg.changes||[]).forEach(c=>{
-        const b=poly.books[c.asset_id];if(!b)return;
-        const side=String(c.side).toUpperCase()==="BUY"?b.bids:b.asks,p=Number(c.price),s=Number(c.size);
-        if(!Number.isFinite(p)||!Number.isFinite(s))return;
-        const i=side.findIndex(x=>x.p===p);if(s<=0){if(i>=0)side.splice(i,1)}else if(i>=0)side[i].s=s;else side.push({p,s});
+      (msg.price_changes||[]).forEach(c=>{
+        const book=poly.books[c.asset_id];if(!book)return;
+        const side=String(c.side).toUpperCase()==="BUY"?book.bids:book.asks;
+        const p=Number(c.price),s=Number(c.size);
+        if(Number.isFinite(p)&&Number.isFinite(s)){
+          const i=side.findIndex(x=>x.p===p);
+          if(s<=0){if(i>=0)side.splice(i,1)}
+          else if(i>=0)side[i].s=s;else side.push({p,s});
+        }
+        // Critical: CLOB sends authoritative best_bid/best_ask on price_change.
+        // Use these immediately instead of waiting for another full book snapshot.
+        const bb=Number(c.best_bid),ba=Number(c.best_ask);
+        if(c.best_bid!==undefined&&Number.isFinite(bb))book.bestBid=bb;
+        if(c.best_ask!==undefined&&Number.isFinite(ba))book.bestAsk=ba;
+        book.updatedAt=Date.now();book.source="WS";
+        book.bids.sort((x,y)=>y.p-x.p);book.asks.sort((x,y)=>x.p-y.p);
       });
     }else if(msg.event_type==="last_trade_price"){
       const side=msg.asset_id===poly.upId?"UP":msg.asset_id===poly.downId?"DOWN":"?";
       poly.lastTrade={side,price:Number(msg.price),size:Number(msg.size),ts:Number(msg.timestamp||Date.now())};
     }else if(msg.event_type==="best_bid_ask"){
-      // Full book snapshots remain the source for depth imbalance.
-      const id=msg.asset_id,b=poly.books[id]||(poly.books[id]={bids:[],asks:[]});
-      if(Number.isFinite(Number(msg.best_bid)))b.bestBid=Number(msg.best_bid);
-      if(Number.isFinite(Number(msg.best_ask)))b.bestAsk=Number(msg.best_ask);
+      const book=poly.books[msg.asset_id]||(poly.books[msg.asset_id]={bids:[],asks:[]});
+      const bb=Number(msg.best_bid),ba=Number(msg.best_ask);
+      if(msg.best_bid!==undefined&&Number.isFinite(bb))book.bestBid=bb;
+      if(msg.best_ask!==undefined&&Number.isFinite(ba))book.bestAsk=ba;
+      book.updatedAt=Date.now();book.source="WS";
+    }
+  }
+  async function refreshPolyBooks(){
+    if(!poly.upId||!poly.downId)return;
+    const ids=[poly.upId,poly.downId];
+    try{
+      const books=await Promise.all(ids.map(id=>fetchJson(clobApi+"/book?token_id="+encodeURIComponent(id),4000)));
+      ids.forEach((id,i)=>{if(books[i]&&Array.isArray(books[i].bids)&&Array.isArray(books[i].asks))poly.books[id]=normalizeBook(books[i])});
+      poly.restAt=Date.now();renderPolyBooks();
+      if(poly.wsConnected)polyBadge("LIVE · WS + REST VERIFIED","ok");else polyBadge("REST LIVE · WS RECONNECTING","bad");
+    }catch(err){
+      if(!poly.restAt)polyBadge("WAITING FOR ORDER BOOK","bad");
+      polyText("polyDetail","REST book refresh failed: "+String(err.message||err)+" · waiting for next retry");
     }
   }
   function bookMetrics(book){
@@ -432,7 +472,7 @@ button:hover{filter:brightness(1.16)}
     const bid=book.bestBid??(bids[0]?.p??null),ask=book.bestAsk??(asks[0]?.p??null);
     const mid=bid!==null&&ask!==null?(bid+ask)/2:null;
     const bidDepth=bids.slice(0,5).reduce((s,x)=>s+x.s,0),askDepth=asks.slice(0,5).reduce((s,x)=>s+x.s,0);
-    return {bid,ask,mid,bidDepth,askDepth,spread:bid!==null&&ask!==null?ask-bid:null,imbalance:bidDepth+askDepth?(bidDepth-askDepth)/(bidDepth+askDepth):0};
+    return {bid,ask,mid,bidDepth,askDepth,spread:bid!==null&&ask!==null?ask-bid:null};
   }
   function renderPolyBooks(){
     const u=bookMetrics(poly.books[poly.upId]),d=bookMetrics(poly.books[poly.downId]);
@@ -440,31 +480,32 @@ button:hover{filter:brightness(1.16)}
     poly.upMid=u.mid;poly.downMid=d.mid;
     polyText("polyUpOdds",u.mid===null?"—":(u.mid*100).toFixed(1)+"¢");
     polyText("polyDownOdds",d.mid===null?"—":(d.mid*100).toFixed(1)+"¢");
-    polyText("polyUpBook","Bid "+(u.bid===null?"—":(u.bid*100).toFixed(1)+"¢")+" · Ask "+(u.ask===null?"—":(u.ask*100).toFixed(1)+"¢")+" · Depth "+Math.round(u.bidDepth+u.askDepth));
-    polyText("polyDownBook","Bid "+(d.bid===null?"—":(d.bid*100).toFixed(1)+"¢")+" · Ask "+(d.ask===null?"—":(d.ask*100).toFixed(1)+"¢")+" · Depth "+Math.round(d.bidDepth+d.askDepth));
-    // Combine both contracts' near-touch depth; positive means stronger UP-side bid pressure.
-    const upBid=u.bidDepth,upAsk=u.askDepth,downBid=d.bidDepth,downAsk=d.askDepth;
-    const upSupport=upBid+downAsk,downSupport=downBid+upAsk,total=upSupport+downSupport;
+    polyText("polyUpBook","Bid "+(u.bid===null?"—":(u.bid*100).toFixed(1)+"¢")+" · Ask "+(u.ask===null?"—":(u.ask*100).toFixed(1)+"¢")+" · Top-5 depth "+Math.round(u.bidDepth+u.askDepth));
+    polyText("polyDownBook","Bid "+(d.bid===null?"—":(d.bid*100).toFixed(1)+"¢")+" · Ask "+(d.ask===null?"—":(d.ask*100).toFixed(1)+"¢")+" · Top-5 depth "+Math.round(d.bidDepth+d.askDepth));
+    const upSupport=u.bidDepth+d.askDepth,downSupport=d.bidDepth+u.askDepth,total=upSupport+downSupport;
     const imbalance=total?(upSupport-downSupport)/total:0;poly.imbalance=imbalance;
     polyText("polyImbalance",(imbalance>=0?"+":"")+(imbalance*100).toFixed(1)+"% "+(imbalance>.08?"UP PRESSURE":imbalance<-.08?"DOWN PRESSURE":"BALANCED"));
     const spreads=[u.spread,d.spread].filter(x=>x!==null);
-    polyText("polySpread",spreads.length?(Math.max(...spreads)*100).toFixed(1)+"¢ avg": "—");
+    polyText("polySpread",spreads.length?(Math.max(...spreads)*100).toFixed(1)+"¢ max":"—");
     if(poly.lastTrade)polyText("polyLastTrade",poly.lastTrade.side+" "+(poly.lastTrade.price*100).toFixed(1)+"¢");
-    const priceSide=u.mid!==null&&d.mid!==null?(u.mid>d.mid?"UP":d.mid>u.mid?"DOWN":"TIED"):"UNKNOWN";
-    const aligned=(priceSide==="UP"&&imbalance>.08)||(priceSide==="DOWN"&&imbalance<-.08);
+    const side=u.mid!==null&&d.mid!==null?(u.mid>d.mid?"UP":d.mid>u.mid?"DOWN":"TIED"):"UNKNOWN";
+    const aligned=(side==="UP"&&imbalance>.08)||(side==="DOWN"&&imbalance<-.08);
     const verdict=$("polyVerdict");
-    if(verdict){
-      verdict.textContent=aligned?priceSide+" MARKET PRICE + ORDER BOOK AGREE":Math.abs(imbalance)<=.08?"NO CLEAR ORDER-BOOK EDGE":"PRICE AND ORDER BOOK DISAGREE · CAUTION";
-      verdict.className="poly-verdict "+(aligned?(priceSide==="UP"?"up":"down"):"");
-    }
-    polyText("polyDetail","Top-5 level depth imbalance · market midpoints are indicative contract prices, not calibrated probabilities · updated "+new Date().toLocaleTimeString());
+    if(verdict){verdict.textContent=aligned?side+" PRICE + BOOK PRESSURE AGREE":Math.abs(imbalance)<=.08?"NO CLEAR ORDER-BOOK EDGE":"PRICE AND BOOK DISAGREE · CAUTION";verdict.className="poly-verdict "+(aligned?(side==="UP"?"up":"down"):"")}
+    const age=poly.restAt?((Date.now()-poly.restAt)/1000).toFixed(1):"—";
+    polyText("polyDetail","REST snapshot "+age+"s ago · "+(poly.wsConnected?"WebSocket connected":"WebSocket reconnecting")+" · midpoint is indicative, not a calibrated win probability");
   }
   function startPolymarketMarketData(){
     discoverPolyMarket();
-    poly.refresh=setInterval(discoverPolyMarket,15000);
-    setInterval(()=>{
-      if(poly.ws&&poly.ws.readyState===WebSocket.OPEN&&poly.lastMsg&&Date.now()-poly.lastMsg>30000)polyBadge("NO RECENT CLOB DATA","bad");
-    },5000);
+    poly.refresh=setInterval(discoverPolyMarket,5000);
+    poly.poll=setInterval(refreshPolyBooks,1800);
+    poly.watchdog=setInterval(()=>{
+      if(poly.wsConnected&&poly.lastMsg&&Date.now()-poly.lastMsg>45000){
+        // Silence can be normal in a static book; REST polling is the freshness check.
+        if(poly.restAt&&Date.now()-poly.restAt>6000)connectPolyBook();
+      }
+      if(poly.restAt&&Date.now()-poly.restAt>7000)polyBadge("BOOK DATA STALE · RETRYING","bad");
+    },2500);
   }
 
   // Autopilot bird: continuously follows the current market leader through matching gates.

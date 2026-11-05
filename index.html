@@ -94,7 +94,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 <section class="market-focus">
   <div class="focus-top"><div class="focus-tag"><span></span> ACTIVE MARKET · 5 MINUTES</div><div><div class="label">TIME LEFT</div><div id="countdown" class="timer">5:00</div></div></div>
   <div class="focus-main">
-    <div><div class="label">PRICE TO BEAT · CAPTURED TWAP60</div><div id="targetLarge" class="target-number">Waiting for next market…</div><div id="targetTime" class="small">Target capture is a browser-side estimate</div></div>
+    <div><div class="label">PRICE TO BEAT · EXACT CHAINLINK TWAP60</div><div id="targetLarge" class="target-number">Waiting for next market…</div><div id="targetTime" class="small">Exact boundary observation · missing data means WAIT</div></div>
     <div id="directionPill" class="direction-pill">WAITING FOR TARGET</div>
   </div>
   <div class="focus-foot"><span>Live TWAP: <b id="liveTwapInline">—</b></span><span>Distance: <b id="distance">—</b></span><span>Next reset: <b>every 5 minutes UTC</b></span></div>
@@ -188,7 +188,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 </section>
 
 <div class="actions"><button id="reconnect">↻ Reconnect live feeds</button><span class="small">Live data connection · No API key required</span></div>
-<div class="note"><b>Important:</b> This dashboard is a separate reference tool; it does not inject data into TradingView. The target is a browser-side approximation using the latest TWAP60 update around each five-minute UTC boundary, not a guaranteed exact oracle snapshot. Always compare the target with the active Polymarket market before trading. Binance is a momentum reference; Chainlink TWAP is the relevant comparison shown here. No trade signal or profitability is guaranteed.</div>
+<div class="note"><b>Settlement rule:</b> Polymarket BTC 5-minute markets resolve using Chainlink BTC/USD TWAP60 at the exact start and end of the interval. The dashboard only accepts the exact timestamped start observation; if it was not captured or recovered from the recent feed replay / browser history, the signal stays WAIT. Coinbase and Hyperliquid are confirmation feeds, not settlement sources. Scores are heuristics, not calibrated probabilities. No outcome is guaranteed.</div>
 
 <script>
 (() => {

@@ -49,6 +49,26 @@ button:hover{filter:brightness(1.16)}
 .actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
 @media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}.focus-main{grid-template-columns:1fr}.direction-pill{width:100%}}
 @media(max-width:650px){.prediction-board{grid-template-columns:repeat(2,minmax(0,1fr))}.prediction-panel{padding:9px}.prediction-heading .label{font-size:8px;letter-spacing:.08em}.prediction-live{font-size:7px;padding:3px 5px}.prediction-callout{font-size:15px}.prediction-reason{font-size:9px;min-height:38px}.prediction-stack b{font-size:10px}.horizon-grid{grid-template-columns:repeat(3,minmax(0,1fr))}} @media(max-width:350px){.prediction-board{grid-template-columns:1fr}} @media(max-width:480px){body{padding:17px 12px 28px}.grid,.metrics{grid-template-columns:1fr 1fr}.card{padding:14px}.market-focus{padding:17px}.timer{font-size:39px}.focus-foot{gap:10px}.grid .card:last-child{grid-column:1/-1}}
+
+/* Polymarket live market data */
+.poly-market{margin-top:13px;border:1px solid #3d4e91;background:linear-gradient(145deg,#111832,#0b1022 78%)}
+.poly-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.poly-live{font-size:9px;letter-spacing:.12em;font-weight:900;border:1px solid #3b5b83;border-radius:20px;padding:5px 8px;color:#a9c8ff}
+.poly-live.ok{color:#54efb4;border-color:#27785f}.poly-live.bad{color:#ff8eaa;border-color:#8a3656}
+.poly-market-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:13px}
+.poly-side{border:1px solid #30436f;border-radius:12px;padding:12px;background:#090f20}
+.poly-side h3{margin:0 0 8px;font-size:12px;letter-spacing:.12em}
+.poly-side .odds{font-size:25px;font-weight:900;font-variant-numeric:tabular-nums}
+.poly-side .bookline{font-size:10px;color:#9bafd4;margin-top:7px;line-height:1.5}
+.poly-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:10px}
+.poly-stat{border:1px solid #29385e;border-radius:10px;background:#0a1022;padding:10px}
+.poly-stat b{display:block;font-size:17px;margin-top:6px;font-variant-numeric:tabular-nums}
+.poly-stat span{font-size:9px;color:#8fa4ce;letter-spacing:.1em;font-weight:800}
+.poly-verdict{margin-top:11px;border:1px solid #3a4d7e;border-radius:11px;padding:11px 13px;background:#0a1022;font-size:12px;font-weight:850;letter-spacing:.04em}
+.poly-verdict.up{color:#43efae;border-color:#26765b}.poly-verdict.down{color:#ff6b96;border-color:#803653}
+.poly-foot{font-size:10px;color:#8ea2c8;line-height:1.5;margin-top:9px}
+@media(max-width:520px){.poly-stats{grid-template-columns:1fr 1fr}.poly-side .odds{font-size:21px}}
+
 </style>
 </head>
 <body>
@@ -110,6 +130,25 @@ button:hover{filter:brightness(1.16)}
     <div><span>5 SEC</span><b id="mom5">—</b></div><div><span>15 SEC</span><b id="mom15">—</b></div><div><span>30 SEC</span><b id="mom30">—</b></div><div><span>1 MIN</span><b id="mom60">—</b></div><div><span>3 MIN</span><b id="mom180">—</b></div>
   </div>
   <div class="small" id="momentumUpdated">Updates as new BTC trades arrive · Binance trade stream</div>
+</section>
+
+
+<section class="card poly-market">
+  <div class="poly-head">
+    <div><div class="label">POLYMARKET · LIVE CLOB ORDER BOOK</div><div id="polyMarketName" class="small">Finding the active BTC 5-minute market…</div></div>
+    <span id="polyConnection" class="poly-live">DISCOVERING MARKET</span>
+  </div>
+  <div class="poly-market-grid">
+    <div class="poly-side"><h3 class="up">UP CONTRACT</h3><div id="polyUpOdds" class="odds">—</div><div id="polyUpBook" class="bookline">Bid — · Ask —</div></div>
+    <div class="poly-side"><h3 class="down">DOWN CONTRACT</h3><div id="polyDownOdds" class="odds">—</div><div id="polyDownBook" class="bookline">Bid — · Ask —</div></div>
+  </div>
+  <div class="poly-stats">
+    <div class="poly-stat"><span>BOOK IMBALANCE</span><b id="polyImbalance">—</b></div>
+    <div class="poly-stat"><span>UP / DOWN SPREAD</span><b id="polySpread">—</b></div>
+    <div class="poly-stat"><span>LAST TRADE</span><b id="polyLastTrade">—</b></div>
+  </div>
+  <div id="polyVerdict" class="poly-verdict">WAITING FOR BOTH ORDER BOOKS</div>
+  <div id="polyDetail" class="poly-foot">Public Polymarket market data · no account connection or credentials · order-book pressure is not a guaranteed prediction</div>
 </section>
 
 <section class="game-card">
@@ -306,6 +345,128 @@ button:hover{filter:brightness(1.16)}
     $("nextMomentum").className=momentum>0?"up":momentum<0?"down":"";
   }
 
+
+  // Public Polymarket market discovery + live CLOB order books (no credentials).
+  const poly={event:null,market:null,upId:null,downId:null,ws:null,books:{},lastTrade:null,lastMsg:0,ping:null,refresh:null,imbalance:0,upMid:null,downMid:null};
+  const polyApi="https://gamma-api.polymarket.com";
+  function polyText(id,value){const el=$(id);if(el)el.textContent=value}
+  function polyBadge(text,mode=""){const el=$("polyConnection");el.textContent=text;el.className="poly-live "+mode}
+  function parseArray(v){if(Array.isArray(v))return v;try{return JSON.parse(v||"[]")}catch(_){return []}}
+  function getEventTimes(ev){
+    const m=(ev.markets||[])[0]||{};
+    const start=Date.parse(ev.eventStartTime||ev.startDate||m.eventStartTime||m.startDate||"");
+    const end=Date.parse(ev.endDate||m.endDate||"");
+    return {start,end};
+  }
+  async function discoverPolyMarket(){
+    try{
+      const url=polyApi+"/events?series_slug=btc-up-or-down-5m&closed=false&limit=100&order=endDate&ascending=true";
+      const res=await fetch(url,{cache:"no-store"});
+      if(!res.ok)throw new Error("Gamma HTTP "+res.status);
+      const events=await res.json(),now=Date.now();
+      const active=(Array.isArray(events)?events:[]).filter(ev=>{
+        const t=getEventTimes(ev);return t.start>0&&t.end>now&&t.start<=now&&Array.isArray(ev.markets)&&ev.markets.length;
+      }).sort((a,b)=>getEventTimes(b).start-getEventTimes(a).start)[0];
+      if(!active)throw new Error("Active BTC 5-minute event not found");
+      const market=(active.markets||[]).find(m=>m.enableOrderBook!==false)||active.markets[0];
+      const ids=parseArray(market.clobTokenIds||market.clob_token_ids);
+      const outs=parseArray(market.outcomes).map(x=>String(x).toLowerCase());
+      let upIndex=outs.findIndex(x=>x==="up"),downIndex=outs.findIndex(x=>x==="down");
+      if(upIndex<0||downIndex<0||!ids[upIndex]||!ids[downIndex])throw new Error("Could not identify UP/DOWN outcome tokens");
+      const key=String(active.slug||market.slug||"");
+      if(poly.event&&poly.event===key&&poly.upId===String(ids[upIndex])&&poly.downId===String(ids[downIndex]))return;
+      poly.event=key;poly.market=market;poly.upId=String(ids[upIndex]);poly.downId=String(ids[downIndex]);poly.books={};poly.lastTrade=null;
+      const times=getEventTimes(active);
+      polyText("polyMarketName",(active.title||market.question||key)+" · "+new Date(times.start).toLocaleTimeString()+"–"+new Date(times.end).toLocaleTimeString());
+      polyBadge("MARKET FOUND");
+      connectPolyBook();
+    }catch(err){
+      polyBadge("DISCOVERY RETRY","bad");
+      polyText("polyMarketName",String(err.message||err));
+    }
+  }
+  function connectPolyBook(){
+    if(poly.ws){try{poly.ws.close()}catch(_){}}
+    if(poly.ping){clearInterval(poly.ping);poly.ping=null}
+    if(!poly.upId||!poly.downId)return;
+    polyBadge("CONNECTING CLOB");
+    const ws=new WebSocket("wss://ws-subscriptions-clob.polymarket.com/ws/market");poly.ws=ws;
+    ws.onopen=()=>{
+      polyBadge("CLOB LIVE","ok");
+      ws.send(JSON.stringify({assets_ids:[poly.upId,poly.downId],type:"market",custom_feature_enabled:true}));
+      poly.ping=setInterval(()=>{if(ws.readyState===WebSocket.OPEN)ws.send("PING")},10000);
+    };
+    ws.onmessage=e=>{
+      if(e.data==="PONG")return;
+      let data;try{data=JSON.parse(e.data)}catch(_){return}
+      (Array.isArray(data)?data:[data]).forEach(handlePolyEvent);
+      poly.lastMsg=Date.now();renderPolyBooks();
+    };
+    ws.onerror=()=>polyBadge("CLOB CONNECTION ERROR","bad");
+    ws.onclose=()=>{if(poly.ping){clearInterval(poly.ping);poly.ping=null}polyBadge("CLOB DISCONNECTED","bad")};
+  }
+  function handlePolyEvent(msg){
+    if(!msg||typeof msg!=="object")return;
+    if(msg.event_type==="book"){
+      poly.books[msg.asset_id]={bids:(msg.bids||[]).map(x=>({p:Number(x.price),s:Number(x.size)})).filter(x=>x.p>0&&x.s>0),asks:(msg.asks||[]).map(x=>({p:Number(x.price),s:Number(x.size)})).filter(x=>x.p>0&&x.s>0)};
+    }else if(msg.event_type==="price_change"){
+      (msg.price_changes||msg.changes||[]).forEach(c=>{
+        const b=poly.books[c.asset_id];if(!b)return;
+        const side=String(c.side).toUpperCase()==="BUY"?b.bids:b.asks,p=Number(c.price),s=Number(c.size);
+        if(!Number.isFinite(p)||!Number.isFinite(s))return;
+        const i=side.findIndex(x=>x.p===p);if(s<=0){if(i>=0)side.splice(i,1)}else if(i>=0)side[i].s=s;else side.push({p,s});
+      });
+    }else if(msg.event_type==="last_trade_price"){
+      const side=msg.asset_id===poly.upId?"UP":msg.asset_id===poly.downId?"DOWN":"?";
+      poly.lastTrade={side,price:Number(msg.price),size:Number(msg.size),ts:Number(msg.timestamp||Date.now())};
+    }else if(msg.event_type==="best_bid_ask"){
+      // Full book snapshots remain the source for depth imbalance.
+      const id=msg.asset_id,b=poly.books[id]||(poly.books[id]={bids:[],asks:[]});
+      if(Number.isFinite(Number(msg.best_bid)))b.bestBid=Number(msg.best_bid);
+      if(Number.isFinite(Number(msg.best_ask)))b.bestAsk=Number(msg.best_ask);
+    }
+  }
+  function bookMetrics(book){
+    if(!book)return null;
+    const bids=[...(book.bids||[])].sort((a,b)=>b.p-a.p),asks=[...(book.asks||[])].sort((a,b)=>a.p-b.p);
+    const bid=book.bestBid??(bids[0]?.p??null),ask=book.bestAsk??(asks[0]?.p??null);
+    const mid=bid!==null&&ask!==null?(bid+ask)/2:null;
+    const bidDepth=bids.slice(0,5).reduce((s,x)=>s+x.s,0),askDepth=asks.slice(0,5).reduce((s,x)=>s+x.s,0);
+    return {bid,ask,mid,bidDepth,askDepth,spread:bid!==null&&ask!==null?ask-bid:null,imbalance:bidDepth+askDepth?(bidDepth-askDepth)/(bidDepth+askDepth):0};
+  }
+  function renderPolyBooks(){
+    const u=bookMetrics(poly.books[poly.upId]),d=bookMetrics(poly.books[poly.downId]);
+    if(!u||!d)return;
+    poly.upMid=u.mid;poly.downMid=d.mid;
+    polyText("polyUpOdds",u.mid===null?"—":(u.mid*100).toFixed(1)+"¢");
+    polyText("polyDownOdds",d.mid===null?"—":(d.mid*100).toFixed(1)+"¢");
+    polyText("polyUpBook","Bid "+(u.bid===null?"—":(u.bid*100).toFixed(1)+"¢")+" · Ask "+(u.ask===null?"—":(u.ask*100).toFixed(1)+"¢")+" · Depth "+Math.round(u.bidDepth+u.askDepth));
+    polyText("polyDownBook","Bid "+(d.bid===null?"—":(d.bid*100).toFixed(1)+"¢")+" · Ask "+(d.ask===null?"—":(d.ask*100).toFixed(1)+"¢")+" · Depth "+Math.round(d.bidDepth+d.askDepth));
+    // Combine both contracts' near-touch depth; positive means stronger UP-side bid pressure.
+    const upBid=u.bidDepth,upAsk=u.askDepth,downBid=d.bidDepth,downAsk=d.askDepth;
+    const upSupport=upBid+downAsk,downSupport=downBid+upAsk,total=upSupport+downSupport;
+    const imbalance=total?(upSupport-downSupport)/total:0;poly.imbalance=imbalance;
+    polyText("polyImbalance",(imbalance>=0?"+":"")+(imbalance*100).toFixed(1)+"% "+(imbalance>.08?"UP PRESSURE":imbalance<-.08?"DOWN PRESSURE":"BALANCED"));
+    const spreads=[u.spread,d.spread].filter(x=>x!==null);
+    polyText("polySpread",spreads.length?(Math.max(...spreads)*100).toFixed(1)+"¢ avg": "—");
+    if(poly.lastTrade)polyText("polyLastTrade",poly.lastTrade.side+" "+(poly.lastTrade.price*100).toFixed(1)+"¢");
+    const priceSide=u.mid!==null&&d.mid!==null?(u.mid>d.mid?"UP":d.mid>u.mid?"DOWN":"TIED"):"UNKNOWN";
+    const aligned=(priceSide==="UP"&&imbalance>.08)||(priceSide==="DOWN"&&imbalance<-.08);
+    const verdict=$("polyVerdict");
+    if(verdict){
+      verdict.textContent=aligned?priceSide+" MARKET PRICE + ORDER BOOK AGREE":Math.abs(imbalance)<=.08?"NO CLEAR ORDER-BOOK EDGE":"PRICE AND ORDER BOOK DISAGREE · CAUTION";
+      verdict.className="poly-verdict "+(aligned?(priceSide==="UP"?"up":"down"):"");
+    }
+    polyText("polyDetail","Top-5 level depth imbalance · market midpoints are indicative contract prices, not calibrated probabilities · updated "+new Date().toLocaleTimeString());
+  }
+  function startPolymarketMarketData(){
+    discoverPolyMarket();
+    poly.refresh=setInterval(discoverPolyMarket,15000);
+    setInterval(()=>{
+      if(poly.ws&&poly.ws.readyState===WebSocket.OPEN&&poly.lastMsg&&Date.now()-poly.lastMsg>30000)polyBadge("NO RECENT CLOB DATA","bad");
+    },5000);
+  }
+
   // Autopilot bird: continuously follows the current market leader through matching gates.
   const canvas=$("birdGame"),ctx=canvas.getContext("2d");
   let game={birdY:95,targetY:95,pipes:[],last:0,spawn:0},raf=0;
@@ -349,7 +510,7 @@ button:hover{filter:brightness(1.16)}
   window.addEventListener("resize",resizeGame);
 
   $("reconnect").addEventListener("click",connect);
-  resizeGame();startBirdAnimation();connect();connectTrades();tick();updateMomentum();state.timer=setInterval(tick,500);
+  resizeGame();startBirdAnimation();connect();connectTrades();startPolymarketMarketData();tick();updateMomentum();state.timer=setInterval(tick,500);
 })();
 
 </script>

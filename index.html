@@ -34,7 +34,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:13px}
 .metric-value{font-size:21px;font-weight:800;margin-top:8px}
 .bar{height:6px;background:#242747;border-radius:10px;margin-top:12px;overflow:hidden}.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#5574ff,#35d9ff);border-radius:10px;transition:width .2s}
-.prediction-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin:12px 0}.prediction-panel{min-width:0;border:1px solid #35457b;border-radius:15px;padding:13px 15px;background:linear-gradient(145deg,#12152e,#0b1022 80%);box-shadow:inset 0 0 22px #3145a018}.next-panel{border-color:#55418a;background:linear-gradient(145deg,#17132f,#0d1024 80%)}.prediction-heading{display:flex;justify-content:space-between;align-items:center;gap:7px}.prediction-live{font-size:8px;font-weight:900;letter-spacing:.12em;color:#9fb5ff;border:1px solid #465b9a;border-radius:20px;padding:4px 7px}.prediction-callout{font-size:clamp(17px,2.5vw,23px);font-weight:900;letter-spacing:-.025em;margin-top:10px;color:#a9b9d9}.prediction-callout.up{color:#43efae}.prediction-callout.down{color:#ff6b96}.prediction-reason{font-size:10px;color:#93a6cb;line-height:1.4;margin-top:5px;min-height:27px}.prediction-stack{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:9px}.prediction-stack>div{background:#080d1d;border:1px solid #27345b;border-radius:9px;padding:7px 8px}.prediction-stack span{display:block;font-size:8px;color:#8198c3;letter-spacing:.1em;font-weight:800}.prediction-stack b{display:block;font-size:12px;margin-top:4px;font-variant-numeric:tabular-nums}.momentum-card{margin-top:13px}.horizon-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:13px}.horizon-grid>div{padding:11px 9px;border:1px solid #293b68;border-radius:11px;background:#0b1024}.horizon-grid span{display:block;font-size:9px;letter-spacing:.12em;color:#8fa5d0;font-weight:800}.horizon-grid b{display:block;margin-top:7px;font-size:15px;font-variant-numeric:tabular-nums}.momentum-grid{margin-top:13px}.momentum-card .small{margin-top:12px}.game-card{margin-top:15px;padding:17px;background:linear-gradient(135deg,#11142d,#100d24 70%);border:1px solid #443d8e;border-radius:19px;box-shadow:0 0 26px #4d39c522}
+.prediction-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0}.prediction-panel{min-width:0;border:1px solid #35457b;border-radius:13px;padding:10px 12px;background:linear-gradient(145deg,#12152e,#0b1022 80%);box-shadow:inset 0 0 22px #3145a018}.next-panel{border-color:#55418a;background:linear-gradient(145deg,#17132f,#0d1024 80%)}.prediction-heading{display:flex;justify-content:space-between;align-items:center;gap:7px}.prediction-live{font-size:8px;font-weight:900;letter-spacing:.12em;color:#9fb5ff;border:1px solid #465b9a;border-radius:20px;padding:4px 7px}.prediction-callout{font-size:clamp(15px,2vw,20px);font-weight:900;letter-spacing:-.025em;margin-top:7px;color:#a9b9d9}.prediction-callout.up{color:#43efae}.prediction-callout.down{color:#ff6b96}.prediction-reason{font-size:10px;color:#93a6cb;line-height:1.4;margin-top:5px;min-height:27px}.prediction-stack{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}.prediction-stack>div{background:#080d1d;border:1px solid #27345b;border-radius:8px;padding:6px 7px}.prediction-stack span{display:block;font-size:8px;color:#8198c3;letter-spacing:.1em;font-weight:800}.prediction-stack b{display:block;font-size:12px;margin-top:4px;font-variant-numeric:tabular-nums}.momentum-card{margin-top:13px}.horizon-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:13px}.horizon-grid>div{padding:11px 9px;border:1px solid #293b68;border-radius:11px;background:#0b1024}.horizon-grid span{display:block;font-size:9px;letter-spacing:.12em;color:#8fa5d0;font-weight:800}.horizon-grid b{display:block;margin-top:7px;font-size:15px;font-variant-numeric:tabular-nums}.momentum-grid{margin-top:13px}.momentum-card .small{margin-top:12px}.game-card{margin-top:15px;padding:17px;background:linear-gradient(135deg,#11142d,#100d24 70%);border:1px solid #443d8e;border-radius:19px;box-shadow:0 0 26px #4d39c522}
 .game-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}
 .game-title{font-weight:850;letter-spacing:-.02em;font-size:16px}.game-score{font-size:11px;color:#a9b7d9;font-variant-numeric:tabular-nums}
 .game-wrap{position:relative;border:1px solid #303c72;border-radius:14px;overflow:hidden;background:linear-gradient(180deg,#111e43,#15102f)}
@@ -48,7 +48,7 @@ button:hover{filter:brightness(1.16)}
 .note{margin-top:15px;padding:13px 15px;background:#0e1024;border:1px solid #29365f;border-radius:13px;color:#aebcda;font-size:11px;line-height:1.6}
 .actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:14px}
 @media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}.focus-main{grid-template-columns:1fr}.direction-pill{width:100%}}
-@media(max-width:650px){.prediction-board{grid-template-columns:1fr}.horizon-grid{grid-template-columns:repeat(3,minmax(0,1fr))}} @media(max-width:480px){body{padding:17px 12px 28px}.grid,.metrics{grid-template-columns:1fr 1fr}.card{padding:14px}.market-focus{padding:17px}.timer{font-size:39px}.focus-foot{gap:10px}.grid .card:last-child{grid-column:1/-1}}
+@media(max-width:650px){.prediction-board{grid-template-columns:repeat(2,minmax(0,1fr))}.prediction-panel{padding:9px}.prediction-heading .label{font-size:8px;letter-spacing:.08em}.prediction-live{font-size:7px;padding:3px 5px}.prediction-callout{font-size:15px}.prediction-reason{font-size:9px;min-height:38px}.prediction-stack b{font-size:10px}.horizon-grid{grid-template-columns:repeat(3,minmax(0,1fr))}} @media(max-width:350px){.prediction-board{grid-template-columns:1fr}} @media(max-width:480px){body{padding:17px 12px 28px}.grid,.metrics{grid-template-columns:1fr 1fr}.card{padding:14px}.market-focus{padding:17px}.timer{font-size:39px}.focus-foot{gap:10px}.grid .card:last-child{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -125,7 +125,7 @@ button:hover{filter:brightness(1.16)}
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastSignal:"WAIT",lastLeader:"WAITING",flipCount:0,lastCallout:"",momentumScore:0,momentumStrength:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastSignal:"WAIT",lastLeader:"WAITING",flipCount:0,lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -183,6 +183,7 @@ button:hover{filter:brightness(1.16)}
     $("directionPill").textContent=above?"POSITIVE · ABOVE TARGET":"NEGATIVE · BELOW TARGET";
     $("directionPill").className="direction-pill"+(above?" above":"");
     $("distanceBar").style.width=Math.min(100,Math.abs(diff)/Math.max(state.target*.001,1)*100)+"%";
+    updateForecasts();
   }
   function tick(){
     const now=Date.now(),marketStart=boundaryAtOrBefore(now);
@@ -248,6 +249,7 @@ button:hover{filter:brightness(1.16)}
     const buy=state.trades.filter(t=>t.buy).reduce((a,t)=>a+t.q*t.price,0);
     const sell=state.trades.filter(t=>!t.buy).reduce((a,t)=>a+t.q*t.price,0);
     const flow=buy+sell?(buy-sell)/(buy+sell):0;
+    state.tradeFlow=flow;
     const blended=Math.max(-1,Math.min(1,score*.72+flow*.28));
     state.momentumScore=blended;state.momentumStrength=Math.round(Math.abs(blended)*100);
     const pct=Math.round(Math.abs(blended)*100);
@@ -277,60 +279,77 @@ button:hover{filter:brightness(1.16)}
     drawGame();
   }
 
-  function forecastLabel(score,minimum=.14){
+  function forecastLabel(score,minimum=.19){
     if(Math.abs(score)<minimum)return {label:"NO CLEAR EDGE",side:"WAIT",cls:"",confidence:Math.round(Math.abs(score)*100)};
-    return {label:score>0?"UP · POSITIVE FAVORED":"DOWN · NEGATIVE FAVORED",side:score>0?"POSITIVE":"NEGATIVE",cls:score>0?"up":"down",confidence:Math.min(95,Math.round(50+Math.abs(score)*45))};
+    return {label:score>0?"UP FAVORED TO WIN":"DOWN FAVORED TO WIN",side:score>0?"UP":"DOWN",cls:score>0?"up":"down",confidence:Math.min(90,Math.round(50+Math.abs(score)*38))};
   }
-  function updateForecasts(pct,flow){
-    const momentum=state.momentumScore;
-    const currentDiff=state.twap!==null&&state.target!==null?(state.twap-state.target)/Math.max(state.target*.00035,1):0;
-    const displacement=Math.max(-1,Math.min(1,currentDiff));
-    const currentScore=Math.max(-1,Math.min(1,displacement*.58+momentum*.42));
-    const nextScore=Math.max(-1,Math.min(1,momentum*.82+flow*.18));
-    const cur=forecastLabel(currentScore,.18),nxt=forecastLabel(nextScore,.16);
-    $("currentCallout").textContent=state.target===null?"WAITING FOR TARGET":cur.label;
-    $("currentCallout").className="prediction-callout "+(state.target===null?"":cur.cls);
-    $("currentReason").textContent=state.target===null?"Current-market forecast activates after the new target is captured":(cur.side==="WAIT"?"Price position and momentum are mixed":(cur.side+" lead · target distance weighted with short-term momentum"));
-    $("currentConfidence").textContent=state.target===null?"—":(cur.side==="WAIT"?"LOW EDGE":cur.confidence+"% · estimate");
-    $("currentMomentum").textContent=(momentum>=0?"UP ":"DOWN ")+Math.round(Math.abs(momentum)*100)+"/100";
+  function updateForecasts(){
+    const momentum=state.momentumScore,flow=state.tradeFlow;
+    const targetReady=state.target!==null&&state.twap!==null;
+    const normalizedGap=targetReady?Math.max(-1,Math.min(1,(state.twap-state.target)/Math.max(state.target*.00045,1))):0;
+    const currentScore=Math.max(-1,Math.min(1,normalizedGap*.62+momentum*.25+flow*.13));
+    const d60=priceChange(60),d180=priceChange(180);
+    const trendAgreement=d60===null||d180===null?0:(Math.sign(d60)===Math.sign(d180)?Math.sign(d60)*.12:0);
+    const nextScore=Math.max(-1,Math.min(1,momentum*.72+flow*.18+trendAgreement));
+    const cur=forecastLabel(currentScore,.20),nxt=forecastLabel(nextScore,.19);
+    $("currentCallout").textContent=!targetReady?"WAITING FOR TARGET":cur.side==="WAIT"?"NO CLEAR WINNER EDGE":cur.label;
+    $("currentCallout").className="prediction-callout "+(targetReady?cur.cls:"");
+    $("currentReason").textContent=!targetReady?"Waiting for this market's reference target":cur.side==="WAIT"?"Price vs target and momentum do not agree strongly":"Live target distance + momentum + aggressive trade flow · estimate only";
+    $("currentConfidence").textContent=!targetReady?"—":cur.side==="WAIT"?"LOW EDGE":cur.confidence+"% · estimate";
+    $("currentMomentum").textContent=(momentum>0?"UP ":momentum<0?"DOWN ":"FLAT ")+Math.round(Math.abs(momentum)*100)+"/100";
     $("currentMomentum").className=momentum>0?"up":momentum<0?"down":"";
-    $("nextCallout").textContent=nxt.label;
+    $("nextCallout").textContent=nxt.side==="WAIT"?"NO CLEAR EDGE":"NEXT: "+nxt.label.replace(" FAVORED TO WIN","");
     $("nextCallout").className="prediction-callout "+nxt.cls;
-    $("nextReason").textContent=nxt.side==="WAIT"?"Recent momentum has no reliable directional agreement":"Early estimate from live price speed and aggressive buy/sell flow";
+    $("nextReason").textContent=nxt.side==="WAIT"?"Recent momentum is mixed; no directional call for the next 5-minute market":"Preview from 5s–3m price momentum, trend agreement and buy/sell pressure";
     $("nextConfidence").textContent=nxt.side==="WAIT"?"LOW EDGE":nxt.confidence+"% · estimate";
-    $("nextMomentum").textContent=(momentum>=0?"UP ":"DOWN ")+Math.round(Math.abs(momentum)*100)+"/100";
+    $("nextMomentum").textContent=(momentum>0?"UP ":momentum<0?"DOWN ":"FLAT ")+Math.round(Math.abs(momentum)*100)+"/100";
     $("nextMomentum").className=momentum>0?"up":momentum<0?"down":"";
   }
 
-  // Autopilot bird: automatically follows the live directional lead through labelled gates.
+  // Autopilot bird: continuously follows the current market leader through matching gates.
   const canvas=$("birdGame"),ctx=canvas.getContext("2d");
-  let game={birdY:95,targetY:95,pipes:[],last:0,spawn:0},frame=0,raf=0;
-  function leader(){return state.twap!==null&&state.target!==null?(state.twap>=state.target?"POSITIVE":"NEGATIVE"):"WAITING"}
-  function resizeGame(){const dpr=Math.min(window.devicePixelRatio||1,2),r=canvas.getBoundingClientRect();canvas.width=Math.max(1,Math.floor(r.width*dpr));canvas.height=Math.max(1,Math.floor(r.height*dpr));ctx.setTransform(dpr,0,0,dpr,0,0);drawGame()}
+  let game={birdY:95,targetY:95,pipes:[],last:0,spawn:0},raf=0;
+  function leader(){return state.twap!==null&&state.target!==null?(state.twap>=state.target?"UP":"DOWN"):"WAITING"}
+  function resizeGame(){
+    const dpr=Math.min(window.devicePixelRatio||1,2),r=canvas.getBoundingClientRect();
+    canvas.width=Math.max(1,Math.floor(r.width*dpr));canvas.height=Math.max(1,Math.floor(r.height*dpr));
+    ctx.setTransform(dpr,0,0,dpr,0,0);drawGame();
+  }
   function drawGame(){
     const r=canvas.getBoundingClientRect(),w=r.width||600,h=r.height||190;ctx.clearRect(0,0,w,h);
     const bg=ctx.createLinearGradient(0,0,0,h);bg.addColorStop(0,"#101e42");bg.addColorStop(1,"#21123c");ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
     ctx.globalAlpha=.2;ctx.fillStyle="#9abaff";for(let i=0;i<24;i++)ctx.fillRect((i*83+19)%w,(i*47+23)%h,2,2);ctx.globalAlpha=1;
-    const win=leader(),positive=win==="POSITIVE",color=positive?"#43efae":win==="NEGATIVE"?"#ff7099":"#a9b9d9",ground=h-12;
-    ctx.fillStyle=color;ctx.font="800 11px system-ui";ctx.fillText("LIVE LEAD: "+win,12,18);
+    const win=leader(),color=win==="UP"?"#43efae":win==="DOWN"?"#ff7099":"#a9b9d9",ground=h-12;
+    ctx.fillStyle=color;ctx.font="800 11px system-ui";ctx.fillText("CURRENT MARKET LEAD: "+win,12,18);
     ctx.fillStyle="#1b2850";ctx.fillRect(0,ground,w,12);
-    for(const p of game.pipes){const c=p.side==="POSITIVE"?"#24c98e":p.side==="NEGATIVE"?"#f05c91":"#8998bd";ctx.fillStyle=c;ctx.shadowColor=c;ctx.shadowBlur=9;ctx.fillRect(p.x,0,34,p.top);ctx.fillRect(p.x,p.top+p.gap,34,ground-p.top-p.gap);ctx.shadowBlur=0;ctx.fillStyle="#071020";ctx.font="900 8px system-ui";ctx.textAlign="center";ctx.fillText(p.side,p.x+17,Math.max(12,p.top-6));ctx.fillText(p.side,p.x+17,Math.min(ground-4,p.top+p.gap+13));ctx.textAlign="left"}
-    const bx=Math.min(100,w*.22),by=game.birdY;ctx.save();ctx.translate(bx,by);ctx.rotate(Math.max(-.25,Math.min(.3,(game.targetY-by)*.01)));ctx.fillStyle="#ffd45e";ctx.shadowColor="#ffc94a";ctx.shadowBlur=12;ctx.beginPath();ctx.ellipse(0,0,13,10,0,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(5,-3,4,0,Math.PI*2);ctx.fill();ctx.fillStyle="#14213d";ctx.beginPath();ctx.arc(6,-3,1.8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#ff8b55";ctx.beginPath();ctx.moveTo(11,1);ctx.lineTo(19,4);ctx.lineTo(11,6);ctx.closePath();ctx.fill();ctx.restore();
+    for(const p of game.pipes){
+      const c=p.side==="UP"?"#24c98e":p.side==="DOWN"?"#f05c91":"#8998bd";
+      ctx.fillStyle=c;ctx.shadowColor=c;ctx.shadowBlur=9;ctx.fillRect(p.x,0,34,p.top);ctx.fillRect(p.x,p.top+p.gap,34,ground-p.top-p.gap);ctx.shadowBlur=0;
+      ctx.fillStyle="#071020";ctx.font="900 8px system-ui";ctx.textAlign="center";ctx.fillText(p.side,p.x+17,Math.max(12,p.top-6));ctx.fillText(p.side,p.x+17,Math.min(ground-4,p.top+p.gap+13));ctx.textAlign="left";
+    }
+    const bx=Math.min(100,w*.22),by=game.birdY;
+    ctx.save();ctx.translate(bx,by);ctx.rotate(Math.max(-.25,Math.min(.3,(game.targetY-by)*.012)));
+    ctx.fillStyle="#ffd45e";ctx.shadowColor="#ffc94a";ctx.shadowBlur=12;ctx.beginPath();ctx.ellipse(0,0,13,10,0,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+    ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(5,-3,4,0,Math.PI*2);ctx.fill();ctx.fillStyle="#14213d";ctx.beginPath();ctx.arc(6,-3,1.8,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle="#ff8b55";ctx.beginPath();ctx.moveTo(11,1);ctx.lineTo(19,4);ctx.lineTo(11,6);ctx.closePath();ctx.fill();ctx.restore();
   }
   function loop(ts){
-    const r=canvas.getBoundingClientRect(),w=r.width,h=r.height,dt=game.last?Math.min((ts-game.last)/16.67,2):1;game.last=ts;frame++;
-    const win=leader(),want=win==="POSITIVE"?h*.34:win==="NEGATIVE"?h*.66:h*.5;
+    const r=canvas.getBoundingClientRect(),w=r.width,h=r.height;
+    if(!w||!h){raf=requestAnimationFrame(loop);return}
+    const dt=game.last?Math.min((ts-game.last)/16.67,2):1;game.last=ts;
+    const win=leader(),want=win==="UP"?h*.34:win==="DOWN"?h*.66:h*.5;
     game.targetY=want;game.birdY+=(want-game.birdY)*Math.min(.12*dt,.24);
-    game.spawn+=dt;if(game.spawn>82){game.spawn=0;const gap=90,top=20+Math.random()*Math.max(10,h-gap-42);game.pipes.push({x:w+12,top,gap,side:win})}
-    for(const p of game.pipes)p.x-=2.15*dt;game.pipes=game.pipes.filter(p=>p.x>-45);
-    // The gates are a live visualization, not obstacles; the bird never crashes or needs input.
-    game.pipes.forEach(p=>{if(leader()!=="WAITING")p.side=leader()});
+    game.spawn+=dt;
+    if(game.spawn>78){game.spawn=0;const gap=92,top=Math.max(20,Math.min(h-12-gap-8,want-gap/2));game.pipes.push({x:w+12,top,gap,side:win});}
+    for(const p of game.pipes){p.x-=2.15*dt;p.side=win}
+    game.pipes=game.pipes.filter(p=>p.x>-45);
     drawGame();raf=requestAnimationFrame(loop);
   }
+  function startBirdAnimation(){if(!raf)raf=requestAnimationFrame(loop)}
   window.addEventListener("resize",resizeGame);
 
   $("reconnect").addEventListener("click",connect);
-  resizeGame();connect();connectTrades();tick();updateMomentum();state.timer=setInterval(tick,500);
+  resizeGame();startBirdAnimation();connect();connectTrades();tick();updateMomentum();state.timer=setInterval(tick,500);
 })();
 
 </script>

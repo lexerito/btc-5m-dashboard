@@ -108,6 +108,8 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     <div class="prediction-stack">
       <div><span>RAW SIGNAL SCORE</span><b id="currentConfidence">—</b></div>
       <div><span>MOMENTUM</span><b id="currentMomentum">—</b></div>
+      <div><span>TIME-ADJUSTED STRIKE PRESSURE</span><b id="timeAdjustedGap">COLLECTING</b></div>
+      <div><span>POLYMARKET ODDS + BOOK</span><b id="polySignalRead">STALE</b></div>
     </div>
   </div>
 </section>
@@ -370,25 +372,49 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 
   }
 
-  function forecastLabel(score,minimum=.19){
+  function recentPriceRange(seconds){
+    const now=Date.now(),cut=now-seconds*1000;
+    const rows=state.prices.filter(x=>x.ts>=cut&&x.ts<=now);
+    if(rows.length<10||rows[rows.length-1].ts-rows[0].ts<15000)return null;
+    let lo=Infinity,hi=-Infinity;
+    for(const row of rows){lo=Math.min(lo,row.price);hi=Math.max(hi,row.price)}
+    return Number.isFinite(hi-lo)&&hi>lo?hi-lo:null;
+  }
+  function forecastLabel(score,minimum=.28){
     if(Math.abs(score)<minimum)return {label:"NO CLEAR EDGE",side:"WAIT",cls:"",confidence:Math.round(Math.abs(score)*100)};
     return {label:score>0?"UP EDGE":"DOWN EDGE",side:score>0?"UP":"DOWN",cls:score>0?"up":"down",confidence:Math.min(100,Math.round(Math.abs(score)*100))};
   }
   function updateForecasts(){
-    const momentum=state.momentumScore,flow=state.tradeFlow;
-    const twapFresh=state.twapTs!==null&&Date.now()-state.twapTs<5000;
-    const targetReady=state.target!==null&&state.twap!==null&&state.targetTs===boundaryAtOrBefore(Date.now())&&twapFresh&&state.crossFresh&&state.crossConfirmed;
-    const normalizedGap=targetReady?Math.max(-1,Math.min(1,(state.twap-state.target)/Math.max(state.target*.00035,1))):0;
-    const rawScore=Math.max(-1,Math.min(1,normalizedGap*.48+momentum*.22+flow*.10+state.crossScore*.20));
-    const currentScore=rawScore*(1-state.exhaustionRisk*.35);
-    const cur=forecastLabel(currentScore,.22);
-    $("currentCallout").textContent=!targetReady?(!twapFresh?"WAIT · TWAP FEED STALE":state.target===null||state.targetTs!==boundaryAtOrBefore(Date.now())?"WAIT · EXACT TARGET REQUIRED":!state.crossFresh?"WAIT · CROSS-VENUE FEED STALE":"WAIT · VENUES DISAGREE"):cur.side==="WAIT"?"NO CLEAR EDGE":cur.label;
-    $("currentCallout").className="prediction-callout "+(targetReady?cur.cls:"");
-    $("currentReason").textContent=!targetReady?"A fresh exact TWAP60 target and agreeing independent venue feeds are required":cur.side==="WAIT"?"Price distance, momentum and cross-venue flow are not strong enough":state.exhaustionRisk>.6?"Short-term impulse is reversing; directional score has been reduced":"Exact settlement-reference distance + BTC momentum + trade flow + cross-venue confirmation · heuristic only";
-    $("currentConfidence").textContent=!targetReady?"—":cur.side==="WAIT"?"WEAK":cur.confidence+"/100 · raw score";
+    const now=Date.now(),momentum=state.momentumScore,flow=state.tradeFlow;
+    const twapFresh=state.twapTs!==null&&now-state.twapTs<5000;
+    const currentStart=boundaryAtOrBefore(now);
+    const range60=recentPriceRange(60);
+    const secondsLeft=Math.max(1,(nextBoundary(now)-now)/1000);
+    // Scale the strike gap by the recent 60-second realised range and time left.
+    // This replaces a fixed percentage threshold that treated early and late calls alike.
+    const expectedMove=range60===null?null:Math.max(range60*Math.sqrt(secondsLeft/60),state.target?state.target*.000025:1);
+    const gapScore=state.target!==null&&state.twap!==null&&expectedMove!==null?Math.tanh((state.twap-state.target)/expectedMove):0;
+    const polyFresh=poly.restAt>0&&now-poly.restAt<7000&&poly.upMid!==null&&poly.downMid!==null;
+    const polyOdds=polyFresh?Math.max(-1,Math.min(1,(poly.upMid-poly.downMid)/.30)):0;
+    const polyBook=polyFresh?Math.max(-1,Math.min(1,poly.imbalance/.20)):0;
+    const polyScore=polyOdds*.70+polyBook*.30;
+    const targetReady=state.target!==null&&state.twap!==null&&state.targetTs===currentStart&&twapFresh&&range60!==null&&state.crossFresh&&state.crossConfirmed&&polyFresh;
+    const rawScore=Math.max(-1,Math.min(1,gapScore*.38+momentum*.18+flow*.08+state.crossScore*.16+polyScore*.20));
+    const currentScore=rawScore*(1-state.exhaustionRisk*.45);
+    const cur=forecastLabel(currentScore,.28);
+    const conflict=cur.side!=="WAIT"&&(Math.sign(currentScore)!==state.crossDirection||(Math.abs(polyScore)>.35&&Math.sign(polyScore)!==Math.sign(currentScore)));
+    const finalSide=conflict?"WAIT":cur.side;
+    const waitingReason=!twapFresh?"WAIT · TWAP FEED STALE":state.target===null||state.targetTs!==currentStart?"WAIT · EXACT TARGET REQUIRED":!range60?"WAIT · BUILDING VOLATILITY SAMPLE":!state.crossFresh?"WAIT · CROSS-VENUE FEED STALE":!state.crossConfirmed?"WAIT · VENUES DISAGREE":!polyFresh?"WAIT · POLYMARKET BOOK STALE":"";
+    $("currentCallout").textContent=!targetReady?waitingReason:conflict?"WAIT · SIGNAL CONFLICT":finalSide==="WAIT"?"NO CLEAR EDGE":cur.label;
+    $("currentCallout").className="prediction-callout "+(targetReady&&!conflict?cur.cls:"");
+    $("currentReason").textContent=!targetReady?"A fresh exact strike, 60-second volatility sample, independent venue confirmation and live Polymarket book are required":conflict?"Composite direction conflicts with cross-venue flow or Polymarket contract pricing":finalSide==="WAIT"?"Time-adjusted strike distance, momentum and order flow do not clear the signal threshold":state.exhaustionRisk>.6?"Short-term impulse is reversing; the directional score is reduced":"Time-adjusted Chainlink strike gap + multi-venue tape + Polymarket odds and book pressure · heuristic only";
+    $("currentConfidence").textContent=!targetReady?"—":conflict?"CONFLICT":finalSide==="WAIT"?"WEAK":cur.confidence+"/100 · raw score";
     $("currentMomentum").textContent=(momentum>0?"UP ":momentum<0?"DOWN ":"FLAT ")+Math.round(Math.abs(momentum)*100)+"/100";
     $("currentMomentum").className=momentum>0?"up":momentum<0?"down":"";
-    captureCheckpoint(currentScore,cur.side);
+    $("timeAdjustedGap").textContent=expectedMove===null?"COLLECTING":(gapScore>=0?"+":"")+Math.round(gapScore*100)+" pressure · ±$"+fmt(expectedMove);
+    $("polySignalRead").textContent=!polyFresh?"STALE":(polyScore>.12?"UP ":polyScore<-.12?"DOWN ":"MIXED ")+Math.round(Math.abs(polyScore)*100)+"/100";
+    $("polySignalRead").className=polyFresh?(polyScore>.12?"up":polyScore<-.12?"down":""):"";
+    captureCheckpoint(currentScore,finalSide);
   }
 
   const LAB_KEY="btc5m-market-lab-v2",TWAP_KEY="btc5m-twap-history-v2";
@@ -721,6 +747,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     if(verdict){verdict.textContent=aligned?side+" PRICE + BOOK PRESSURE AGREE":Math.abs(imbalance)<=.08?"NO CLEAR ORDER-BOOK EDGE":"PRICE AND BOOK DISAGREE · CAUTION";verdict.className="poly-verdict "+(aligned?(side==="UP"?"up":"down"):"")}
     const age=poly.restAt?((Date.now()-poly.restAt)/1000).toFixed(1):"—";
     polyText("polyDetail","REST snapshot "+age+"s ago · "+(poly.wsConnected?"WebSocket connected":"WebSocket reconnecting")+" · midpoint is indicative, not a calibrated win probability");
+    updateForecasts();
   }
   function startPolymarketMarketData(){
     discoverPolyMarket();

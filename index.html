@@ -34,7 +34,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:13px}
 .metric-value{font-size:21px;font-weight:800;margin-top:8px}
 .bar{height:6px;background:#242747;border-radius:10px;margin-top:12px;overflow:hidden}.bar span{display:block;height:100%;width:0;background:linear-gradient(90deg,#5574ff,#35d9ff);border-radius:10px;transition:width .2s}
-.prediction-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0}.prediction-panel{min-width:0;border:1px solid #35457b;border-radius:13px;padding:10px 12px;background:linear-gradient(145deg,#12152e,#0b1022 80%);box-shadow:inset 0 0 22px #3145a018}.next-panel{border-color:#55418a;background:linear-gradient(145deg,#17132f,#0d1024 80%)}.prediction-heading{display:flex;justify-content:space-between;align-items:center;gap:7px}.prediction-live{font-size:8px;font-weight:900;letter-spacing:.12em;color:#9fb5ff;border:1px solid #465b9a;border-radius:20px;padding:4px 7px}.prediction-callout{font-size:clamp(15px,2vw,20px);font-weight:900;letter-spacing:-.025em;margin-top:7px;color:#a9b9d9}.prediction-callout.up{color:#43efae}.prediction-callout.down{color:#ff6b96}.prediction-reason{font-size:10px;color:#93a6cb;line-height:1.4;margin-top:5px;min-height:27px}.prediction-stack{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}.prediction-stack>div{background:#080d1d;border:1px solid #27345b;border-radius:8px;padding:6px 7px}.prediction-stack span{display:block;font-size:8px;color:#8198c3;letter-spacing:.1em;font-weight:800}.prediction-stack b{display:block;font-size:12px;margin-top:4px;font-variant-numeric:tabular-nums}.momentum-card{margin-top:13px}.horizon-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:13px}.horizon-grid>div{padding:11px 9px;border:1px solid #293b68;border-radius:11px;background:#0b1024}.horizon-grid span{display:block;font-size:9px;letter-spacing:.12em;color:#8fa5d0;font-weight:800}.horizon-grid b{display:block;margin-top:7px;font-size:15px;font-variant-numeric:tabular-nums}.momentum-grid{margin-top:13px}.momentum-card .small{margin-top:12px}@media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}.focus-main{grid-template-columns:1fr}.direction-pill{width:100%}}
+.prediction-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:10px 0}.prediction-panel{min-width:0;border:1px solid #35457b;border-radius:13px;padding:10px 12px;background:linear-gradient(145deg,#12152e,#0b1022 80%);box-shadow:inset 0 0 22px #3145a018}.next-panel{border-color:#55418a;background:linear-gradient(145deg,#17132f,#0d1024 80%)}.prediction-heading{display:flex;justify-content:space-between;align-items:center;gap:7px}.prediction-live{font-size:8px;font-weight:900;letter-spacing:.12em;color:#9fb5ff;border:1px solid #465b9a;border-radius:20px;padding:4px 7px}.prediction-callout{font-size:clamp(15px,2vw,20px);font-weight:900;letter-spacing:-.025em;margin-top:7px;color:#a9b9d9}.prediction-callout.up{color:#43efae}.prediction-callout.down{color:#ff6b96}.prediction-reason{font-size:10px;color:#93a6cb;line-height:1.4;margin-top:5px;min-height:27px}.prediction-stack{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:7px}.prediction-stack>div{background:#080d1d;border:1px solid #27345b;border-radius:8px;padding:6px 7px}.prediction-stack span{display:block;font-size:8px;color:#8198c3;letter-spacing:.1em;font-weight:800}.prediction-stack b{display:block;font-size:12px;margin-top:4px;font-variant-numeric:tabular-nums}.momentum-card{margin-top:13px}.horizon-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;margin-top:13px}.horizon-grid>div{padding:11px 9px;border:1px solid #293b68;border-radius:11px;background:#0b1024}.horizon-grid span{display:block;font-size:9px;letter-spacing:.12em;color:#8fa5d0;font-weight:800}.horizon-grid b{display:block;margin-top:7px;font-size:15px;font-variant-numeric:tabular-nums}.momentum-grid{margin-top:13px;grid-template-columns:repeat(4,minmax(0,1fr))}.momentum-card .small{margin-top:12px}@media(max-width:760px){.grid{grid-template-columns:1fr 1fr}.metrics{grid-template-columns:1fr 1fr}.focus-main{grid-template-columns:1fr}.direction-pill{width:100%}}
 @media(max-width:650px){.prediction-board{grid-template-columns:repeat(2,minmax(0,1fr))}.prediction-panel{padding:9px}.prediction-heading .label{font-size:8px;letter-spacing:.08em}.prediction-live{font-size:7px;padding:3px 5px}.prediction-callout{font-size:15px}.prediction-reason{font-size:9px;min-height:38px}.prediction-stack b{font-size:10px}.horizon-grid{grid-template-columns:repeat(3,minmax(0,1fr))}} @media(max-width:350px){.prediction-board{grid-template-columns:1fr}} @media(max-width:480px){body{padding:17px 12px 28px}.grid,.metrics{grid-template-columns:1fr 1fr}.card{padding:14px}.market-focus{padding:17px}.timer{font-size:39px}.focus-foot{gap:10px}.grid .card:last-child{grid-column:1/-1}}
 
 /* Polymarket live market data */
@@ -122,6 +122,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
   <div class="card"><div class="label">Momentum signal</div><div id="momentumSignal" class="metric-value">COLLECTING</div><div id="momentumExplain" class="small">Building live price and trade-flow history</div></div>
   <div class="card"><div class="label">Directional agreement</div><div id="agreement" class="metric-value">—</div><div class="bar"><span id="agreementBar"></span></div><div id="agreementDetail" class="small">Short and longer horizons</div></div>
   <div class="card"><div class="label">Trade pressure · 60s</div><div id="tradePressure" class="metric-value">—</div><div id="tradePressureDetail" class="small">Binance aggressor buy vs sell volume</div></div>
+  <div class="card"><div class="label">Momentum health</div><div id="exhaustionSignal" class="metric-value">COLLECTING</div><div id="exhaustionDetail" class="small">Comparing the latest 5-second impulse with the prior 5 seconds</div></div>
 </section>
 <section class="card momentum-card">
   <div class="label">LIVE MOMENTUM · PRICE CHANGE BY HORIZON</div>
@@ -194,7 +195,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,twapHistory:[],journal:[],activeRecord:null,lastTwapPersist:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,twapHistory:[],journal:[],activeRecord:null,lastTwapPersist:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -335,6 +336,21 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const flow=buy+sell?(buy-sell)/(buy+sell):0;
     state.tradeFlow=flow;
     const blended=Math.max(-1,Math.min(1,score*.72+flow*.28));
+    const shortMove=priceChange(5),tenMove=priceChange(10);
+    const priorMove=shortMove!==null&&tenMove!==null?tenMove-shortMove:null;
+    let exhaustion=0,health="COLLECTING",healthDetail="Need two complete 5-second price windows";
+    if(shortMove!==null&&priorMove!==null){
+      if(Math.abs(shortMove)>.5&&Math.abs(priorMove)>.5&&Math.sign(shortMove)!==Math.sign(priorMove)){
+        exhaustion=.78;health="REVERSAL PRESSURE";healthDetail="Latest 5s move opposes the previous 5s move";
+      }else if(Math.abs(priorMove)>1&&Math.sign(shortMove)===Math.sign(priorMove)&&Math.abs(shortMove)<Math.abs(priorMove)*.55){
+        exhaustion=.48;health="LOSING FORCE";healthDetail="Same direction, but the latest 5s impulse has faded";
+      }else if(Math.abs(priorMove)>.5&&Math.sign(shortMove)===Math.sign(priorMove)&&Math.abs(shortMove)>Math.abs(priorMove)*1.35){
+        health="ACCELERATING";healthDetail="Latest 5s impulse is expanding";
+      }else{health="STEADY";healthDetail="No strong acceleration or exhaustion pattern";}
+    }
+    state.exhaustionRisk=exhaustion;
+    $("exhaustionSignal").textContent=health;$("exhaustionSignal").className="metric-value "+(exhaustion>.6?"down":exhaustion>.2?"":"up");
+    $("exhaustionDetail").textContent=healthDetail;
     state.momentumScore=blended;state.momentumStrength=Math.round(Math.abs(blended)*100);
     const pct=Math.round(Math.abs(blended)*100);
     let signal="MIXED",cls="";
@@ -363,11 +379,12 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const twapFresh=state.twapTs!==null&&Date.now()-state.twapTs<5000;
     const targetReady=state.target!==null&&state.twap!==null&&state.targetTs===boundaryAtOrBefore(Date.now())&&twapFresh&&state.crossFresh&&state.crossConfirmed;
     const normalizedGap=targetReady?Math.max(-1,Math.min(1,(state.twap-state.target)/Math.max(state.target*.00035,1))):0;
-    const currentScore=Math.max(-1,Math.min(1,normalizedGap*.48+momentum*.22+flow*.10+state.crossScore*.20));
+    const rawScore=Math.max(-1,Math.min(1,normalizedGap*.48+momentum*.22+flow*.10+state.crossScore*.20));
+    const currentScore=rawScore*(1-state.exhaustionRisk*.35);
     const cur=forecastLabel(currentScore,.22);
     $("currentCallout").textContent=!targetReady?(!twapFresh?"WAIT · TWAP FEED STALE":state.target===null||state.targetTs!==boundaryAtOrBefore(Date.now())?"WAIT · EXACT TARGET REQUIRED":!state.crossFresh?"WAIT · CROSS-VENUE FEED STALE":"WAIT · VENUES DISAGREE"):cur.side==="WAIT"?"NO CLEAR EDGE":cur.label;
     $("currentCallout").className="prediction-callout "+(targetReady?cur.cls:"");
-    $("currentReason").textContent=!targetReady?"A fresh exact TWAP60 target and agreeing independent venue feeds are required":cur.side==="WAIT"?"Price distance, momentum and cross-venue flow are not strong enough":"Exact settlement-reference distance + BTC momentum + trade flow + cross-venue confirmation · heuristic only";
+    $("currentReason").textContent=!targetReady?"A fresh exact TWAP60 target and agreeing independent venue feeds are required":cur.side==="WAIT"?"Price distance, momentum and cross-venue flow are not strong enough":state.exhaustionRisk>.6?"Short-term impulse is reversing; directional score has been reduced":"Exact settlement-reference distance + BTC momentum + trade flow + cross-venue confirmation · heuristic only";
     $("currentConfidence").textContent=!targetReady?"—":cur.side==="WAIT"?"WEAK":cur.confidence+"/100 · raw score";
     $("currentMomentum").textContent=(momentum>0?"UP ":momentum<0?"DOWN ":"FLAT ")+Math.round(Math.abs(momentum)*100)+"/100";
     $("currentMomentum").className=momentum>0?"up":momentum<0?"down":"";

@@ -193,7 +193,7 @@ button:hover{filter:brightness(1.16)}
     ws.onmessage=e=>{let t;try{t=JSON.parse(e.data)}catch(_){return}
       const ts=Number(t.T||Date.now()),q=Number(t.q||0),price=Number(t.p||0);
       if(!Number.isFinite(q)||!Number.isFinite(price))return;
-      state.trades.push({ts,q,buy:!t.m,price});pruneHistory(ts);updateMomentum();
+      addPriceSample(ts,price);state.trades.push({ts,q,buy:!t.m,price});pruneHistory(ts);updateMomentum();
     };
     ws.onclose=()=>{setTimeout(()=>{if(state.tradeWs===ws)connectTrades()},2500)};
     ws.onerror=()=>{try{ws.close()}catch(_){}};

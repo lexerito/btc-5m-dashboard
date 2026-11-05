@@ -92,6 +92,36 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .poly-verdict.down{background:#3b1428;border:1px solid #ec5686;color:#ff82a7;box-shadow:0 0 28px #ec568620}
 .poly-verdict:not(.up):not(.down){background:#171a2c;border:1px solid #3b4567;color:#aebcda}
 @media(max-width:650px){body{padding:14px 12px 24px}.market-focus{padding:16px}.focus-main{grid-template-columns:1fr}.direction-pill{min-width:0}.poly-market{padding:15px}}
+
+
+/* Live settlement chart + second-by-second directional pressure */
+.live-chart-card{display:block!important;margin:0 0 13px;border:1px solid #4a5598;background:linear-gradient(145deg,#10172e,#090d1c 78%);padding:16px 17px;box-shadow:0 12px 38px #0005,0 0 28px #5143b51c}
+.chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.chart-subtitle{font-size:10px;color:#92a6d0;margin-top:5px;line-height:1.5}
+#liveChart{width:100%;height:286px;margin-top:10px;border:1px solid #202d50;border-radius:11px;overflow:hidden;background:#090d1b}
+.chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px;color:#95a9cf;font-size:9px;font-weight:800;letter-spacing:.07em}
+.chart-legend span{display:inline-flex;align-items:center;gap:6px}
+.chart-legend i{display:inline-block;width:17px;height:3px;border-radius:4px}
+.legend-twap{background:#9b82ff}.legend-spot{background:#42c7ff}.legend-target{height:0!important;border-top:2px dashed #f1cb79}
+.live-momentum-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:12px;margin-top:14px;align-items:stretch}
+.momentum-leader-box{border:1px solid #34436c;border-radius:12px;padding:13px;background:#0b1123;min-width:0}
+.momentum-leader-value{font-size:clamp(19px,3vw,27px);font-weight:950;letter-spacing:-.03em;margin-top:7px;color:#b5c4e2}
+.momentum-leader-value.up{color:#4aefb2}.momentum-leader-value.down{color:#ff7298}
+.momentum-leader-detail{font-size:10px;color:#8fa4ca;line-height:1.5;margin-top:7px}
+.momentum-score-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.momentum-score-box{border:1px solid #2d426b;border-radius:11px;padding:11px;background:#0b1123;min-width:0}
+.momentum-score-box.up-box{border-color:#22684f}.momentum-score-box.down-box{border-color:#78364f}
+.momentum-score-box span{display:block;font-size:9px;font-weight:850;letter-spacing:.1em;color:#9bb0d5}
+.momentum-score-box b{display:block;font-size:clamp(23px,3vw,31px);font-weight:950;margin-top:6px;font-variant-numeric:tabular-nums}
+.momentum-score-box.up-box b{color:#4aefb2}.momentum-score-box.down-box b{color:#ff7298}
+.momentum-score-box small{display:block;font-size:9px;color:#879bbf;line-height:1.4;margin-top:4px}
+.pressure-track{display:flex;gap:2px;height:8px;background:#222a46;border-radius:20px;overflow:hidden;margin-top:12px}
+.pressure-track .up-fill{height:100%;background:linear-gradient(90deg,#18885f,#4aefb2);transition:width .25s}
+.pressure-track .down-fill{height:100%;background:linear-gradient(90deg,#ff7298,#a63e68);transition:width .25s}
+.chart-foot{font-size:9px;color:#8398be;line-height:1.5;margin-top:9px}
+.chart-foot a{color:#a9baff;text-decoration:none}
+@media(max-width:620px){.live-chart-card{padding:13px}.live-momentum-layout{grid-template-columns:1fr}#liveChart{height:245px}.momentum-score-box{padding:9px}}
+
 </style>
 </head>
 <body>
@@ -113,6 +143,44 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     <div id="directionPill" class="direction-pill">WAITING FOR TARGET</div>
   </div>
   <div class="focus-foot"><span>Live TWAP: <b id="liveTwapInline">—</b></span><span>Distance: <b id="distance">—</b></span><span>Next reset: <b>every 5 minutes UTC</b></span></div>
+</section>
+
+
+<section class="card live-chart-card">
+  <div class="chart-head">
+    <div>
+      <div class="label">LIVE BTC PRICE ACTION · CHAINLINK</div>
+      <div class="chart-subtitle">The TWAP60 line is the settlement reference. Chainlink spot shows the faster underlying move.</div>
+    </div>
+    <span id="chartStatus" class="poly-live">WAITING FOR CHAINLINK</span>
+  </div>
+  <div id="liveChart" aria-label="Live Chainlink BTC price and 60-second time-weighted average chart"></div>
+  <div class="chart-legend">
+    <span><i class="legend-twap"></i>CHAINLINK TWAP60</span>
+    <span><i class="legend-spot"></i>CHAINLINK BTC/USD SPOT</span>
+    <span><i class="legend-target"></i>PRICE TO BEAT</span>
+  </div>
+  <div class="live-momentum-layout">
+    <div class="momentum-leader-box">
+      <div class="label">STRONGER SIDE · ROLLING 60 SECONDS</div>
+      <div id="liveMomentumLeader" class="momentum-leader-value">COLLECTING DATA</div>
+      <div id="liveMomentumDetail" class="momentum-leader-detail">Waiting for fresh one-second Chainlink observations.</div>
+    </div>
+    <div class="momentum-score-grid">
+      <div class="momentum-score-box up-box">
+        <span>POSITIVE / UP MOMENTUM</span>
+        <b id="upMomentumScore">—</b>
+        <small id="upMomentumTicks">— rising seconds</small>
+      </div>
+      <div class="momentum-score-box down-box">
+        <span>NEGATIVE / DOWN MOMENTUM</span>
+        <b id="downMomentumScore">—</b>
+        <small id="downMomentumTicks">— falling seconds</small>
+      </div>
+    </div>
+  </div>
+  <div class="pressure-track"><div id="pressureUpBar" class="up-fill" style="width:50%"></div><div id="pressureDownBar" class="down-fill" style="width:50%"></div></div>
+  <div id="momentumFeedDetail" class="chart-foot">The momentum split is a relative strength reading, not a win probability. Each distinct Chainlink second is counted once. Powered by <a href="https://www.tradingview.com/lightweight-charts/" target="_blank" rel="noopener">TradingView Lightweight Charts™</a>.</div>
 </section>
 
 <section class="prediction-board">
@@ -207,11 +275,12 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 <div class="actions"><button id="reconnect">↻ Reconnect live feeds</button><span class="small">Live data connection · No API key required</span></div>
 <div class="note"><b>Settlement rule:</b> Polymarket BTC 5-minute markets resolve using Chainlink BTC/USD TWAP60 at the exact start and end of the interval. The dashboard only accepts the exact timestamped start observation; if it was not captured or recovered from the recent feed replay / browser history, the signal stays WAIT. Coinbase and Hyperliquid are confirmation feeds, not settlement sources. Scores are heuristics, not calibrated probabilities. No outcome is guaranteed.</div>
 
+<script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,twapHistory:[],journal:[],activeRecord:null,lastTwapPersist:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,journal:[],activeRecord:null,lastTwapPersist:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -249,7 +318,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
           $("twapTime").textContent="Observed "+new Date(ts).toLocaleTimeString();
           addTwapObservation(ts,value);updateDirection();
         }else if(msg.topic==="crypto_prices_chainlink"&&symbol==="btc/usd"){
-          state.chainlink=value;$("chainlink").textContent="$"+fmt(value);
+          state.chainlink=value;$("chainlink").textContent="$"+fmt(value);addChainlinkObservation(ts,value);
         }else if(msg.topic==="crypto_prices"&&symbol==="btcusdt"){
           state.binance=value;$("binance").textContent="$"+fmt(value);
           addPriceSample(ts,value);updateMomentum();
@@ -422,6 +491,218 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     captureCheckpoint(score,side);
   }
 
+
+  // Chainlink spot observations are kept separate from exchange prices so the
+  // momentum meter can measure the same oracle family used by the market.
+  function addChainlinkObservation(ts,value){
+    if(!Number.isFinite(ts)||!Number.isFinite(value)||value<=0)return;
+    const second=Math.floor(ts/1000)*1000;
+    const idx=state.chainlinkHistory.findIndex(x=>Math.floor(x.ts/1000)*1000===second);
+    if(idx>=0){state.chainlinkHistory[idx]={ts:second,value};}
+    else state.chainlinkHistory.push({ts:second,value});
+    state.chainlinkHistory.sort((a,b)=>a.ts-b.ts);
+    const cutoff=Date.now()-600000;
+    state.chainlinkHistory=state.chainlinkHistory.filter(x=>x.ts>=cutoff);
+    if(state.chainlinkHistory.length>700)state.chainlinkHistory=state.chainlinkHistory.slice(-650);
+    updateLiveChartSeries(state.spotSeries,state.chainlinkHistory,second,value);
+  }
+
+  function updateLiveChartSeries(series,history,ts,value){
+    if(!series)return;
+    const point={time:Math.floor(ts/1000),value};
+    const last=history.length?Math.floor(history[history.length-1].ts/1000):0;
+    try{
+      if(point.time>=last)series.update(point);
+      else series.setData(history.map(x=>({time:Math.floor(x.ts/1000),value:x.value})));
+    }catch(_){
+      try{series.setData(history.map(x=>({time:Math.floor(x.ts/1000),value:x.value})));}catch(__){}
+    }
+  }
+
+  function setChartWindow(startMs){
+    if(!state.liveChart)return;
+    const start=Math.floor(startMs/1000);
+    try{state.liveChart.timeScale().setVisibleRange({from:start,to:start+300});}catch(_){}
+  }
+
+  function setChartTargetLine(){
+    if(!state.twapSeries||state.target===null||typeof LightweightCharts==="undefined")return;
+    try{
+      if(state.chartTargetLine)state.twapSeries.removePriceLine(state.chartTargetLine);
+      state.chartTargetLine=state.twapSeries.createPriceLine({
+        price:state.target,color:"#f1cb79",lineWidth:2,
+        lineStyle:LightweightCharts.LineStyle.Dashed,
+        axisLabelVisible:true,title:"PRICE TO BEAT"
+      });
+    }catch(_){}
+  }
+
+  function initLiveChart(){
+    const container=$("liveChart");
+    if(!container)return;
+    if(typeof LightweightCharts==="undefined"){
+      $("chartStatus").textContent="CHART LIBRARY UNAVAILABLE";
+      $("chartStatus").className="poly-live bad";
+      return;
+    }
+    try{
+      const L=LightweightCharts;
+      state.liveChart=L.createChart(container,{
+        autoSize:true,height:286,
+        layout:{background:{type:"solid",color:"#090d1b"},textColor:"#91a6cf",fontFamily:"Inter,system-ui,sans-serif"},
+        grid:{vertLines:{color:"#18213c"},horzLines:{color:"#18213c"}},
+        rightPriceScale:{borderColor:"#2b3b61",scaleMargins:{top:.13,bottom:.13}},
+        timeScale:{borderColor:"#2b3b61",timeVisible:true,secondsVisible:true,rightOffset:3,barSpacing:7},
+        crosshair:{mode:L.CrosshairMode.Normal,vertLine:{color:"#52628e",labelBackgroundColor:"#29365f"},horzLine:{color:"#52628e",labelBackgroundColor:"#29365f"}},
+        localization:{priceFormatter:p=>"$"+Number(p).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2})}
+      });
+      state.twapSeries=state.liveChart.addSeries(L.LineSeries,{
+        color:"#9b82ff",lineWidth:3,title:"Chainlink TWAP60",
+        priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:true
+      });
+      state.spotSeries=state.liveChart.addSeries(L.LineSeries,{
+        color:"#42c7ff",lineWidth:1,title:"Chainlink BTC/USD",
+        priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:true
+      });
+      const start=boundaryAtOrBefore(Date.now()),from=start-15000;
+      state.twapSeries.setData(state.twapHistory.filter(x=>x.ts>=from).map(x=>({time:Math.floor(x.ts/1000),value:x.value})));
+      state.spotSeries.setData(state.chainlinkHistory.filter(x=>x.ts>=from).map(x=>({time:Math.floor(x.ts/1000),value:x.value})));
+      if(state.target!==null)setChartTargetLine();
+      setChartWindow(start);
+      $("chartStatus").textContent="CHAINLINK STREAM · LIVE";
+      $("chartStatus").className="poly-live ok";
+    }catch(err){
+      $("chartStatus").textContent="CHART INITIALIZATION ERROR";
+      $("chartStatus").className="poly-live bad";
+      $("momentumFeedDetail").textContent="Chart could not initialize: "+String(err.message||err);
+    }
+  }
+
+  function deltaFromHistory(rows,seconds){
+    if(!rows||rows.length<2)return null;
+    const last=rows[rows.length-1],cut=last.ts-seconds*1000;
+    for(let i=rows.length-2;i>=0;i--){
+      if(rows[i].ts<=cut)return last.value-rows[i].value;
+    }
+    return null;
+  }
+
+  function averageAbsoluteStep(rows){
+    if(!rows||rows.length<2)return 0;
+    let sum=0,count=0;
+    for(let i=1;i<rows.length;i++){
+      const dt=rows[i].ts-rows[i-1].ts;
+      if(dt>0&&dt<=2500){sum+=Math.abs(rows[i].value-rows[i-1].value);count++;}
+    }
+    return count?sum/count:0;
+  }
+
+  function weightedPriceImpulse(rows,horizons,weights,scale){
+    let total=0,used=0;
+    horizons.forEach((seconds,i)=>{
+      const delta=deltaFromHistory(rows,seconds);
+      if(delta===null)return;
+      total+=Math.tanh(delta/scale)*weights[i];
+      used+=weights[i];
+    });
+    return used?total/used:null;
+  }
+
+  function venueTradeFlow(trades,now,windowMs){
+    let buy=0,sell=0;
+    for(const t of trades||[]){
+      const ts=Number(t.ts),price=Number(t.price),qty=Number(t.q??t.size);
+      if(!Number.isFinite(ts)||now-ts<0||now-ts>windowMs||!(price>0)||!(qty>0))continue;
+      const notional=price*qty;
+      if(t.buy)buy+=notional;else sell+=notional;
+    }
+    const total=buy+sell;
+    return total>0?{ratio:(buy-sell)/total,total}:null;
+  }
+
+  function combinedTradeFlow(now,windowMs){
+    const values=[
+      venueTradeFlow(state.trades,now,windowMs),
+      venueTradeFlow(state.coinbaseTrades,now,windowMs),
+      venueTradeFlow(state.hlTrades,now,windowMs)
+    ].filter(Boolean);
+    if(!values.length)return null;
+    return values.reduce((sum,x)=>sum+x.ratio,0)/values.length;
+  }
+
+  function updateLiveMomentum(){
+    const now=Date.now();
+    const spotAll=state.chainlinkHistory;
+    const latestSpot=spotAll.length?spotAll[spotAll.length-1]:null;
+    const latestTwap=state.twapHistory.length?state.twapHistory[state.twapHistory.length-1]:null;
+    const spotAge=latestSpot?Math.max(0,now-latestSpot.ts):Infinity;
+    const twapAge=latestTwap?Math.max(0,now-latestTwap.ts):Infinity;
+    const spotRows=spotAll.filter(x=>latestSpot&&x.ts>=latestSpot.ts-75000);
+    const twapRows=state.twapHistory.filter(x=>latestTwap&&x.ts>=latestTwap.ts-75000);
+
+    let upTicks=0,downTicks=0,flatTicks=0,upMove=0,downMove=0,samples=0;
+    for(let i=1;i<spotRows.length;i++){
+      const dt=spotRows[i].ts-spotRows[i-1].ts;
+      if(dt<=0||dt>2500)continue;
+      const change=spotRows[i].value-spotRows[i-1].value;
+      samples++;
+      if(change>.005){upTicks++;upMove+=change;}
+      else if(change<-.005){downTicks++;downMove+=Math.abs(change);}
+      else flatTicks++;
+    }
+
+    const spotScale=Math.max(averageAbsoluteStep(spotRows)*1.5,(latestSpot?.value||70000)*.000004,.25);
+    const twapScale=Math.max(averageAbsoluteStep(twapRows)*1.8,(latestTwap?.value||70000)*.000002,.20);
+    const spotImpulse=weightedPriceImpulse(spotRows,[1,3,5,15,30],[.10,.20,.25,.25,.20],spotScale);
+    const twapImpulse=weightedPriceImpulse(twapRows,[5,15,30,60],[.40,.30,.20,.10],twapScale);
+    const flow15=combinedTradeFlow(now,15000),flow60=combinedTradeFlow(now,60000);
+    const flowImpulse=flow15!==null&&flow60!==null?flow15*.7+flow60*.3:flow15!==null?flow15:flow60;
+
+    let total=0,weight=0;
+    if(spotImpulse!==null){total+=spotImpulse*.58;weight+=.58;}
+    if(twapImpulse!==null){total+=twapImpulse*.22;weight+=.22;}
+    if(flowImpulse!==null){total+=flowImpulse*.20;weight+=.20;}
+    const rawScore=weight?Math.max(-1,Math.min(1,total/weight)):0;
+    const fresh=!!latestSpot&&!!latestTwap&&spotAge<3500&&twapAge<6000&&spotRows.length>=5&&samples>=3;
+    if(!fresh){
+      $("liveMomentumLeader").textContent="WAIT · SYNCING FEEDS";
+      $("liveMomentumLeader").className="momentum-leader-value";
+      $("liveMomentumDetail").textContent="Chainlink spot age "+(Number.isFinite(spotAge)?(spotAge/1000).toFixed(1)+"s":"—")+" · TWAP60 age "+(Number.isFinite(twapAge)?(twapAge/1000).toFixed(1)+"s":"—");
+      $("upMomentumScore").textContent="—";$("downMomentumScore").textContent="—";
+      $("upMomentumTicks").textContent=upTicks+" rising seconds";
+      $("downMomentumTicks").textContent=downTicks+" falling seconds";
+      $("pressureUpBar").style.width="50%";$("pressureDownBar").style.width="50%";
+      $("chartStatus").textContent=latestSpot||latestTwap?"FEED DELAYED":"WAITING FOR CHAINLINK";
+      $("chartStatus").className="poly-live bad";
+      $("momentumFeedDetail").textContent="No directional reading while Chainlink data is stale or the one-second sample window is incomplete. Up/down counts include observed second-to-second price changes only.";
+      return;
+    }
+
+    state.liveMomentumEma=state.liveMomentumEma===null?rawScore:state.liveMomentumEma*.58+rawScore*.42;
+    const score=Math.max(-1,Math.min(1,state.liveMomentumEma));
+    const upShare=Math.round((score+1)*50),downShare=100-upShare;
+    const leader=score>=.12?"POSITIVE / UP LEADING":score<=-.12?"NEGATIVE / DOWN LEADING":"NO CLEAR MOMENTUM LEADER";
+    const leaderEl=$("liveMomentumLeader");
+    leaderEl.textContent=leader;
+    leaderEl.className="momentum-leader-value "+(score>=.12?"up":score<=-.12?"down":"");
+    $("upMomentumScore").textContent=upShare+"/100";
+    $("downMomentumScore").textContent=downShare+"/100";
+    $("upMomentumTicks").textContent=upTicks+" rising seconds · +$"+fmt(upMove);
+    $("downMomentumTicks").textContent=downTicks+" falling seconds · −$"+fmt(downMove);
+    $("pressureUpBar").style.width=upShare+"%";
+    $("pressureDownBar").style.width=downShare+"%";
+    const lastMove=spotRows.length>1?spotRows[spotRows.length-1].value-spotRows[spotRows.length-2].value:null;
+    $("liveMomentumDetail").textContent="60s observed: "+upTicks+" up / "+downTicks+" down / "+flatTicks+" flat · last Chainlink tick "+(lastMove===null?"—":(lastMove>=0?"+$":"−$")+fmt(Math.abs(lastMove)));
+    $("chartStatus").textContent="CHAINLINK LIVE · "+samples+" SAMPLES / 60S";
+    $("chartStatus").className="poly-live ok";
+    $("momentumFeedDetail").textContent="Updated each second · Chainlink spot "+(spotAge/1000).toFixed(1)+"s old · TWAP60 "+(twapAge/1000).toFixed(1)+"s old · score blends spot speed, settlement-TWAP direction and available exchange taker flow. Relative strength only, not a win probability.";
+  }
+
+  function startLiveMomentum(){
+    updateLiveMomentum();
+    state.liveMomentumTimer=setInterval(updateLiveMomentum,1000);
+  }
+
   const LAB_KEY="btc5m-market-lab-v2",TWAP_KEY="btc5m-twap-history-v2";
   function loadMarketLab(){
     try{state.journal=JSON.parse(localStorage.getItem(LAB_KEY)||"[]");if(!Array.isArray(state.journal))state.journal=[]}catch(_){state.journal=[]}
@@ -441,6 +722,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const existing=state.twapHistory.find(x=>x.ts===ts);
     if(existing)existing.value=value;else state.twapHistory.push({ts,value});
     state.twapHistory.sort((a,b)=>a.ts-b.ts);
+    updateLiveChartSeries(state.twapSeries,state.twapHistory,ts,value);
     const cutoff=Date.now()-900000;state.twapHistory=state.twapHistory.filter(x=>x.ts>=cutoff);
     const start=boundaryAtOrBefore(ts);
     // At a five-minute boundary, first close the previous market using its
@@ -456,6 +738,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       $("targetTime").textContent="Exact Chainlink TWAP60 start observation · "+new Date(ts).toLocaleTimeString();
       state.activeRecord={start,target:value,checkpoints:{}};
       saveMarketLab();
+      setChartTargetLine();setChartWindow(start);
       updateDirection();
     }
     if(ts%5000<1000)persistTwapHistory();
@@ -777,7 +1060,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 
   $("reconnect").addEventListener("click",connect);
   $("exportLab").addEventListener("click",exportMarketLab);
-  loadMarketLab();connect();connectTrades();startPolymarketMarketData();tick();updateMomentum();state.timer=setInterval(tick,500);
+  loadMarketLab();initLiveChart();connect();connectTrades();startCrossVenue();startPolymarketMarketData();tick();updateMomentum();startLiveMomentum();state.timer=setInterval(tick,500);
 })();
 
 </script>

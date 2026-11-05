@@ -400,7 +400,8 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
   function updateForecasts(){
     const now=Date.now(),latest=state.prices[state.prices.length-1];
     const priceFresh=!!latest&&now-latest.ts<3500;
-    const polyFresh=poly.lastDataAt>0&&now-poly.lastDataAt<9000&&poly.upMid!==null&&poly.downMid!==null;
+    const upBook=poly.books[poly.upId],downBook=poly.books[poly.downId];
+    const polyFresh=!!upBook&&!!downBook&&now-(upBook.updatedAt||0)<9000&&now-(downBook.updatedAt||0)<9000&&poly.upMid!==null&&poly.downMid!==null;
     const odds=Math.max(-1,Math.min(1,((poly.upMid??.5)-(poly.downMid??.5))/.24));
     const book=Math.max(-1,Math.min(1,(poly.imbalance||0)/.18));
     const momentum=state.momentumScore||0;
@@ -763,7 +764,10 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     discoverPolyMarket();
     poly.refresh=setInterval(discoverPolyMarket,5000);
     // WebSocket is the primary feed. REST is only a startup/recovery snapshot, not a competing poll loop.
-    poly.poll=setInterval(()=>{if(!poly.wsConnected||Date.now()-poly.lastDataAt>5000)refreshPolyBooks()},8000);
+    poly.poll=setInterval(()=>{
+      const now=Date.now(),u=poly.books[poly.upId],dn=poly.books[poly.downId];
+      if(!poly.wsConnected||!u||!dn||now-(u.updatedAt||0)>5000||now-(dn.updatedAt||0)>5000)refreshPolyBooks();
+    },8000);
     poly.watchdog=setInterval(()=>{
       if(poly.wsConnected&&poly.lastMsg&&Date.now()-poly.lastMsg>90000&&Date.now()-poly.restAt>12000){
         connectPolyBook();

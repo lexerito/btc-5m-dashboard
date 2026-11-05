@@ -161,7 +161,7 @@ button:hover{filter:brightness(1.16)}
     }
     // Capture the newest fresh TWAP shortly after each UTC 5-minute boundary.
     // This is intentionally labelled approximate; it is not an official oracle snapshot.
-    if(state.twap!==null&&state.twapTs!==null&&state.targetTs!==marketStart&&now>=marketStart+1200){
+    if(state.twap!==null&&state.twapTs!==null&&state.targetTs!==marketStart&&now>=marketStart+1200&&now<=marketStart+6500){
       const age=now-state.twapTs;
       if(age>=0&&age<=5000){
         state.target=state.twap;state.targetTs=marketStart;

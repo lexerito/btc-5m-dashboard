@@ -261,7 +261,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 </section>
 
 
-<section class="card flow-card">
+<section class="card flow-card" hidden style="display:none!important">
   <div class="feature-head">
     <div><div class="label">LIVE AGGRESSOR TAPE · LARGE BUYS / SELLS</div><div class="small">Binance USD-M futures + Binance spot + Coinbase + Hyperliquid</div></div>
     <span id="flowFeedStatus" class="feature-status">CONNECTING FUTURES TAPE</span>
@@ -372,7 +372,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 </section>
 
 
-<section class="card poly-market">
+<section class="card poly-market" hidden style="display:none!important">
   <div class="poly-head">
     <div><div class="label">POLYMARKET · LIVE CLOB ORDER BOOK</div><div id="polyMarketName" class="small">Finding the active BTC 5-minute market…</div></div>
     <span id="polyConnection" class="poly-live">DISCOVERING MARKET</span>
@@ -875,7 +875,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
   }
   function renderLargePrintFootprint(now=Date.now()){
     const canvas=$("largePrintCanvas"),host=$("largePrintChart");
-    if(!canvas||!host)return;
+    if(!canvas||!host||host.closest(".flow-card")?.hidden)return;
     const prints=state.flowTrades.filter(t=>t.ts>=now-120000&&t.ts<=now&&t.notional>=LARGE_PRINT_USD);
     const p30=largePrintWindow(30000,now),p10=largePrintWindow(10000,now);
     const put=(id,value,cls)=>{const el=$(id);if(el){el.textContent=value;el.className=cls||"";}};
@@ -958,7 +958,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     if(foot)foot.textContent="Each 5s column is split by price level: green = aggressive buys lifting asks, pink = aggressive sells hitting bids. Cell values are $K · dashed gold = current price to beat · chart volumes are uncapped.";
   }
   function renderFlowTape(){
-    const list=$("flowTapeList");if(!list)return;
+    const list=$("flowTapeList");if(!list||list.closest(".flow-card")?.hidden)return;
     list.textContent="";
     const items=state.alertFeed.slice(0,7);
     if(!items.length){

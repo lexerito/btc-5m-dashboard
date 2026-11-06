@@ -871,7 +871,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     }
     const total=buy+sell;
     return {buy,sell,rawBuy,rawSell,total,rawTotal:rawBuy+rawSell,delta:buy-sell,rawDelta:rawBuy-rawSell,
-      count:buyCount+sellCount,buyCount,sellCount,imbalance:total?(buy-sell)/total:0,venues:Array.from(venues)};
+      count:buyCount+sellCount,buyCount,sellCount,imbalance:total?(buy-sell)/total:null,venues:Array.from(venues)};
   }
   function renderLargePrintFootprint(now=Date.now()){
     const canvas=$("largePrintCanvas"),host=$("largePrintChart");

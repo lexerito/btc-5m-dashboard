@@ -135,6 +135,22 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .feature-stat span{display:block;font-size:9px;color:#90a5d0;font-weight:850;letter-spacing:.1em}
 .feature-stat b{display:block;font-size:clamp(16px,2.5vw,22px);margin-top:6px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .feature-stat small{display:block;color:#8196be;font-size:9px;margin-top:4px}
+.large-print-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px;margin-top:10px}
+.large-print-stat{padding:9px;border:1px solid #2e3d67;border-radius:9px;background:#080e1f;min-width:0}
+.large-print-stat span{display:block;font-size:8px;color:#90a5d0;font-weight:900;letter-spacing:.08em}
+.large-print-stat b{display:block;font-size:clamp(14px,2.2vw,19px);margin-top:5px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.large-print-stat.buy b{color:#49efb0}.large-print-stat.sell b{color:#ff769b}
+.large-print-leader{margin-top:8px;padding:10px 11px;border:1px solid #34456f;border-radius:9px;background:#0a1022;color:#bcc9e4;font-size:10px;font-weight:950;letter-spacing:.055em;line-height:1.5}
+.large-print-leader.buy{color:#58efb4;border-color:#276c55;background:#0c2827}
+.large-print-leader.sell{color:#ff83a4;border-color:#784052;background:#2a1323}
+.large-print-leader.mixed{color:#f2d28c;border-color:#77613b;background:#241f16}
+.large-print-legend{display:flex;gap:13px;flex-wrap:wrap;margin:10px 0 6px;color:#97acd0;font-size:8px;font-weight:900;letter-spacing:.07em}
+.large-print-legend span{display:inline-flex;align-items:center;gap:6px}
+.large-print-legend i{display:inline-block;width:8px;height:8px;border-radius:2px}
+.large-print-legend .buy-dot{background:#36d99a}.large-print-legend .sell-dot{background:#f2648d}
+.large-print-chart{height:260px;width:100%;border:1px solid #202d50;border-radius:9px;overflow:hidden;background:#090d1b}
+#largePrintCanvas{display:block;width:100%;height:100%}
+@media(max-width:620px){.large-print-summary{grid-template-columns:1fr 1fr}.large-print-chart{height:235px}}
 .flow-tape-list{display:grid;gap:7px;margin-top:11px}
 .flow-tape-row{display:grid;grid-template-columns:62px minmax(0,1fr) auto;align-items:center;gap:8px;padding:9px 10px;border:1px solid #2d3b61;border-radius:9px;background:#0a1021;font-size:10px}
 .flow-tape-row.buy{border-left:3px solid #36d99a}.flow-tape-row.sell{border-left:3px solid #f2648d}
@@ -259,7 +275,18 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     <div id="flowBurstStatus" class="small">NO LARGE-ORDER BURST DETECTED</div>
     <button id="flowAlertToggle" class="flow-toggle" type="button">ENABLE SOUND + BROWSER ALERTS</button>
   </div>
-  <div class="label" style="margin-top:13px">RECENT LARGE TAKER PRINTS · $75K+ ORDERS</div>
+  <div class="label" style="margin-top:13px">LARGE-PRINT FOOTPRINT · $75K+ AGGRESSOR ORDERS</div>
+  <div class="large-print-summary">
+    <div class="large-print-stat buy"><span>BUY NOTIONAL · 30S</span><b id="largePrintBuy">$0</b></div>
+    <div class="large-print-stat sell"><span>SELL NOTIONAL · 30S</span><b id="largePrintSell">$0</b></div>
+    <div class="large-print-stat"><span>NET LARGE-PRINT DELTA</span><b id="largePrintDelta">—</b></div>
+    <div class="large-print-stat"><span>PRINT COUNT · 30S</span><b id="largePrintCount">0</b></div>
+  </div>
+  <div id="largePrintLeader" class="large-print-leader">COLLECTING LARGE PRINTS · BUY / SELL LEADER NOT YET ESTABLISHED</div>
+  <div class="large-print-legend"><span><i class="buy-dot"></i> AGGRESSIVE BUY / ASK LIFT</span><span><i class="sell-dot"></i> AGGRESSIVE SELL / BID HIT</span><span>5S COLUMNS · PRICE LEVEL FOOTPRINT · 120S WINDOW</span></div>
+  <div id="largePrintChart" class="large-print-chart"><canvas id="largePrintCanvas" aria-label="Large aggressive buy and sell volume by price level and five-second time bucket"></canvas></div>
+  <div id="largePrintChartFoot" class="feature-foot">Each cell stacks large taker buy and sell notional at that price level. Stronger prints are brighter; dashed line marks the current price-to-beat.</div>
+  <div class="label" style="margin-top:13px">LATEST LARGE PRINTS · TAPE</div>
   <div id="flowTapeList" class="flow-tape-list"><div class="feature-muted">Waiting for large aggressive BTC buys or sells.</div></div>
   <div class="feature-foot">Binance aggregate trades combine fills from a single taker order. A BUY is an aggressive buyer; a SELL is an aggressive seller. Neither alone proves a new long or short—orders can also close or hedge positions.</div>
 </section>
@@ -715,6 +742,10 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const spotSurge=volumeSurgeFor(spotVenues,now),perpSurge=volumeSurgeFor(perpVenues,now);
     const surges=[spotSurge.ratio,perpSurge.ratio].filter(Number.isFinite);
     const volumeSurge=surges.length?Math.max(...surges):null;
+    const largePrint10=largePrintWindow(10000,now),largePrint30=largePrintWindow(30000,now),largePrint60=largePrintWindow(60000,now);
+    const largePrintScore=weightedWindows([largePrint10,largePrint30,largePrint60],[.48,.34,.18]);
+    const largePrintPulse=largePrint10.count>=2&&largePrint10.total>=200000&&Math.abs(largePrint10.imbalance)>=.38
+      ?(largePrint10.imbalance>0?"UP":"DOWN"):null;
 
     const latest=state.chainlinkHistory.length?state.chainlinkHistory[state.chainlinkHistory.length-1]:null;
     const priceRows=state.chainlinkHistory.filter(x=>latest&&x.ts>=now-90000);
@@ -746,12 +777,19 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const participationConfirmed=(volumeSurge!==null&&volumeSurge>=1.18)||independentNotional>=80000;
     // A turn requires independent spot + perp participation AND a price response.
     // Relative volume is helpful, but a mature historical baseline is not mandatory.
-    const fastTurnSide=alignedFlow&&priceConfirms&&independentCounts&&participationConfirmed
-      ?(flow30>0?"UP":"DOWN")
-      :null;
+    const largePrintPrice10=deltaFromHistory(priceRows,10);
+    const largePrintDirection=largePrintPulse==="UP"?1:largePrintPulse==="DOWN"?-1:0;
+    const largePrintCrossVenue=largePrint10.venues.length>=2||independentNotional>=80000;
+    const largePrintTurn=largePrintDirection!==0&&largePrintCrossVenue&&largePrint10.count>=2&&
+      largePrintPrice10!==null&&Math.sign(largePrintPrice10)===largePrintDirection&&Math.abs(largePrintPrice10)>noiseGate*.20&&
+      ((spot30&&Math.sign(spot30.imbalance)===largePrintDirection&&Math.abs(spot30.imbalance)>.16)||
+       (perp30&&Math.sign(perp30.imbalance)===largePrintDirection&&Math.abs(perp30.imbalance)>.16));
+    const fastTurnSide=largePrintTurn?(largePrintDirection>0?"UP":"DOWN"):
+      alignedFlow&&priceConfirms&&independentCounts&&participationConfirmed
+      ?(flow30>0?"UP":"DOWN"):null;
     return {
       updatedAt:now,spot30,spot120,spot300,perp30,perp120,perp300,
-      spotScore,perpScore,spotSurge,perpSurge,volumeSurge,price30,price60,
+      spotScore,perpScore,spotSurge,perpSurge,volumeSurge,largePrint10,largePrint30,largePrint60,largePrintScore,largePrintPulse,largePrintTurn,price30,price60,
       oi1m,oi5m,oiRaw,oiAge:state.hlOiHistory.length?now-state.hlOiHistory[state.hlOiHistory.length-1].ts:Infinity,
       longShortLiq,absorptionRaw,absorptionLabel,flow30,fastTurnSide,
       sourceCount:(spot30?.sources.length||0)+(perp30?.sources.length||0)
@@ -820,6 +858,104 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     }
     if(e.fastTurnSide)set("flowTurnRead","HIGH-VOLUME TURN CONFIRMED · "+e.fastTurnSide);
     else set("flowTurnRead","NO HIGH-VOLUME PRICE + DELTA TURN CONFIRMED");
+  }
+  function largePrintWindow(ms,now=Date.now()){
+    let buy=0,sell=0,rawBuy=0,rawSell=0,buyCount=0,sellCount=0;
+    const venues=new Set();
+    for(const t of state.flowTrades){
+      if(t.ts<now-ms||t.ts>now||t.notional<LARGE_PRINT_USD)continue;
+      const effective=Math.min(t.notional,350000);
+      venues.add(t.venue);
+      if(t.buy){buy+=effective;rawBuy+=t.notional;buyCount++;}
+      else{sell+=effective;rawSell+=t.notional;sellCount++;}
+    }
+    const total=buy+sell;
+    return {buy,sell,rawBuy,rawSell,total,rawTotal:rawBuy+rawSell,delta:buy-sell,rawDelta:rawBuy-rawSell,
+      count:buyCount+sellCount,buyCount,sellCount,imbalance:total?(buy-sell)/total:0,venues:Array.from(venues)};
+  }
+  function renderLargePrintFootprint(now=Date.now()){
+    const canvas=$("largePrintCanvas"),host=$("largePrintChart");
+    if(!canvas||!host)return;
+    const prints=state.flowTrades.filter(t=>t.ts>=now-120000&&t.ts<=now&&t.notional>=LARGE_PRINT_USD);
+    const p30=largePrintWindow(30000,now),p10=largePrintWindow(10000,now);
+    const put=(id,value,cls)=>{const el=$(id);if(el){el.textContent=value;el.className=cls||"";}};
+    put("largePrintBuy",p30.rawBuy?compactUsd(p30.rawBuy):"$0","large-print-stat buy");
+    put("largePrintSell",p30.rawSell?compactUsd(p30.rawSell):"$0","large-print-stat sell");
+    put("largePrintDelta",p30.count?(p30.rawDelta>=0?"+":"−")+compactUsd(p30.rawDelta):"—",p30.rawDelta>0?"up":p30.rawDelta<0?"down":"");
+    put("largePrintCount",String(p30.count),"");
+    const leader=$("largePrintLeader");
+    if(leader){
+      const side=p30.count>=2&&p30.total>=200000&&Math.abs(p30.imbalance)>=.18?(p30.imbalance>0?"BUY":"SELL"):"MIXED";
+      const share=p30.total?Math.round((side==="BUY"?p30.buy:side==="SELL"?p30.sell:Math.max(p30.buy,p30.sell))/p30.total*100):0;
+      leader.textContent=side==="BUY"?"BUYERS LEADING · "+share+"% OF LARGE-PRINT PRESSURE · "+p30.count+" PRINTS · 30S":
+        side==="SELL"?"SELLERS LEADING · "+share+"% OF LARGE-PRINT PRESSURE · "+p30.count+" PRINTS · 30S":
+        p30.count?"NO CLEAR LARGE-PRINT LEADER · "+p30.count+" PRINTS · WAIT FOR FOLLOW-THROUGH":"COLLECTING LARGE PRINTS · $75K+ ONLY";
+      leader.className="large-print-leader "+(side==="BUY"?"buy":side==="SELL"?"sell":"mixed");
+      if(p10.count>=2&&p10.total>=200000&&Math.abs(p10.imbalance)>=.38){
+        leader.textContent+=" · FAST 10S PRESSURE "+(p10.imbalance>0?"BUY":"SELL")+" "+Math.round(Math.abs(p10.imbalance)*100)+"%";
+      }
+    }
+    const rect=host.getBoundingClientRect(),width=Math.max(280,Math.floor(rect.width)),height=Math.max(190,Math.floor(rect.height));
+    const dpr=Math.min(2,window.devicePixelRatio||1);
+    if(canvas.width!==Math.round(width*dpr)||canvas.height!==Math.round(height*dpr)){
+      canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);
+    }
+    const ctx=canvas.getContext("2d");if(!ctx)return;
+    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,width,height);
+    ctx.fillStyle="#090d1b";ctx.fillRect(0,0,width,height);
+    const left=62,right=8,top=12,bottom=24,plotW=width-left-right,plotH=height-top-bottom;
+    const columns=24,colMs=5000,colW=plotW/columns;
+    const currentPrice=state.chainlinkHistory.length?state.chainlinkHistory[state.chainlinkHistory.length-1].value:(state.binance||75000);
+    const minPrice=prints.length?Math.min(...prints.map(x=>x.price)):currentPrice-100;
+    const maxPrice=prints.length?Math.max(...prints.map(x=>x.price)):currentPrice+100;
+    const span=Math.max(20,maxPrice-minPrice);
+    const step=span>1400?200:span>700?100:span>350?50:span>170?25:10;
+    const low=Math.floor(minPrice/step)*step-step,high=Math.ceil(maxPrice/step)*step+step;
+    const count=Math.max(3,Math.min(28,Math.round((high-low)/step)+1)),rowH=plotH/count;
+    const start=Math.floor((now-120000)/colMs)*colMs;
+    const cells=new Map();let maxCell=0;
+    for(const t of prints){
+      const col=Math.floor((t.ts-start)/colMs),priceBin=Math.floor(t.price/step)*step;
+      if(col<0||col>=columns)continue;
+      const key=col+":"+priceBin,cell=cells.get(key)||{buy:0,sell:0};
+      if(t.buy)cell.buy+=t.notional;else cell.sell+=t.notional;
+      cells.set(key,cell);maxCell=Math.max(maxCell,cell.buy+cell.sell);
+    }
+    ctx.font="9px ui-monospace,monospace";ctx.textBaseline="middle";
+    for(let r=0;r<count;r++){
+      const price=low+r*step,y=top+plotH-(r+1)*rowH;
+      ctx.fillStyle="#8196be";ctx.textAlign="right";ctx.fillText("$"+Math.round(price).toLocaleString("en-US"),left-7,y+rowH/2);
+      ctx.strokeStyle="#1a2542";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(left,y+rowH);ctx.lineTo(width-right,y+rowH);ctx.stroke();
+      for(let c=0;c<columns;c++){
+        const cell=cells.get(c+":"+price);if(!cell)continue;
+        const x=left+c*colW+1,w=Math.max(1,colW-2),half=w/2-1;
+        const buyIntensity=cell.buy?Math.min(1,cell.buy/(maxCell*.55)):0;
+        const sellIntensity=cell.sell?Math.min(1,cell.sell/(maxCell*.55)):0;
+        if(cell.buy){ctx.fillStyle="rgba(54,217,154,"+(.16+buyIntensity*.78)+")";ctx.fillRect(x,y+1,half,Math.max(2,rowH-2));}
+        if(cell.sell){ctx.fillStyle="rgba(242,100,141,"+(.16+sellIntensity*.78)+")";ctx.fillRect(x+half+2,y+1,half,Math.max(2,rowH-2));}
+        if(w>30&&rowH>13){
+          ctx.font="7px ui-monospace,monospace";ctx.textAlign="center";
+          if(cell.buy){ctx.fillStyle="#e0fff1";ctx.fillText(Math.round(cell.buy/1000),x+half/2,y+rowH/2);}
+          if(cell.sell){ctx.fillStyle="#ffe3eb";ctx.fillText(Math.round(cell.sell/1000),x+half+2+half/2,y+rowH/2);}
+          ctx.font="9px ui-monospace,monospace";
+        }
+      }
+    }
+    if(state.target!==null&&state.target>=low&&state.target<=high){
+      const y=top+plotH-((state.target-low)/step+.5)*rowH;
+      ctx.save();ctx.setLineDash([5,4]);ctx.strokeStyle="#f1cb79";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(width-right,y);ctx.stroke();ctx.restore();
+      ctx.fillStyle="#f1cb79";ctx.textAlign="left";ctx.font="8px ui-monospace,monospace";ctx.fillText("TARGET",left+3,Math.max(8,y-7));
+    }
+    ctx.textAlign="center";ctx.fillStyle="#8196be";ctx.font="8px ui-monospace,monospace";
+    for(const [secs,label] of [[120,"−120s"],[90,"−90s"],[60,"−60s"],[30,"−30s"],[0,"NOW"]]){
+      const x=left+plotW*(120-secs)/120;ctx.fillText(label,x,height-9);
+    }
+    if(!prints.length){
+      ctx.fillStyle="#8ea2c8";ctx.textAlign="center";ctx.font="11px system-ui,sans-serif";
+      ctx.fillText("Waiting for $75K+ aggressive prints · footprint updates every second",left+plotW/2,top+plotH/2);
+    }
+    const foot=$("largePrintChartFoot");
+    if(foot)foot.textContent="Each 5s column is split by price level: green = aggressive buys lifting asks, pink = aggressive sells hitting bids. Cell values are $K · dashed gold = current price to beat · chart volumes are uncapped.";
   }
   function renderFlowTape(){
     const list=$("flowTapeList");if(!list)return;
@@ -1114,6 +1250,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       clob:smoothRoundInput(memory,"clob",clobRaw,6500,now),
       spotFlow:smoothRoundInput(memory,"spotFlow",edge.spotScore,9000,now),
       perpFlow:smoothRoundInput(memory,"perpFlow",edge.perpScore,8500,now),
+      largePrint:smoothRoundInput(memory,"largePrint",edge.largePrintScore,2500,now),
       speed:smoothRoundInput(memory,"speed",spotRaw,6500,now),
       target:smoothRoundInput(memory,"target",targetRaw,14000,now),
       swing:smoothRoundInput(memory,"swing",swingRaw,16000,now),
@@ -1123,16 +1260,17 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 
     const progress=Math.max(0,Math.min(1,elapsed/300));
     const weights={
-      clob:.21-progress*.02,
-      spotFlow:.16,
-      perpFlow:.16,
-      speed:.14-progress*.02,
+      clob:.19-progress*.02,
+      spotFlow:.14,
+      perpFlow:.14,
+      largePrint:.10,
+      speed:.13-progress*.02,
       target:.14+progress*.08,
-      swing:.09,
-      oi:.06,
-      hl:.04
+      swing:.08,
+      oi:.05,
+      hl:.03
     };
-    const names={clob:"POLY CLOB",spotFlow:"SPOT CVD",perpFlow:"PERP CVD",speed:"CHAINLINK SPEED",target:"TWAP VS START",swing:"SWING STRUCTURE",oi:"OPEN INTEREST",hl:"HYPERLIQUID L2"};
+    const names={clob:"POLY CLOB",spotFlow:"SPOT CVD",perpFlow:"PERP CVD",largePrint:"LARGE-PRINT DELTA",speed:"CHAINLINK SPEED",target:"TWAP VS START",swing:"SWING STRUCTURE",oi:"OPEN INTEREST",hl:"HYPERLIQUID L2"};
     let weighted=0,totalWeight=0,valid=0;
     const inputs=[];
     for(const key of Object.keys(weights)){
@@ -1147,7 +1285,8 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const rawScore=totalWeight?Math.max(-1,Math.min(1,weighted/totalWeight+volumeBoost+absorptionAdjust)):0;
 
     const leaderSide=memory.leader;
-    const fastTurn=!!edge.fastTurnSide&&edge.fastTurnSide!==leaderSide;
+    const fastTurn=!!edge.fastTurnSide&&edge.fastTurnSide!==leaderSide&&
+      (edge.largePrintTurn||((edge.largePrint10?.count||0)>=2&&(edge.largePrint10?.total||0)>=200000));
     const scoreDt=memory.scoreUpdatedAt?Math.max(0,Math.min(5000,now-memory.scoreUpdatedAt)):1000;
     const scoreTau=fastTurn?4200:9500;
     const scoreAlpha=1-Math.exp(-scoreDt/scoreTau);
@@ -1254,9 +1393,12 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     );
     const side=confirmed?memory.leader:"WAIT";
 
+    const largePrintOpposes=memory.leader==="UP"
+      ?edge.largePrintScore!==null&&edge.largePrintScore<-.26
+      :memory.leader==="DOWN"&&edge.largePrintScore!==null&&edge.largePrintScore>.26;
     const flowOpposes=memory.leader==="UP"
-      ?edge.spotScore!==null&&edge.perpScore!==null&&edge.spotScore<-.22&&edge.perpScore<-.22
-      :memory.leader==="DOWN"&&edge.spotScore!==null&&edge.perpScore!==null&&edge.spotScore>.22&&edge.perpScore>.22;
+      ?(edge.spotScore!==null&&edge.perpScore!==null&&edge.spotScore<-.22&&edge.perpScore<-.22)||largePrintOpposes
+      :memory.leader==="DOWN"&&((edge.spotScore!==null&&edge.perpScore!==null&&edge.spotScore>.22&&edge.perpScore>.22)||largePrintOpposes);
     let holdText="HOLD READ · WAITING FOR INDEPENDENT FLOW",holdClass="";
     if(memory.leader==="WAIT"){
       holdText="NO ESTABLISHED EDGE · WAIT FOR SPOT + PERP CONFIRMATION";
@@ -1292,6 +1434,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 
     const forecast={
       side,leader:memory.leader,score,rawScore,up,down,votes,valid,elapsed,remaining,
+      largePrintScore:edge.largePrintScore,largePrintPulse:edge.largePrintPulse,largePrint10:edge.largePrint10,largePrint30:edge.largePrint30,
       targetGap,targetSideNow,targetAcceptance:targetAcceptance.ratio,targetAcceptanceSamples:targetAcceptance.count,
       updatedAt:now,persistence:leaderPersistence.ratio,samples:leaderPersistence.count,
       leaderAge,leadChanges:memory.leadChanges,candidate:memory.candidate,
@@ -1380,12 +1523,14 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     connectFuturesTakerTape();
     initFlowChart();
     updateSwingEngine();
+    renderLargePrintFootprint();
     renderFlowIntelligence();
     updateConfluenceForecast();
     state.flowTimer=setInterval(()=>{
       updateSwingEngine();
       renderFlowIntelligence();
       renderFlowPressure();
+      renderLargePrintFootprint();
     },1000);
   }
 

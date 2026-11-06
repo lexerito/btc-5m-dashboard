@@ -1285,6 +1285,9 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       (targetGap===null?"price-to-beat gap syncing":(targetGap>=0?"+$":"−$")+fmt(Math.abs(targetGap)))+
       " · 5m backdrop "+(contextFresh?contextSide+" "+Math.round(Math.abs(contextScore)*100)+"/100":"collecting")+
       " · score is evidence strength, not win probability.";
+    if(!memory.lastPersistAt||now-memory.lastPersistAt>=5000){
+      try{localStorage.setItem(ROUND_MEMORY_KEY,JSON.stringify({...memory,savedAt:now}));memory.lastPersistAt=now;}catch(_){}
+    }
     captureTrendCheckpoint(forecast);
   }
 
@@ -1575,7 +1578,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     state.liveMomentumTimer=setInterval(updateLiveMomentum,1000);
   }
 
-  const LAB_KEY="btc5m-market-lab-v2",TWAP_KEY="btc5m-twap-history-v2";
+  const LAB_KEY="btc5m-market-lab-v2",TWAP_KEY="btc5m-twap-history-v2",ROUND_MEMORY_KEY=LAB_KEY+":continuous-trend-v1";
   function loadMarketLab(){
     try{state.journal=JSON.parse(localStorage.getItem(LAB_KEY)||"[]");if(!Array.isArray(state.journal))state.journal=[]}catch(_){state.journal=[]}
     try{state.twapHistory=JSON.parse(localStorage.getItem(TWAP_KEY)||"[]").filter(x=>Number.isFinite(x.ts)&&Number.isFinite(x.value)&&Date.now()-x.ts<900000)}catch(_){state.twapHistory=[]}
@@ -1583,6 +1586,19 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     if(ref){state.target=ref.value;state.targetTs=start;$("targetLarge").textContent="$"+fmt(ref.value);$("targetTime").textContent="Recovered exact Chainlink TWAP60 start observation"}
     try{const active=JSON.parse(localStorage.getItem(LAB_KEY+":active")||"null");if(active&&active.start===start)state.activeRecord=active}catch(_){}
     if(ref&&!state.activeRecord)state.activeRecord={start,target:ref.value,checkpoints:{},trendCheckpoints:{}};
+    try{
+      const saved=JSON.parse(localStorage.getItem(ROUND_MEMORY_KEY)||"null"),age=saved?Date.now()-Number(saved.savedAt||0):Infinity;
+      if(saved&&age>=0&&age<900000&&Number.isFinite(saved.score)&&Array.isArray(saved.history)){
+        state.roundMemory=saved;
+        state.roundMemory.inputs={};
+        state.roundMemory.history=saved.history.filter(x=>Number.isFinite(x.ts)&&Date.now()-x.ts<600000);
+        state.roundMemory.lastSampleAt=0;
+        state.roundMemory.scoreUpdatedAt=Date.now()-Math.min(age,5000);
+        state.roundMemory.contextUpdatedAt=age<15000?Date.now()-age:Date.now()-15000;
+        state.roundMemory.candidate="WAIT";state.roundMemory.candidateSince=0;
+        if(age>120000){state.roundMemory.leader="WAIT";state.roundMemory.leaderSince=0;state.roundMemory.score=(Number(saved.contextScore)||0)*.5;}
+      }
+    }catch(_){state.roundMemory=null;}
     renderMarketLab();
   }
   function persistTwapHistory(){
@@ -1636,7 +1652,12 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     saveMarketLab();renderMarketLab();
   }
   function saveMarketLab(){
-    try{localStorage.setItem(LAB_KEY,JSON.stringify(state.journal));if(state.activeRecord)localStorage.setItem(LAB_KEY+":active",JSON.stringify(state.activeRecord));else localStorage.removeItem(LAB_KEY+":active")}catch(_){}
+    try{
+      localStorage.setItem(LAB_KEY,JSON.stringify(state.journal));
+      if(state.activeRecord)localStorage.setItem(LAB_KEY+":active",JSON.stringify(state.activeRecord));
+      else localStorage.removeItem(LAB_KEY+":active");
+      if(state.roundMemory)localStorage.setItem(ROUND_MEMORY_KEY,JSON.stringify({...state.roundMemory,savedAt:Date.now()}));
+    }catch(_){}
   }
   function renderMarketLab(){
     const done=state.journal.filter(x=>x.outcome);
@@ -1974,7 +1995,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 
   $("reconnect").addEventListener("click",connect);
   $("exportLab").addEventListener("click",exportMarketLab);
-  loadMarketLab();initLiveChart();initFlowChart();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();state.timer=setInterval(tick,500);
+  loadMarketLab();initLiveChart();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();state.timer=setInterval(tick,500);
 })();
 
 </script>

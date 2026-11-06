@@ -739,9 +739,14 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       :null;
     const longShortLiq=liquidationWindow(60000,now);
 
-    const alignedFlow=spot30&&perp30&&Math.sign(spot30.imbalance)===Math.sign(perp30.imbalance)&&Math.abs(spot30.imbalance)>.30&&Math.abs(perp30.imbalance)>.30;
-    const priceConfirms=price30!==null&&Math.sign(price30)===Math.sign(flow30||0)&&Math.abs(price30)>noiseGate*.45;
-    const fastTurnSide=alignedFlow&&priceConfirms&&volumeSurge!==null&&volumeSurge>=1.35
+    const alignedFlow=spot30&&perp30&&Math.sign(spot30.imbalance)===Math.sign(perp30.imbalance)&&Math.abs(spot30.imbalance)>.24&&Math.abs(perp30.imbalance)>.24;
+    const priceConfirms=price30!==null&&Math.sign(price30)===Math.sign(flow30||0)&&Math.abs(price30)>noiseGate*.40;
+    const independentNotional=Math.min(spot30?.total||0,perp30?.total||0);
+    const independentCounts=!!spot30&&!!perp30&&spot30.count>=4&&perp30.count>=4;
+    const participationConfirmed=(volumeSurge!==null&&volumeSurge>=1.18)||independentNotional>=80000;
+    // A turn requires independent spot + perp participation AND a price response.
+    // Relative volume is helpful, but a mature historical baseline is not mandatory.
+    const fastTurnSide=alignedFlow&&priceConfirms&&independentCounts&&participationConfirmed
       ?(flow30>0?"UP":"DOWN")
       :null;
     return {
@@ -1038,6 +1043,13 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const aligned=recent.filter(x=>x.turnSide===side).length;
     return {ratio:aligned/recent.length,count:recent.length};
   }
+  function roundTargetAcceptance(memory,side,windowMs=15000,marketStart=memory.marketStart){
+    if(side!=="UP"&&side!=="DOWN")return {ratio:0,count:0,aligned:0,total:0};
+    const sign=side==="UP"?1:-1,now=Date.now();
+    const recent=memory.history.filter(x=>x.marketStart===marketStart&&now-x.ts<=windowMs&&x.targetSide!==0&&Number.isFinite(x.targetSide));
+    const aligned=recent.filter(x=>x.targetSide===sign).length;
+    return {ratio:recent.length?aligned/recent.length:0,count:recent.length,aligned,total:recent.length};
+  }
   function updateConfluenceForecast(){
     if(!$("confluenceCall"))return;
     const now=Date.now(),start=boundaryAtOrBefore(now),elapsed=(now-start)/1000,remaining=Math.max(0,300-elapsed);
@@ -1090,6 +1102,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const targetScale=Math.max((latestSpot?.value||70000)*.00010,averageAbsoluteStep(spotRows)*8,12);
     const targetDeadband=Math.max(2.5,averageAbsoluteStep(spotRows)*2.2);
     const targetRaw=targetGap===null?null:Math.sign(targetGap)*Math.tanh(Math.max(0,Math.abs(targetGap)-targetDeadband)/targetScale);
+    const targetSideNow=targetGap===null||Math.abs(targetGap)<=targetDeadband?0:Math.sign(targetGap);
 
     const swingRaw=state.swingInfo&&state.swingInfo.ready&&now-state.swingInfo.updatedAt<4000?Math.max(-1,Math.min(1,state.swingInfo.score)):null;
     const hlBookFresh=!!state.hlBook.ts&&now-state.hlBook.ts<8000;
@@ -1134,9 +1147,9 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const rawScore=totalWeight?Math.max(-1,Math.min(1,weighted/totalWeight+volumeBoost+absorptionAdjust)):0;
 
     const leaderSide=memory.leader;
-    const fastTurn=!!edge.fastTurnSide&&edge.fastTurnSide!==leaderSide&&edge.volumeSurge>=1.35;
+    const fastTurn=!!edge.fastTurnSide&&edge.fastTurnSide!==leaderSide;
     const scoreDt=memory.scoreUpdatedAt?Math.max(0,Math.min(5000,now-memory.scoreUpdatedAt)):1000;
-    const scoreTau=fastTurn?4500:10500;
+    const scoreTau=fastTurn?4200:9500;
     const scoreAlpha=1-Math.exp(-scoreDt/scoreTau);
     memory.score=memory.scoreUpdatedAt?memory.score+scoreAlpha*(rawScore-memory.score):rawScore;
     memory.scoreUpdatedAt=now;
@@ -1154,7 +1167,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       memory.contextUpdatedAt=now;
     }
     if(!memory.lastSampleAt||now-memory.lastSampleAt>=850){
-      memory.history.push({ts:now,score:memory.score,context:rawContext===null?null:memory.contextScore,turnSide:edge.fastTurnSide||null});
+      memory.history.push({ts:now,score:memory.score,context:rawContext===null?null:memory.contextScore,turnSide:edge.fastTurnSide||null,targetSide:targetSideNow,marketStart:start});
       memory.history=memory.history.filter(x=>now-x.ts<=600000);
       memory.lastSampleAt=now;
     }
@@ -1194,32 +1207,50 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
         memory.candidate="WAIT";memory.candidateSince=0;
       }else{
         if(memory.candidate!==scoreSide){memory.candidate=scoreSide;memory.candidateSince=now;}
-        const persistence=fastTurn?roundTurnPersistence(memory,scoreSide,12000):roundPersistence(memory,scoreSide,20000);
-        const targetConflict=filtered.target!==null&&Math.abs(filtered.target)>.45&&Math.sign(filtered.target)!==(scoreSide==="UP"?1:-1);
-        const contextConflict=contextFresh&&Math.abs(contextScore)>.38&&Math.sign(contextScore)!==(scoreSide==="UP"?1:-1);
-        const requiredSeconds=fastTurn?7:(targetConflict?20:(contextConflict?24:(memory.leader==="WAIT"?12:14)));
-        const requiredPersistence=fastTurn?.58:(targetConflict?.78:contextConflict?.80:.65);
-        const minSamples=fastTurn?5:7;
         const alignedVotes=scoreSide==="UP"?up:down;
         const opposingVotes=scoreSide==="UP"?down:up;
-        const alignedCvd=scoreSide==="UP"
-          ?edge.spotScore!==null&&edge.perpScore!==null&&edge.spotScore>.28&&edge.perpScore>.28
-          :edge.spotScore!==null&&edge.perpScore!==null&&edge.spotScore<-.28&&edge.perpScore<-.28;
-        if(now-memory.candidateSince>=requiredSeconds*1000&&persistence.count>=minSamples&&persistence.ratio>=requiredPersistence&&alignedVotes>=3&&opposingVotes<=2&&(!fastTurn||alignedCvd)){
+        const turnSign=scoreSide==="UP"?1:-1;
+        const alignedCvd=!!edge.spot30&&!!edge.perp30&&Number.isFinite(edge.spot30.imbalance)&&Number.isFinite(edge.perp30.imbalance)&&
+          Math.sign(edge.spot30.imbalance)===turnSign&&Math.sign(edge.perp30.imbalance)===turnSign&&
+          Math.abs(edge.spot30.imbalance)>.22&&Math.abs(edge.perp30.imbalance)>.22&&
+          edge.price30!==null&&Math.sign(edge.price30)===turnSign;
+        const fastTurnEligible=fastTurn&&alignedCvd&&alignedVotes>=2&&opposingVotes<=3&&
+          (filtered.clob===null||filtered.clob*turnSign>-.62);
+        const persistence=fastTurnEligible
+          ?roundTurnPersistence(memory,scoreSide,14000)
+          :roundPersistence(memory,scoreSide,20000);
+        const targetConflict=filtered.target!==null&&Math.abs(filtered.target)>.45&&Math.sign(filtered.target)!==turnSign;
+        const contextConflict=contextFresh&&Math.abs(contextScore)>.38&&Math.sign(contextScore)!==turnSign;
+        const targetAcceptance=roundTargetAcceptance(memory,scoreSide,15000,start);
+        const targetAccepted=targetAcceptance.count>=5&&targetAcceptance.ratio>=.62;
+        // Balanced switching: accelerate only when independent spot/perp flow and price agree.
+        // The longer trend is context, not a veto against a verified local reversal.
+        const requiredSeconds=fastTurnEligible?7:(targetConflict?(targetAccepted?13:17):(contextConflict?(targetAccepted?14:18):(targetAccepted?10:12)));
+        const requiredPersistence=fastTurnEligible?.55:(targetConflict?.68:contextConflict?.70:.62);
+        const minSamples=fastTurnEligible?5:6;
+        const voteOK=fastTurnEligible
+          ?alignedVotes>=2&&opposingVotes<=3
+          :alignedVotes>=3&&opposingVotes<=2;
+        if(now-memory.candidateSince>=requiredSeconds*1000&&persistence.count>=minSamples&&persistence.ratio>=requiredPersistence&&voteOK){
           if(memory.leader!=="WAIT"&&memory.leader!==scoreSide)memory.leadChanges++;
           memory.leader=scoreSide;memory.leaderSince=now;
-          if(fastTurn){memory.turnHoldSide=scoreSide;memory.turnHoldUntil=now+15000;}
+          if(fastTurnEligible){memory.turnHoldSide=scoreSide;memory.turnHoldUntil=now+18000;}
           memory.candidate="WAIT";memory.candidateSince=0;
         }
       }
     }
 
     const leaderPersistence=memory.leader==="WAIT"?{ratio:0,count:0}:roundPersistence(memory,memory.leader,20000);
+    const targetAcceptance=memory.leader==="WAIT"?{ratio:0,count:0,aligned:0,total:0}:roundTargetAcceptance(memory,memory.leader,15000,start);
+    const oppositeLeader=memory.leader==="UP"?"DOWN":"UP";
+    const oppositeTargetAcceptance=memory.leader==="WAIT"?{ratio:0,count:0}:roundTargetAcceptance(memory,oppositeLeader,15000,start);
+    const leaderSign=memory.leader==="UP"?1:memory.leader==="DOWN"?-1:0;
+    const targetMatchesLeader=leaderSign!==0&&targetSideNow===leaderSign;
+    const targetHeld=targetAcceptance.count>=5&&targetAcceptance.ratio>=.55;
     const leaderAge=memory.leaderSince?Math.max(0,(now-memory.leaderSince)/1000):0;
     const scoreMatchesLeader=memory.leader!=="WAIT"&&Math.sign(score)===(memory.leader==="UP"?1:-1);
-    const confirmed=enough&&memory.leader!=="WAIT"&&(
-      (scoreMatchesLeader&&leaderPersistence.ratio>=.58&&Math.abs(score)>=.22)||
-      (turnHoldActive&&memory.turnHoldSide===memory.leader&&edge.volumeSurge!==null&&edge.volumeSurge>=1.15)
+    const confirmed=enough&&memory.leader!=="WAIT"&&scoreMatchesLeader&&leaderPersistence.ratio>=.55&&Math.abs(score)>=.20&&targetMatchesLeader&&(
+      targetHeld||(turnHoldActive&&memory.turnHoldSide===memory.leader)
     );
     const side=confirmed?memory.leader:"WAIT";
 
@@ -1229,8 +1260,11 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     let holdText="HOLD READ · WAITING FOR INDEPENDENT FLOW",holdClass="";
     if(memory.leader==="WAIT"){
       holdText="NO ESTABLISHED EDGE · WAIT FOR SPOT + PERP CONFIRMATION";
+    }else if(targetSideNow===-leaderSign&&oppositeTargetAcceptance.count>=5&&oppositeTargetAcceptance.ratio>=.62){
+      holdText="TARGET ACCEPTED "+oppositeLeader+" · "+Math.round(oppositeTargetAcceptance.ratio*100)+"% OF RECENT SAMPLES · "+memory.leader+" HOLD UNDER PRESSURE";
+      holdClass=oppositeLeader==="UP"?"up":"down";
     }else if(fastTurn&&flowOpposes){
-      holdText="REVERSAL PRESSURE · SPOT + PERP + PRICE TURNED AGAINST "+memory.leader;
+      holdText="REVERSAL PRESSURE · INDEPENDENT SPOT + PERP FLOW TURNED AGAINST "+memory.leader;
       holdClass="down";
     }else if(flowOpposes){
       holdText="REVERSAL WATCH · BOTH SPOT AND PERP FLOW OPPOSE "+memory.leader;
@@ -1238,11 +1272,17 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     }else if(edge.absorptionRaw!==null&&((memory.leader==="UP"&&edge.absorptionRaw<0)||(memory.leader==="DOWN"&&edge.absorptionRaw>0))){
       holdText="EDGE UNDER PRESSURE · AGGRESSIVE FLOW IS BEING ABSORBED";
       holdClass="down";
+    }else if(targetHeld&&targetMatchesLeader&&memory.leader==="UP"){
+      holdText="HOLD UP · PRICE ACCEPTED ABOVE PRICE TO BEAT · "+Math.round(targetAcceptance.ratio*100)+"% / 15s";
+      holdClass="up";
+    }else if(targetHeld&&targetMatchesLeader&&memory.leader==="DOWN"){
+      holdText="HOLD DOWN · PRICE ACCEPTED BELOW PRICE TO BEAT · "+Math.round(targetAcceptance.ratio*100)+"% / 15s";
+      holdClass="down";
     }else if(memory.leader==="UP"&&edge.spotScore!==null&&edge.perpScore!==null&&edge.spotScore>.16&&edge.perpScore>.16){
-      holdText="HOLD UP BIAS · SPOT + PERP CVD SUPPORT THE MOVE";
+      holdText="UP LEADER · SPOT + PERP CVD SUPPORT · WAITING FOR TARGET ACCEPTANCE";
       holdClass="up";
     }else if(memory.leader==="DOWN"&&edge.spotScore!==null&&edge.perpScore!==null&&edge.spotScore<-.16&&edge.perpScore<-.16){
-      holdText="HOLD DOWN BIAS · SPOT + PERP CVD SUPPORT THE MOVE";
+      holdText="DOWN LEADER · SPOT + PERP CVD SUPPORT · WAITING FOR TARGET ACCEPTANCE";
       holdClass="down";
     }else{
       holdText="LEADER "+memory.leader+" · FLOW MIXED · HOLD CONFIDENCE IN CHECK";
@@ -1252,7 +1292,8 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 
     const forecast={
       side,leader:memory.leader,score,rawScore,up,down,votes,valid,elapsed,remaining,
-      targetGap,updatedAt:now,persistence:leaderPersistence.ratio,samples:leaderPersistence.count,
+      targetGap,targetSideNow,targetAcceptance:targetAcceptance.ratio,targetAcceptanceSamples:targetAcceptance.count,
+      updatedAt:now,persistence:leaderPersistence.ratio,samples:leaderPersistence.count,
       leaderAge,leadChanges:memory.leadChanges,candidate:memory.candidate,
       spotCvd:edge.spotScore,perpCvd:edge.perpScore,volumeSurge:edge.volumeSurge,
       oi1m:edge.oi1m,absorption:edge.absorptionLabel,hold:holdText
@@ -1274,7 +1315,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       " · perp CVD "+fmtVote(filtered.perpFlow)+" · Chainlink speed "+fmtVote(filtered.speed)+
       " · swing "+fmtVote(filtered.swing)+" · OI "+fmtVote(filtered.oi)+
       " · TWAP gap "+(targetGap===null?"—":(targetGap>=0?"+$":"−$")+fmt(Math.abs(targetGap)))+
-      " · "+up+" UP votes / "+down+" DOWN votes · volume is separated by spot / perp venue.";
+      " · "+up+" UP votes / "+down+" DOWN votes · target acceptance "+(targetAcceptance.count?Math.round(targetAcceptance.ratio*100)+"% "+(memory.leader==="WAIT"?"leader":memory.leader)+" ("+targetAcceptance.count+" samples)":"collecting")+" · spot/perp volume kept independent.";
 
     const memoryEl=$("confluenceMemory");
     if(memoryEl){
@@ -1285,7 +1326,10 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       const contextText=contextFresh
         ?" · 5M BTC BACKDROP "+contextSide+" "+Math.round(Math.abs(contextScore)*100)+"/100 · "+Math.round(contextPersistence*100)+"% ALIGNMENT"
         :" · LONG BTC BACKDROP COLLECTING";
-      memoryEl.textContent=leaderText+contextText+" · "+memory.marketChanges+" ROLLOVERS / "+memory.leadChanges+" LEADER FLIPS";
+      const acceptanceText=targetAcceptance.count
+        ?" · TARGET HOLD "+Math.round(targetAcceptance.ratio*100)+"% "+memory.leader
+        :" · TARGET HOLD COLLECTING";
+      memoryEl.textContent=leaderText+contextText+acceptanceText+" · "+memory.marketChanges+" ROLLOVERS / "+memory.leadChanges+" LEADER FLIPS";
       memoryEl.className="confluence-memory "+(memory.leader==="UP"?"up":memory.leader==="DOWN"?"down":"wait");
     }
 
@@ -1320,6 +1364,8 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
           up:forecast.up,down:forecast.down,valid:forecast.valid,at:Date.now(),
           seconds:Math.round(elapsed),leader:forecast.leader,
           persistence:Math.round(forecast.persistence*1000)/1000,
+          targetAcceptance:Math.round((forecast.targetAcceptance||0)*1000)/1000,
+          targetAcceptanceSamples:forecast.targetAcceptanceSamples||0,
           leadChanges:forecast.leadChanges,leaderAge:Math.round(forecast.leaderAge),
           spotCvd:forecast.spotCvd,perpCvd:forecast.perpCvd,
           volumeSurge:forecast.volumeSurge,oi1m:forecast.oi1m,

@@ -1285,8 +1285,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const rawScore=totalWeight?Math.max(-1,Math.min(1,weighted/totalWeight+volumeBoost+absorptionAdjust)):0;
 
     const leaderSide=memory.leader;
-    const fastTurn=!!edge.fastTurnSide&&edge.fastTurnSide!==leaderSide&&
-      (edge.largePrintTurn||((edge.largePrint10?.count||0)>=2&&(edge.largePrint10?.total||0)>=200000));
+    const fastTurn=!!edge.fastTurnSide&&edge.fastTurnSide!==leaderSide;
     const scoreDt=memory.scoreUpdatedAt?Math.max(0,Math.min(5000,now-memory.scoreUpdatedAt)):1000;
     const scoreTau=fastTurn?4200:9500;
     const scoreAlpha=1-Math.exp(-scoreDt/scoreTau);

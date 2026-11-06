@@ -826,7 +826,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     if(!$("confluenceCall"))return;
     const now=Date.now(),start=boundaryAtOrBefore(now),elapsed=(now-start)/1000,remaining=Math.max(0,300-elapsed);
     if(!state.roundMemory||state.roundMemory.start!==start){
-      state.roundMemory={start,lastSampleAt:0,inputs:{},score:0,history:[],leader:"WAIT",leaderSince:0,candidate:"WAIT",candidateSince:0,weakSince:0,leadChanges:0};
+      state.roundMemory={start,lastSampleAt:0,inputs:{},score:0,history:[],leader:"WAIT",leaderSince:0,candidate:"WAIT",candidateSince:0,weakSince:0,leadChanges:0,scoreUpdatedAt:0};
     }
     const memory=state.roundMemory;
     const f30=robustFlowWindow(30000),f60=robustFlowWindow(60000);
@@ -918,9 +918,10 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       inputs.push({name:names[key],side:Math.abs(value)>=.18?Math.sign(value):0,value,weight:weights[key]});
     }
     const rawScore=totalWeight?Math.max(-1,Math.min(1,weighted/totalWeight)):0;
-    const dt=memory.lastSampleAt?Math.max(0,Math.min(5000,now-memory.lastSampleAt)):1000;
-    const scoreAlpha=1-Math.exp(-dt/11000);
-    memory.score=memory.lastSampleAt?memory.score+scoreAlpha*(rawScore-memory.score):rawScore;
+    const scoreDt=memory.scoreUpdatedAt?Math.max(0,Math.min(5000,now-memory.scoreUpdatedAt)):1000;
+    const scoreAlpha=1-Math.exp(-scoreDt/11000);
+    memory.score=memory.scoreUpdatedAt?memory.score+scoreAlpha*(rawScore-memory.score):rawScore;
+    memory.scoreUpdatedAt=now;
     if(!memory.lastSampleAt||now-memory.lastSampleAt>=850){
       memory.history.push({ts:now,score:memory.score});
       memory.history=memory.history.filter(x=>now-x.ts<=35000);
@@ -934,9 +935,12 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 
     if(scoreSide==="WAIT"){
       memory.candidate="WAIT";memory.candidateSince=0;
-      if(Math.abs(score)<.13){
+      const leaderSign=memory.leader==="UP"?1:-1;
+      const opposed=memory.leader!=="WAIT"&&score*leaderSign<-.13;
+      if(Math.abs(score)<.13||opposed){
         if(!memory.weakSince)memory.weakSince=now;
-        if(memory.leader!=="WAIT"&&now-memory.weakSince>=8500){
+        const clearAfter=opposed?6500:8500;
+        if(memory.leader!=="WAIT"&&now-memory.weakSince>=clearAfter){
           memory.leader="WAIT";memory.leaderSince=0;
         }
       }else memory.weakSince=0;
@@ -994,7 +998,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       const candidateAge=memory.candidateSince?Math.max(0,(now-memory.candidateSince)/1000):0;
       const leaderText=memory.leader==="WAIT"
         ?"ROUND LEADER · NOT ESTABLISHED"+(memory.candidate!=="WAIT"?" · "+memory.candidate+" CANDIDATE "+Math.floor(candidateAge)+"s":"")
-        :"ROUND LEADER · "+memory.leader+" HOLDING ADVANTAGE · "+Math.round(leaderPersistence.ratio*100)+"% OF LAST "+Math.round(leaderPersistence.count)+"s SAMPLES · "+Math.floor(leaderAge)+"s HELD";
+        :"ROUND LEADER · "+memory.leader+" "+(scoreMatchesLeader?"HOLDING ADVANTAGE":"ADVANTAGE UNDER PRESSURE")+" · "+Math.round(leaderPersistence.ratio*100)+"% PERSISTENCE · "+leaderPersistence.count+" RECENT SAMPLES · "+Math.floor(leaderAge)+"s HELD";
       memoryEl.textContent=leaderText+" · "+memory.leadChanges+" LEAD CHANGES";
       memoryEl.className="confluence-memory "+(memory.leader==="UP"?"up":memory.leader==="DOWN"?"down":"wait");
     }

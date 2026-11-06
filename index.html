@@ -576,9 +576,9 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     if(state.flowSeen[key])return;
     state.flowSeen[key]=ts;
     const trade={key,venue,ts,price,size,buy:!!isBuy,notional:price*size};
-    state.flowTrades.push(trade);
     const cutoff=Date.now()-120000;
-    while(state.flowTrades.length&&state.flowTrades[0].ts<cutoff)state.flowTrades.shift();
+    state.flowTrades=state.flowTrades.filter(x=>x.ts>=cutoff&&x.ts<=Date.now());
+    state.flowTrades.push(trade);
     if(state.flowTrades.length>25000)state.flowTrades=state.flowTrades.slice(-20000);
     if(trade.notional>=LARGE_PRINT_USD){
       state.largePrints.unshift(trade);
@@ -792,7 +792,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const bookFresh=!!upBook&&!!downBook&&upAge<9000&&downAge<9000&&poly.upMid!==null&&poly.downMid!==null;
     const clobRaw=bookFresh?Math.max(-1,Math.min(1,(poly.upMid-poly.downMid)/.20)):null;
     const depthRaw=bookFresh?Math.max(-1,Math.min(1,(poly.imbalance||0)/.35)):null;
-    const flowRaw=f10.total>=150000&&f10.count>=3?.68*f10.imbalance+.32*f30.imbalance:null;
+    const flowRaw=f10.total>=150000&&f10.count>=3?.68*f10.imbalance+.32*f30.imbalance:f30.total>=350000&&f30.count>=6?f30.imbalance:null;
     const spotRows=state.chainlinkHistory.filter(x=>latestSpot&&x.ts>=latestSpot.ts-45000);
     const spotScale=Math.max(averageAbsoluteStep(spotRows)*1.6,(latestSpot?.value||70000)*.000004,.30);
     const spotRaw=latestSpot&&spotAge<3500&&spotRows.length>=5?weightedPriceImpulse(spotRows,[1,3,5,15],[.10,.25,.35,.30],spotScale):null;
@@ -1222,7 +1222,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       }
       if(m.channel==="market_trades")for(const ev of (m.events||[]))for(const t of (ev.trades||[])){
         const p=Number(t.price),size=Number(t.size),ts=Date.parse(t.time)||now;
-        if(p>0&&size>0){state.coinbaseTrades.push({ts,price:p,size,buy:String(t.side||"").toUpperCase()==="BUY"});pushFlowTrade("COINBASE",t.trade_id??(ts+"-"+p+"-"+size),ts,p,size,String(t.side||"").toUpperCase()==="BUY");state.coinbaseTrades=state.coinbaseTrades.filter(x=>now-x.ts<65000);state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,ts,p);renderCrossVenue()}
+        if(p>0&&size>0){state.coinbaseTrades.push({ts,price:p,size,buy:String(t.side||"").toUpperCase()==="SELL"});pushFlowTrade("COINBASE",t.trade_id??(ts+"-"+p+"-"+size),ts,p,size,String(t.side||"").toUpperCase()==="SELL");state.coinbaseTrades=state.coinbaseTrades.filter(x=>now-x.ts<65000);state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,ts,p);renderCrossVenue()}
       }
     };
     ws.onerror=()=>crossStatus("COINBASE FEED ERROR","bad");

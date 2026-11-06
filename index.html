@@ -265,7 +265,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 
 <section class="card confluence-card">
   <div class="feature-head">
-    <div><div class="label">FIVE-MINUTE OUTCOME ENGINE · CROSS-SIGNAL CONFLUENCE</div><div class="small">Order book + taker flow + Chainlink speed + swing structure + starting-price position</div></div>
+    <div><div class="label">FIVE-MINUTE OUTCOME ENGINE · CROSS-SIGNAL CONFLUENCE</div><div class="small">New price to beat each five-minute market · continuous BTC trend memory carries across rounds</div></div>
     <span id="confluenceStatus" class="feature-status">COLLECTING</span>
   </div>
   <div class="confluence-main">
@@ -825,17 +825,36 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
   function updateConfluenceForecast(){
     if(!$("confluenceCall"))return;
     const now=Date.now(),start=boundaryAtOrBefore(now),elapsed=(now-start)/1000,remaining=Math.max(0,300-elapsed);
-    if(!state.roundMemory||state.roundMemory.start!==start){
-      state.roundMemory={start,lastSampleAt:0,inputs:{},score:0,history:[],leader:"WAIT",leaderSince:0,candidate:"WAIT",candidateSince:0,weakSince:0,leadChanges:0,scoreUpdatedAt:0};
+    if(!state.roundMemory){
+      state.roundMemory={
+        marketStart:start,lastSampleAt:0,inputs:{},score:0,history:[],
+        leader:"WAIT",leaderSince:0,candidate:"WAIT",candidateSince:0,
+        weakSince:0,leadChanges:0,scoreUpdatedAt:0,
+        contextScore:0,contextUpdatedAt:0,contextLastSampleAt:0,contextHistory:[],marketChanges:0
+      };
     }
     const memory=state.roundMemory;
+    // A new contract gets a new settlement reference, not a new brain.
+    // Carry the leader, score, non-contract inputs and longer BTC context
+    // forward. Only discard the old contract book and old target-gap filter.
+    if(memory.marketStart!==start){
+      memory.marketStart=start;
+      memory.marketChanges=(memory.marketChanges||0)+1;
+      memory.inputs.clob=null;
+      memory.inputs.target=null;
+      memory.candidate="WAIT";
+      memory.candidateSince=0;
+      memory.weakSince=0;
+    }
     const f30=robustFlowWindow(30000),f60=robustFlowWindow(60000);
     const latestSpot=state.chainlinkHistory.length?state.chainlinkHistory[state.chainlinkHistory.length-1]:null;
     const spotAge=latestSpot?now-latestSpot.ts:Infinity;
     const spotRows=state.chainlinkHistory.filter(x=>latestSpot&&x.ts>=latestSpot.ts-65000);
     const upBook=poly.books[poly.upId],downBook=poly.books[poly.downId];
     const upAge=upBook?now-(upBook.updatedAt||0):Infinity,downAge=downBook?now-(downBook.updatedAt||0):Infinity;
-    const bookFresh=!!upBook&&!!downBook&&upAge<9000&&downAge<9000&&poly.upMid!==null&&poly.downMid!==null;
+    const expectedMarketSlug="btc-updown-5m-"+Math.floor(start/1000);
+    const correctMarketBook=poly.event===expectedMarketSlug;
+    const bookFresh=correctMarketBook&&!!upBook&&!!downBook&&upAge<9000&&downAge<9000&&poly.upMid!==null&&poly.downMid!==null;
 
     let clobRaw=null,clobSpread=null,depthRaw=null;
     if(bookFresh){
@@ -922,18 +941,51 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const scoreAlpha=1-Math.exp(-scoreDt/11000);
     memory.score=memory.scoreUpdatedAt?memory.score+scoreAlpha*(rawScore-memory.score):rawScore;
     memory.scoreUpdatedAt=now;
+
+    // A separate, slower BTC backdrop excludes contract odds and the current
+    // round's target gap. It can therefore survive the next five-minute slug.
+    const contextParts=[
+      {key:"flow",weight:.34},{key:"speed",weight:.30},
+      {key:"swing",weight:.26},{key:"hl",weight:.10}
+    ].filter(x=>filtered[x.key]!==null&&Number.isFinite(filtered[x.key]));
+    const contextWeight=contextParts.reduce((sum,x)=>sum+x.weight,0);
+    const rawContext=contextWeight
+      ?contextParts.reduce((sum,x)=>sum+filtered[x.key]*x.weight,0)/contextWeight
+      :null;
+    if(rawContext!==null){
+      const contextDt=memory.contextUpdatedAt?Math.max(0,Math.min(10000,now-memory.contextUpdatedAt)):1000;
+      const contextAlpha=1-Math.exp(-contextDt/90000);
+      memory.contextScore=memory.contextUpdatedAt
+        ?memory.contextScore+contextAlpha*(rawContext-memory.contextScore)
+        :rawContext;
+      memory.contextUpdatedAt=now;
+    }
     if(!memory.lastSampleAt||now-memory.lastSampleAt>=850){
-      memory.history.push({ts:now,score:memory.score});
-      memory.history=memory.history.filter(x=>now-x.ts<=35000);
+      memory.history.push({ts:now,score:memory.score,context:rawContext===null?null:memory.contextScore});
+      memory.history=memory.history.filter(x=>now-x.ts<=600000);
       memory.lastSampleAt=now;
     }
     const score=Math.max(-1,Math.min(1,memory.score));
+    const contextScore=Math.max(-1,Math.min(1,memory.contextScore||0));
+    const contextFresh=!!memory.contextUpdatedAt&&now-memory.contextUpdatedAt<15000;
+    const contextSide=!contextFresh?"WAIT":contextScore>=.18?"UP":contextScore<=-.18?"DOWN":"MIXED";
+    const contextRecent=memory.history.filter(x=>x.context!==null&&now-x.ts<=300000);
+    const contextAligned=contextSide==="WAIT"||contextSide==="MIXED"
+      ?0:contextRecent.filter(x=>Math.sign(x.context)===(contextSide==="UP"?1:-1)).length;
+    const contextPersistence=contextRecent.length
+      ?contextAligned/contextRecent.length
+      :0;
     const votes=inputs.filter(x=>x.side!==0);
     const up=votes.filter(x=>x.side>0).length,down=votes.filter(x=>x.side<0).length;
     const scoreSide=score>=.29?"UP":score<=-.29?"DOWN":"WAIT";
     const enough=bookFresh&&targetFresh&&spotFresh&&valid>=4;
 
-    if(scoreSide==="WAIT"){
+    // Never erase or flip the carried leader while the new market's own
+    // book/target is still syncing. Resume leadership decisions once the new
+    // settlement reference and required feeds are fresh.
+    if(!enough){
+      memory.candidate="WAIT";memory.candidateSince=0;
+    }else if(scoreSide==="WAIT"){
       memory.candidate="WAIT";memory.candidateSince=0;
       const leaderSign=memory.leader==="UP"?1:-1;
       const opposed=memory.leader!=="WAIT"&&score*leaderSign<-.13;
@@ -952,12 +1004,12 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
         if(memory.candidate!==scoreSide){memory.candidate=scoreSide;memory.candidateSince=now;}
         const persistence=roundPersistence(memory,scoreSide,20000);
         const targetConflict=filtered.target!==null&&Math.abs(filtered.target)>.45&&Math.sign(filtered.target)!==(scoreSide==="UP"?1:-1);
-        const strongReversal=Math.abs(score)>=.74&&!targetConflict;
-        const requiredSeconds=targetConflict?20:(memory.leader==="WAIT"?12:(strongReversal?8:15));
-        const requiredPersistence=targetConflict?.78:.66;
+        const contextConflict=contextFresh&&Math.abs(contextScore)>.42&&Math.sign(contextScore)!==(scoreSide==="UP"?1:-1);
+        const requiredSeconds=targetConflict?20:(contextConflict?25:(memory.leader==="WAIT"?12:15));
+        const requiredPersistence=targetConflict?.78:contextConflict?.80:.66;
         const alignedVotes=scoreSide==="UP"?up:down;
         const opposingVotes=scoreSide==="UP"?down:up;
-        if(enough&&now-memory.candidateSince>=requiredSeconds*1000&&persistence.count>=7&&persistence.ratio>=requiredPersistence&&alignedVotes>=3&&opposingVotes<=2){
+        if(now-memory.candidateSince>=requiredSeconds*1000&&persistence.count>=7&&persistence.ratio>=requiredPersistence&&alignedVotes>=3&&opposingVotes<=2){
           if(memory.leader!=="WAIT"&&memory.leader!==scoreSide)memory.leadChanges++;
           memory.leader=scoreSide;memory.leaderSince=now;
           memory.candidate="WAIT";memory.candidateSince=0;
@@ -978,7 +1030,9 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     };
     state.trendForecast=forecast;
 
-    $("confluenceCall").textContent=side==="WAIT"?"WAIT · NO CONFIRMED EDGE":side+" · SUSTAINED ROUND EDGE";
+    $("confluenceCall").textContent=side==="WAIT"
+      ?(!targetFresh?"WAIT · NEW PRICE TO BEAT SYNCING":!correctMarketBook?"WAIT · NEW POLYMARKET BOOK SYNCING":"WAIT · NO CONFIRMED EDGE")
+      :side+" · CONTINUOUS EDGE";
     $("confluenceCall").className="confluence-call "+(side==="UP"?"up":side==="DOWN"?"down":"");
     $("confluenceScore").textContent=totalWeight?(score>=0?"UP ":"DOWN ")+Math.round(Math.abs(score)*100)+"/100":"—";
     $("confluenceMeter").style.width=Math.round((score+1)*50)+"%";
@@ -997,9 +1051,13 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     if(memoryEl){
       const candidateAge=memory.candidateSince?Math.max(0,(now-memory.candidateSince)/1000):0;
       const leaderText=memory.leader==="WAIT"
-        ?"ROUND LEADER · NOT ESTABLISHED"+(memory.candidate!=="WAIT"?" · "+memory.candidate+" CANDIDATE "+Math.floor(candidateAge)+"s":"")
-        :"ROUND LEADER · "+memory.leader+" "+(scoreMatchesLeader?"HOLDING ADVANTAGE":"ADVANTAGE UNDER PRESSURE")+" · "+Math.round(leaderPersistence.ratio*100)+"% PERSISTENCE · "+leaderPersistence.count+" RECENT SAMPLES · "+Math.floor(leaderAge)+"s HELD";
-      memoryEl.textContent=leaderText+" · "+memory.leadChanges+" LEAD CHANGES";
+        ?"CONTINUOUS LEADER · NOT ESTABLISHED"+(memory.candidate!=="WAIT"?" · "+memory.candidate+" CANDIDATE "+Math.floor(candidateAge)+"s":"")
+        :"CONTINUOUS LEADER · "+memory.leader+" "+(scoreMatchesLeader?"HOLDING ADVANTAGE":"ADVANTAGE UNDER PRESSURE")+" · "+Math.round(leaderPersistence.ratio*100)+"% RECENT PERSISTENCE · "+leaderPersistence.count+" SAMPLES · "+Math.floor(leaderAge)+"s HELD";
+      const contextText=contextFresh
+        ?" · 5M BTC BACKDROP "+contextSide+" "+Math.round(Math.abs(contextScore)*100)+"/100 · "+Math.round(contextPersistence*100)+"% ALIGNMENT"
+        :" · LONG BTC BACKDROP COLLECTING";
+      const syncText=!targetFresh?" · NEW TARGET SYNCING":!correctMarketBook?" · NEW CLOB SYNCING":"";
+      memoryEl.textContent=leaderText+contextText+syncText+" · "+memory.marketChanges+" TARGET ROLLOVERS · "+memory.leadChanges+" LEAD CHANGES";
       memoryEl.className="confluence-memory "+(memory.leader==="UP"?"up":memory.leader==="DOWN"?"down":"wait");
     }
 
@@ -1011,8 +1069,9 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       chips.appendChild(el);
     }
     $("confluenceClock").textContent=
-      "Market elapsed "+Math.floor(elapsed)+"s · "+Math.ceil(remaining)+"s left · "+
+      "New settlement target each 5m · engine memory carries across rounds · current market "+Math.floor(elapsed)+"s elapsed / "+Math.ceil(remaining)+"s left · "+
       (targetGap===null?"starting-price gap not synchronized":(targetGap>=0?"+$":"−$")+fmt(Math.abs(targetGap)))+
+      " · 5m BTC backdrop "+(contextFresh?contextSide+" "+Math.round(Math.abs(contextScore)*100)+"/100":"collecting")+
       " · score is evidence strength, not win probability.";
     captureTrendCheckpoint(forecast);
   }

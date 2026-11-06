@@ -343,6 +343,26 @@ body>.swing-card{grid-column:span 4}
 .swing-event.up{border-color:#285c4c;color:var(--terminal-mint);background:#0f211d}
 .swing-event.down{border-color:#633744;color:var(--terminal-red);background:#21151a}
 body>.confluence-card{grid-column:1/-1}
+body>.basis-orderflow-card{grid-column:1/-1}
+.basis-orderflow-card{
+  margin:0;padding:16px;
+  border:1px solid var(--terminal-line);border-radius:11px;
+  background:#0d141d;box-shadow:none;min-width:0;
+}
+.basis-orderflow-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.basis-orderflow-controls{display:flex;gap:7px;flex-wrap:wrap}
+.basis-view-btn{
+  border:1px solid #344657;border-radius:6px;padding:8px 10px;
+  background:#111b27;color:#9eb0c2;font:800 9px/1.2 inherit;
+  letter-spacing:.06em;cursor:pointer;
+}
+.basis-view-btn[aria-pressed="true"]{border-color:#5677a4;background:#17283a;color:#d5e7fa}
+.basis-widget-frame{
+  display:block;width:100%;height:520px;margin-top:13px;
+  border:1px solid #1e2a37;border-radius:8px;background:#080d13;
+}
+.basis-orderflow-foot{display:flex;justify-content:space-between;gap:9px;flex-wrap:wrap;margin-top:8px;color:#788b9e;font-size:9px;line-height:1.5}
+.basis-orderflow-foot a{color:#a6c7e8;text-decoration:none}
 .confluence-card{
   margin:0;padding:18px;
   border:1px solid #34364d;border-radius:11px;
@@ -392,7 +412,7 @@ button{font-family:inherit}
 }
 @media(max-width:620px){
   body{display:grid;grid-template-columns:minmax(0,1fr);gap:11px;padding:14px 11px 26px}
-  body>header,body>.market-focus,body>.live-chart-card,body>.swing-card,body>.confluence-card{grid-column:1}
+  body>header,body>.market-focus,body>.live-chart-card,body>.swing-card,body>.basis-orderflow-card,body>.confluence-card{grid-column:1}
   body>header{align-items:flex-start}
   .brand{gap:9px}
   .coin{width:34px;height:34px;font-size:18px}
@@ -522,6 +542,29 @@ button{font-family:inherit}
   </div>
   <div id="swingEvent" class="swing-event">WAIT · BUILDING CONFIRMED SWING STRUCTURE</div>
   <div id="swingNarrative" class="feature-foot">A swing is confirmed only after two bars form to its right. This avoids treating every one-second wiggle as a trend reversal.</div>
+</section>
+
+<section class="card basis-orderflow-card">
+  <div class="basis-orderflow-top">
+    <div>
+      <div class="label">BASIS ORDER FLOW · LIVE BINANCE DATA</div>
+      <div class="chart-subtitle">Independent execution and liquidity view. Use it to inspect whether aggressive flow is producing price progress near the current target.</div>
+    </div>
+    <div class="basis-orderflow-controls" role="group" aria-label="Basis order-flow chart view">
+      <button id="basisFootprintBtn" class="basis-view-btn" type="button" aria-pressed="true">FOOTPRINT · BID × ASK</button>
+      <button id="basisHeatmapBtn" class="basis-view-btn" type="button" aria-pressed="false">LIQUIDITY HEATMAP</button>
+    </div>
+  </div>
+  <iframe id="basisOrderflowFrame" class="basis-widget-frame"
+    src="https://www.basischarts.com/embed/chart?symbol=BTCUSDT&view=footprint"
+    title="Live BTCUSDT footprint chart by Basis"
+    loading="lazy"
+    sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+    referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  <div class="basis-orderflow-foot">
+    <span id="basisViewDescription">Footprint shows executed buy/sell volume and delta at each price. It is not a full order book.</span>
+    <span>Basis data · Binance · <a href="https://www.basischarts.com/" target="_blank" rel="noopener noreferrer">Open Basis terminal</a></span>
+  </div>
 </section>
 
 <section class="card confluence-card">
@@ -2425,6 +2468,20 @@ button{font-family:inherit}
   }
 
 
+
+  const basisOrderflowFrame=$("basisOrderflowFrame");
+  function setBasisOrderflowView(view){
+    const heatmap=view==="heatmap";
+    const src="https://www.basischarts.com/embed/chart?symbol=BTCUSDT&view="+(heatmap?"heatmap":"footprint");
+    if(basisOrderflowFrame.getAttribute("src")!==src)basisOrderflowFrame.src=src;
+    $("basisFootprintBtn").setAttribute("aria-pressed",String(!heatmap));
+    $("basisHeatmapBtn").setAttribute("aria-pressed",String(heatmap));
+    $("basisViewDescription").textContent=heatmap
+      ?"Heatmap shows displayed Binance perpetual liquidity, executed trades and cumulative delta. Depth history starts building while the chart is open."
+      :"Footprint shows executed buy/sell volume and delta at each price. It is not a full order book.";
+  }
+  $("basisFootprintBtn").addEventListener("click",()=>setBasisOrderflowView("footprint"));
+  $("basisHeatmapBtn").addEventListener("click",()=>setBasisOrderflowView("heatmap"));
 
   $("reconnect").addEventListener("click",connect);
   $("exportLab").addEventListener("click",exportMarketLab);

@@ -122,6 +122,45 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .chart-foot a{color:#a9baff;text-decoration:none}
 @media(max-width:620px){.live-chart-card{padding:13px}.live-momentum-layout{grid-template-columns:1fr}#liveChart{height:245px}.momentum-score-box{padding:9px}}
 
+
+/* Order-flow alerts, confirmed swing structure and unified five-minute forecast */
+.flow-card,.swing-card,.confluence-card{display:block!important;margin-top:13px;border:1px solid #414f8d;background:linear-gradient(145deg,#11172e,#090f20 80%);box-shadow:0 10px 34px #0005}
+.feature-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.feature-status{font-size:9px;font-weight:900;letter-spacing:.1em;border:1px solid #3d5b84;border-radius:20px;padding:5px 8px;color:#a9c8ff}
+.feature-status.ok{color:#55efb3;border-color:#27785f}.feature-status.bad{color:#ff8eaa;border-color:#8a3656}
+.flow-toggle{border:1px solid #5867a7;background:#171d3b;color:#dce5ff;border-radius:9px;padding:8px 10px;font-size:9px;font-weight:900;letter-spacing:.07em;cursor:pointer}
+.flow-toggle.enabled{border-color:#239b6c;background:#103326;color:#67f4b8}
+.flow-stats,.swing-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}
+.feature-stat{padding:10px;border:1px solid #2e3d67;border-radius:10px;background:#080e1f;min-width:0}
+.feature-stat span{display:block;font-size:9px;color:#90a5d0;font-weight:850;letter-spacing:.1em}
+.feature-stat b{display:block;font-size:clamp(16px,2.5vw,22px);margin-top:6px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.feature-stat small{display:block;color:#8196be;font-size:9px;margin-top:4px}
+.flow-tape-list{display:grid;gap:7px;margin-top:11px}
+.flow-tape-row{display:grid;grid-template-columns:62px minmax(0,1fr) auto;align-items:center;gap:8px;padding:9px 10px;border:1px solid #2d3b61;border-radius:9px;background:#0a1021;font-size:10px}
+.flow-tape-row.buy{border-left:3px solid #36d99a}.flow-tape-row.sell{border-left:3px solid #f2648d}
+.flow-tape-time{font-variant-numeric:tabular-nums;color:#8298c1}
+.flow-tape-side{font-weight:950;letter-spacing:.04em}.flow-tape-side.buy{color:#49efb0}.flow-tape-side.sell{color:#ff769b}
+.flow-tape-notional{font-weight:850;text-align:right;font-variant-numeric:tabular-nums}
+.feature-muted{padding:11px;border:1px dashed #344367;border-radius:9px;color:#879bc1;font-size:10px;line-height:1.45}
+.feature-foot{font-size:9px;color:#8398be;line-height:1.5;margin-top:9px}
+.swing-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.swing-stat b.up{color:#4aefb2}.swing-stat b.down{color:#ff7298}
+.swing-event{margin-top:11px;border:1px solid #34456f;background:#0a1022;border-radius:10px;padding:11px;font-size:11px;color:#bcc9e4;font-weight:850}
+.swing-event.up{border-color:#286c55;color:#56efb4}.swing-event.down{border-color:#7a3850;color:#ff83a4}
+.confluence-card{border-color:#5a63a7;background:linear-gradient(120deg,#171538,#11172e 55%,#0d1428)}
+.confluence-main{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin-top:12px}
+.confluence-call{font-size:clamp(22px,4vw,31px);font-weight:950;letter-spacing:-.035em;color:#bdc9e5}
+.confluence-call.up{color:#4aefb2}.confluence-call.down{color:#ff7298}
+.confluence-score{font-size:clamp(18px,3vw,25px);font-weight:950;font-variant-numeric:tabular-nums;text-align:right}
+.confluence-detail{font-size:10px;color:#94a8cf;line-height:1.55;margin-top:8px}
+.confluence-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.confluence-chips span{font-size:9px;color:#a9bbdf;border:1px solid #34456f;border-radius:7px;padding:5px 7px;background:#0b1225}
+.confluence-chips .up{color:#58eeb5;border-color:#276c55}.confluence-chips .down{color:#ff83a4;border-color:#784052}
+.confluence-meter{height:7px;background:#242c49;border-radius:20px;overflow:hidden;margin-top:12px}
+.confluence-meter span{display:block;height:100%;width:50%;background:linear-gradient(90deg,#f2648d,#7772d8,#36d99a);transition:width .25s}
+.lab-swing-heading{margin-top:13px;padding-top:12px;border-top:1px solid #ffffff18;font-size:9px;color:#9db1d8;font-weight:900;letter-spacing:.12em}
+@media(max-width:620px){.flow-stats{grid-template-columns:1fr 1fr}.swing-stats{grid-template-columns:1fr 1fr}.flow-tape-row{grid-template-columns:54px minmax(0,1fr) auto;padding:8px}.confluence-main{grid-template-columns:1fr}.confluence-score{text-align:left}}
+
 </style>
 </head>
 <body>
@@ -181,6 +220,57 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
   </div>
   <div class="pressure-track"><div id="pressureUpBar" class="up-fill" style="width:50%"></div><div id="pressureDownBar" class="down-fill" style="width:50%"></div></div>
   <div id="momentumFeedDetail" class="chart-foot">The momentum split is a relative strength reading, not a win probability. Each distinct Chainlink second is counted once. Powered by <a href="https://www.tradingview.com/lightweight-charts/" target="_blank" rel="noopener">TradingView Lightweight Charts™</a>.</div>
+</section>
+
+
+<section class="card flow-card">
+  <div class="feature-head">
+    <div><div class="label">LIVE AGGRESSOR TAPE · LARGE BUYS / SELLS</div><div class="small">Binance USD-M futures + Binance spot + Coinbase + Hyperliquid</div></div>
+    <span id="flowFeedStatus" class="feature-status">CONNECTING FUTURES TAPE</span>
+  </div>
+  <div class="flow-stats">
+    <div class="feature-stat"><span>10-SECOND NET FLOW</span><b id="flowNet10">—</b><small id="flowGross10">Waiting for prints</small></div>
+    <div class="feature-stat"><span>30-SECOND BUY / SELL</span><b id="flowImbalance30">—</b><small id="flowTotals30">Waiting for prints</small></div>
+    <div class="feature-stat"><span>LAST 60S LARGE PRINTS</span><b id="flowLargeCount">0</b><small id="flowLargeTotals">BUY $0 · SELL $0</small></div>
+  </div>
+  <div class="feature-head" style="margin-top:11px">
+    <div id="flowBurstStatus" class="small">NO LARGE-ORDER BURST DETECTED</div>
+    <button id="flowAlertToggle" class="flow-toggle" type="button">ENABLE SOUND + BROWSER ALERTS</button>
+  </div>
+  <div class="label" style="margin-top:13px">RECENT LARGE TAKER PRINTS · $75K+ ORDERS</div>
+  <div id="flowTapeList" class="flow-tape-list"><div class="feature-muted">Waiting for large aggressive BTC buys or sells.</div></div>
+  <div class="feature-foot">Binance aggregate trades combine fills from a single taker order. A BUY is an aggressive buyer; a SELL is an aggressive seller. Neither alone proves a new long or short—orders can also close or hedge positions.</div>
+</section>
+
+<section class="card swing-card">
+  <div class="feature-head">
+    <div><div class="label">TREND-SWING ENGINE · MARKET STRUCTURE</div><div class="small">Confirmed highs/lows from Chainlink BTC/USD · 5-second and 15-second bars</div></div>
+    <span id="swingStatus" class="feature-status">COLLECTING STRUCTURE</span>
+  </div>
+  <div class="swing-stats">
+    <div class="feature-stat swing-stat"><span>FAST STRUCTURE · 5S</span><b id="swingFast">—</b><small id="swingFastDetail">Waiting for pivots</small></div>
+    <div class="feature-stat swing-stat"><span>CONFIRMATION · 15S</span><b id="swingSlow">—</b><small id="swingSlowDetail">Waiting for pivots</small></div>
+    <div class="feature-stat swing-stat"><span>LAST CONFIRMED HIGH</span><b id="swingHigh">—</b><small id="swingHighAge">—</small></div>
+    <div class="feature-stat swing-stat"><span>LAST CONFIRMED LOW</span><b id="swingLow">—</b><small id="swingLowAge">—</small></div>
+  </div>
+  <div id="swingEvent" class="swing-event">WAIT · BUILDING CONFIRMED SWING STRUCTURE</div>
+  <div id="swingNarrative" class="feature-foot">A swing is confirmed only after two bars form to its right. This avoids treating every one-second wiggle as a trend reversal.</div>
+</section>
+
+<section class="card confluence-card">
+  <div class="feature-head">
+    <div><div class="label">FIVE-MINUTE OUTCOME ENGINE · CROSS-SIGNAL CONFLUENCE</div><div class="small">Order book + taker flow + Chainlink speed + swing structure + starting-price position</div></div>
+    <span id="confluenceStatus" class="feature-status">COLLECTING</span>
+  </div>
+  <div class="confluence-main">
+    <div id="confluenceCall" class="confluence-call">WAIT · COLLECTING DATA</div>
+    <div id="confluenceScore" class="confluence-score">—</div>
+  </div>
+  <div class="confluence-meter"><span id="confluenceMeter"></span></div>
+  <div id="confluenceDetail" class="confluence-detail">No directional call until enough live inputs are fresh and aligned.</div>
+  <div id="confluenceChips" class="confluence-chips"></div>
+  <div id="confluenceClock" class="feature-foot">Five-minute market · waiting for exact price-to-beat and both Polymarket books.</div>
+  <div class="feature-foot">The score is a confluence meter, not a probability. Its historical hit rate will be shown only after completed five-minute markets.</div>
 </section>
 
 <section class="prediction-board">
@@ -269,6 +359,13 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     <div class="cross-cell"><span>240S CHECKPOINT</span><b id="lab240">—</b><div class="cross-detail">First call after 4 minutes</div></div>
   </div>
   <div id="labDetail" class="cross-verdict">No settled sample history yet. Calls will be measured, not assumed accurate.</div>
+  <div class="lab-swing-heading">NEW · SWING + FLOW CONFLUENCE HIT RATE VS EXACT SETTLEMENT</div>
+  <div class="lab-grid">
+    <div class="cross-cell"><span>CONFLUENCE · 60S</span><b id="labTrend60">—</b><div class="cross-detail">Directional calls only</div></div>
+    <div class="cross-cell"><span>CONFLUENCE · 180S</span><b id="labTrend180">—</b><div class="cross-detail">Directional calls only</div></div>
+    <div class="cross-cell"><span>CONFLUENCE · 240S</span><b id="labTrend240">—</b><div class="cross-detail">Directional calls only</div></div>
+  </div>
+
   <div class="actions"><button id="exportLab" type="button">Export results CSV</button><span class="small">No wallet access · no trades · local browser record</span></div>
 </section>
 
@@ -280,7 +377,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,journal:[],activeRecord:null,lastTwapPersist:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresPrice:null,flowTimer:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,journal:[],activeRecord:null,lastTwapPersist:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -385,7 +482,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     ws.onmessage=e=>{let t;try{t=JSON.parse(e.data)}catch(_){return}
       const ts=Number(t.T||Date.now()),q=Number(t.q||0),price=Number(t.p||0);
       if(!Number.isFinite(q)||!Number.isFinite(price))return;
-      addPriceSample(ts,price);state.trades.push({ts,q,buy:!t.m,price});pruneHistory(ts);updateMomentum();
+      addPriceSample(ts,price);state.trades.push({ts,q,buy:!t.m,price});pushFlowTrade("BINANCE SPOT",t.a,ts,price,q,!t.m);pruneHistory(ts);updateMomentum();
     };
     ws.onclose=()=>{setTimeout(()=>{if(state.tradeWs===ws)connectTrades()},2500)};
     ws.onerror=()=>{try{ws.close()}catch(_){}};
@@ -462,6 +559,307 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 
   }
 
+
+  // Multi-venue taker tape. Binance aggTrade identifies the buyer-maker flag:
+  // m=false means buyer was taker (aggressive buy); m=true means seller taker.
+  const LARGE_PRINT_USD=75000, WHALE_PRINT_USD=250000;
+  function compactUsd(value){
+    const n=Math.abs(Number(value)||0);
+    if(n>=1e9)return "$"+(n/1e9).toFixed(2)+"B";
+    if(n>=1e6)return "$"+(n/1e6).toFixed(2)+"M";
+    if(n>=1e3)return "$"+(n/1e3).toFixed(1)+"K";
+    return "$"+n.toFixed(0);
+  }
+  function pushFlowTrade(venue,id,ts,price,size,isBuy){
+    if(!Number.isFinite(ts)||!Number.isFinite(price)||!Number.isFinite(size)||price<=0||size<=0)return;
+    const key=venue+":"+String(id??(ts+"-"+price+"-"+size));
+    if(state.flowSeen[key])return;
+    state.flowSeen[key]=ts;
+    const trade={key,venue,ts,price,size,buy:!!isBuy,notional:price*size};
+    state.flowTrades.push(trade);
+    const cutoff=Date.now()-120000;
+    while(state.flowTrades.length&&state.flowTrades[0].ts<cutoff)state.flowTrades.shift();
+    if(state.flowTrades.length>25000)state.flowTrades=state.flowTrades.slice(-20000);
+    if(trade.notional>=LARGE_PRINT_USD){
+      state.largePrints.unshift(trade);
+      state.largePrints=state.largePrints.slice(0,60);
+      pushFlowAlert({ts,side:trade.buy?"BUY":"SELL",venue,notional:trade.notional,price,kind:trade.notional>=WHALE_PRINT_USD?"WHALE PRINT":"LARGE PRINT"});
+    }
+    if(Object.keys(state.flowSeen).length>30000){
+      const keep={};for(const x of state.flowTrades)keep[x.key]=x.ts;state.flowSeen=keep;
+    }
+  }
+  function getFlowWindow(ms){
+    const now=Date.now(),cutoff=now-ms;let buy=0,sell=0,count=0,buyCount=0,sellCount=0;
+    for(const t of state.flowTrades){
+      if(t.ts<cutoff||t.ts>now)continue;
+      if(t.buy){buy+=t.notional;buyCount++;}else{sell+=t.notional;sellCount++;}
+      count++;
+    }
+    const total=buy+sell;
+    return {buy,sell,total,count,buyCount,sellCount,net:buy-sell,imbalance:total?(buy-sell)/total:0};
+  }
+  function renderFlowTape(){
+    const list=$("flowTapeList");if(!list)return;
+    list.textContent="";
+    const items=state.alertFeed.slice(0,7);
+    if(!items.length){
+      const empty=document.createElement("div");empty.className="feature-muted";empty.textContent="Waiting for a $75K+ aggressive BTC buy or sell.";list.appendChild(empty);return;
+    }
+    for(const item of items){
+      const row=document.createElement("div");row.className="flow-tape-row "+(item.side==="BUY"?"buy":"sell");
+      const tm=document.createElement("span");tm.className="flow-tape-time";tm.textContent=new Date(item.ts).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+      const sd=document.createElement("span");sd.className="flow-tape-side "+(item.side==="BUY"?"buy":"sell");sd.textContent=item.kind+" · "+item.side+" · "+item.venue;
+      const val=document.createElement("span");val.className="flow-tape-notional";val.textContent=compactUsd(item.notional);
+      row.append(tm,sd,val);list.appendChild(row);
+    }
+  }
+  function playFlowTone(side,large=false){
+    if(!state.alertsEnabled||!state.alertAudio||Date.now()-state.lastAlertAt<700)return;
+    state.lastAlertAt=Date.now();
+    try{
+      const ctx=state.alertAudio;if(ctx.state==="suspended")ctx.resume();
+      const osc=ctx.createOscillator(),gain=ctx.createGain();
+      osc.type="sine";osc.frequency.value=side==="BUY"?(large?1100:850):(large?360:520);
+      gain.gain.setValueAtTime(.0001,ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.12,ctx.currentTime+.02);
+      gain.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+(large?.34:.18));
+      osc.connect(gain);gain.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+(large?.36:.20));
+    }catch(_){}
+  }
+  function pushFlowAlert(item){
+    state.alertFeed.unshift(item);state.alertFeed=state.alertFeed.slice(0,50);renderFlowTape();
+    const important=item.kind==="WHALE PRINT"||item.kind==="BUY BURST"||item.kind==="SELL BURST";
+    playFlowTone(item.side,important);
+    if(important&&state.alertsEnabled&&"Notification" in window&&Notification.permission==="granted"){
+      try{new Notification("BTC "+item.kind+" · "+item.side,{body:item.venue+" · "+compactUsd(item.notional)+" · $"+fmt(item.price),tag:"btc-flow-"+item.kind+"-"+item.side});}catch(_){}
+    }
+  }
+  async function toggleFlowAlerts(){
+    if(!state.alertsEnabled){
+      try{
+        const AC=window.AudioContext||window.webkitAudioContext;
+        if(AC){state.alertAudio=new AC();if(state.alertAudio.state==="suspended")await state.alertAudio.resume();}
+      }catch(_){}
+      if("Notification" in window&&Notification.permission==="default"){try{await Notification.requestPermission();}catch(_){}}
+      state.alertsEnabled=true;
+      $("flowAlertToggle").textContent="ALERTS ENABLED · CLICK TO MUTE";
+      $("flowAlertToggle").className="flow-toggle enabled";
+      playFlowTone("BUY",false);
+    }else{
+      state.alertsEnabled=false;
+      $("flowAlertToggle").textContent="ENABLE SOUND + BROWSER ALERTS";
+      $("flowAlertToggle").className="flow-toggle";
+    }
+  }
+  function connectFuturesTakerTape(){
+    if(state.futuresWs){try{state.futuresWs.close();}catch(_){}}
+    if(state.futuresReconnect){clearTimeout(state.futuresReconnect);state.futuresReconnect=null;}
+    const ws=new WebSocket("wss://fstream.binance.com/market/ws/btcusdt@aggTrade");
+    state.futuresWs=ws;
+    ws.onopen=()=>{state.futuresLastAt=Date.now();};
+    ws.onmessage=e=>{
+      let t;try{t=JSON.parse(e.data)}catch(_){return}
+      if(t&&t.data)t=t.data;
+      if(!t||t.e!=="aggTrade")return;
+      const ts=Number(t.T||t.E||Date.now()),price=Number(t.p),size=Number(t.q);
+      if(!(price>0&&size>0))return;
+      state.futuresLastAt=Date.now();state.futuresPrice=price;
+      pushFlowTrade("BINANCE PERP",t.a,ts,price,size,!t.m);
+    };
+    ws.onerror=()=>{try{ws.close();}catch(_){}};
+    ws.onclose=()=>{
+      if(state.futuresWs!==ws)return;
+      state.futuresReconnect=setTimeout(connectFuturesTakerTape,1800);
+    };
+  }
+  function renderFlowPressure(){
+    const now=Date.now(),f10=getFlowWindow(10000),f30=getFlowWindow(30000),f60=getFlowWindow(60000);
+    $("flowNet10").textContent=f10.total?(f10.net>=0?"+":"−")+compactUsd(f10.net):"—";
+    $("flowNet10").className=f10.net>0?"up":f10.net<0?"down":"";
+    $("flowGross10").textContent=f10.total?"BUY "+compactUsd(f10.buy)+" · SELL "+compactUsd(f10.sell)+" · "+f10.count+" prints":"No trades in last 10s";
+    $("flowImbalance30").textContent=f30.total?(f30.imbalance>=0?"BUY ":"SELL ")+Math.round(Math.abs(f30.imbalance)*100)+"%":"—";
+    $("flowImbalance30").className=f30.imbalance>.08?"up":f30.imbalance<-.08?"down":"";
+    $("flowTotals30").textContent=f30.total?"BUY "+compactUsd(f30.buy)+" · SELL "+compactUsd(f30.sell)+" · "+f30.count+" prints":"No trades in last 30s";
+    const recent=state.largePrints.filter(x=>now-x.ts<=60000);
+    const bigBuy=recent.filter(x=>x.buy).reduce((a,x)=>a+x.notional,0),bigSell=recent.filter(x=>!x.buy).reduce((a,x)=>a+x.notional,0);
+    $("flowLargeCount").textContent=String(recent.length);
+    $("flowLargeTotals").textContent="BUY "+compactUsd(bigBuy)+" · SELL "+compactUsd(bigSell);
+    const age=state.futuresLastAt?((now-state.futuresLastAt)/1000):null;
+    $("flowFeedStatus").textContent=age!==null&&age<4?"BINANCE FUTURES LIVE":age!==null?"FUTURES FEED DELAYED":"CONNECTING FUTURES";
+    $("flowFeedStatus").className="feature-status "+(age!==null&&age<4?"ok":"bad");
+    let burst="NO LARGE-ORDER BURST DETECTED";
+    if(f10.total>=400000&&f10.count>=4&&Math.abs(f10.imbalance)>=.62){
+      const side=f10.imbalance>0?"BUY":"SELL";
+      burst=side+" BURST · "+compactUsd(Math.abs(f10.net))+" NET IN 10S";
+      if(now-state.lastBurstAt>12000){
+        state.lastBurstAt=now;
+        pushFlowAlert({ts:now,side,venue:"MULTI-VENUE",notional:Math.abs(f10.net),price:state.futuresPrice||state.binance||0,kind:side+" BURST"});
+      }
+    }else if(f60.total){
+      burst="60S FLOW · "+(f60.imbalance>=0?"BUY ":"SELL ")+Math.round(Math.abs(f60.imbalance)*100)+"% · "+f60.count+" PRINTS";
+    }
+    $("flowBurstStatus").textContent=burst;
+    renderFlowTape();
+    updateConfluenceForecast();
+  }
+
+  // Convert live Chainlink observations to 5s and 15s OHLC bars.
+  function makeSwingBars(rows,barMs){
+    const map=new Map();
+    for(const x of rows){
+      const t=Math.floor(x.ts/barMs)*barMs;
+      let b=map.get(t);
+      if(!b){b={ts:t,open:x.value,high:x.value,low:x.value,close:x.value};map.set(t,b);}
+      else{b.high=Math.max(b.high,x.value);b.low=Math.min(b.low,x.value);b.close=x.value;}
+    }
+    return Array.from(map.values()).sort((a,b)=>a.ts-b.ts);
+  }
+  function findConfirmedPivots(bars){
+    const highs=[],lows=[];
+    for(let i=2;i<bars.length-2;i++){
+      const b=bars[i],left=bars.slice(i-2,i),right=bars.slice(i+1,i+3);
+      if(left.every(x=>b.high>x.high)&&right.every(x=>b.high>=x.high))highs.push({price:b.high,ts:b.ts});
+      if(left.every(x=>b.low<x.low)&&right.every(x=>b.low<=x.low))lows.push({price:b.low,ts:b.ts});
+    }
+    return {highs,lows};
+  }
+  function classifySwingStructure(bars){
+    if(bars.length<9)return {trend:0,label:"BUILDING",detail:"Need at least 9 bars",highs:[],lows:[],breakSide:0,reclaim:0};
+    const piv=findConfirmedPivots(bars),hs=piv.highs.slice(-2),ls=piv.lows.slice(-2),last=bars[bars.length-1];
+    let trend=0,label="RANGE / MIXED";
+    if(hs.length===2&&ls.length===2){
+      const hh=hs[1].price>hs[0].price,hl=ls[1].price>ls[0].price;
+      const lh=hs[1].price<hs[0].price,ll=ls[1].price<ls[0].price;
+      if(hh&&hl){trend=1;label="HIGHER HIGH + HIGHER LOW";}
+      else if(lh&&ll){trend=-1;label="LOWER HIGH + LOWER LOW";}
+      else if(hh||hl){trend=.45;label="PARTIAL BULLISH STRUCTURE";}
+      else if(lh||ll){trend=-.45;label="PARTIAL BEARISH STRUCTURE";}
+    }
+    const priorHigh=piv.highs.length?piv.highs[piv.highs.length-1].price:null;
+    const priorLow=piv.lows.length?piv.lows[piv.lows.length-1].price:null;
+    const pad=Math.max(.35,last.close*.000003);
+    const breakSide=priorHigh!==null&&last.close>priorHigh+pad?1:priorLow!==null&&last.close<priorLow-pad?-1:0;
+    const wickUp=priorHigh!==null&&last.high>priorHigh+pad&&last.close<priorHigh;
+    const wickDown=priorLow!==null&&last.low<priorLow-pad&&last.close>priorLow;
+    const reclaim=wickDown?1:wickUp?-1:0;
+    return {trend,label,detail:"HH "+(hs.length?compactUsd(hs[1].price):"—")+" · HL "+(ls.length?compactUsd(ls[1].price):"—"),highs:piv.highs,lows:piv.lows,breakSide,reclaim,priorHigh,priorLow};
+  }
+  function updateSwingEngine(){
+    const now=Date.now(),latest=state.chainlinkHistory.length?state.chainlinkHistory[state.chainlinkHistory.length-1]:null;
+    if(!latest||now-latest.ts>4000){
+      state.swingInfo=null;
+      $("swingStatus").textContent="CHAINLINK STALE";$("swingStatus").className="feature-status bad";
+      $("swingEvent").textContent="WAIT · NO FRESH CHAINLINK SWING DATA";return;
+    }
+    const rows=state.chainlinkHistory.filter(x=>x.ts>=now-420000);
+    const fast=classifySwingStructure(makeSwingBars(rows,5000));
+    const slow=classifySwingStructure(makeSwingBars(rows,15000));
+    const fastHigh=fast.highs.length?fast.highs[fast.highs.length-1]:null;
+    const fastLow=fast.lows.length?fast.lows[fast.lows.length-1]:null;
+    const breakSide=fast.breakSide||slow.breakSide;
+    const reclaim=fast.reclaim||slow.reclaim;
+    const score=Math.max(-1,Math.min(1,fast.trend*.42+slow.trend*.33+breakSide*.42+reclaim*.22));
+    const ready=fast.trend!==0||slow.trend!==0||breakSide!==0||reclaim!==0;
+    const label=breakSide>0?"BREAK OF STRUCTURE · UP":breakSide<0?"BREAK OF STRUCTURE · DOWN":reclaim>0?"FAILED LOW BREAK · RECLAIM":reclaim<0?"FAILED HIGH BREAK · REJECT":score>.22?"BULLISH SWING STRUCTURE":score<-.22?"BEARISH SWING STRUCTURE":"NO CLEAN SWING TREND";
+    state.swingInfo={score,ready,fast,slow,breakSide,reclaim,label,updatedAt:now};
+    const set=(id,value,cls="")=>{const el=$(id);el.textContent=value;el.className="";if(cls)el.classList.add(cls);};
+    set("swingFast",fast.label,fast.trend>0?"up":fast.trend<0?"down":"");
+    set("swingFastDetail",fast.detail);
+    set("swingSlow",slow.label,slow.trend>0?"up":slow.trend<0?"down":"");
+    set("swingSlowDetail",slow.detail);
+    set("swingHigh",fastHigh?"$"+fmt(fastHigh.price):"—");
+    set("swingLow",fastLow?"$"+fmt(fastLow.price):"—");
+    set("swingHighAge",fastHigh?Math.max(0,Math.round((now-fastHigh.ts)/1000))+"s ago · confirmed":"No confirmed high");
+    set("swingLowAge",fastLow?Math.max(0,Math.round((now-fastLow.ts)/1000))+"s ago · confirmed":"No confirmed low");
+    const event=$("swingEvent");
+    event.textContent=ready?label:"WAIT · BUILDING CONFIRMED SWING STRUCTURE";
+    event.className="swing-event "+(score>.20?"up":score<-.20?"down":"");
+    $("swingStatus").textContent=ready?"5S + 15S STRUCTURE LIVE":"NEED MORE PIVOTS";
+    $("swingStatus").className="feature-status "+(ready?"ok":"");
+    $("swingNarrative").textContent="5s: "+fast.label+" · 15s: "+slow.label+" · confirmed fast swing high "+(fastHigh?"$"+fmt(fastHigh.price):"—")+" and low "+(fastLow?"$"+fmt(fastLow.price):"—")+". Pivots require two bars on the right; breakouts use current Chainlink close.";
+  }
+
+  function updateConfluenceForecast(){
+    if(!$("confluenceCall"))return;
+    const now=Date.now(),start=boundaryAtOrBefore(now),elapsed=(now-start)/1000,remaining=Math.max(0,300-elapsed);
+    const f10=getFlowWindow(10000),f30=getFlowWindow(30000);
+    const latestSpot=state.chainlinkHistory.length?state.chainlinkHistory[state.chainlinkHistory.length-1]:null;
+    const latestTwap=state.twapHistory.length?state.twapHistory[state.twapHistory.length-1]:null;
+    const spotAge=latestSpot?now-latestSpot.ts:Infinity,twapAge=latestTwap?now-latestTwap.ts:Infinity;
+    const upBook=poly.books[poly.upId],downBook=poly.books[poly.downId];
+    const upAge=upBook?now-(upBook.updatedAt||0):Infinity,downAge=downBook?now-(downBook.updatedAt||0):Infinity;
+    const bookFresh=!!upBook&&!!downBook&&upAge<9000&&downAge<9000&&poly.upMid!==null&&poly.downMid!==null;
+    const clobRaw=bookFresh?Math.max(-1,Math.min(1,(poly.upMid-poly.downMid)/.20)):null;
+    const depthRaw=bookFresh?Math.max(-1,Math.min(1,(poly.imbalance||0)/.35)):null;
+    const flowRaw=f10.total>=150000&&f10.count>=3?.68*f10.imbalance+.32*f30.imbalance:null;
+    const spotRows=state.chainlinkHistory.filter(x=>latestSpot&&x.ts>=latestSpot.ts-45000);
+    const spotScale=Math.max(averageAbsoluteStep(spotRows)*1.6,(latestSpot?.value||70000)*.000004,.30);
+    const spotRaw=latestSpot&&spotAge<3500&&spotRows.length>=5?weightedPriceImpulse(spotRows,[1,3,5,15],[.10,.25,.35,.30],spotScale):null;
+    const targetFresh=state.target!==null&&state.targetTs===start&&state.twap!==null&&state.twapTs!==null&&now-state.twapTs<7000;
+    const targetGap=targetFresh?state.twap-state.target:null;
+    const targetScale=Math.max((latestSpot?.value||70000)*.00010,averageAbsoluteStep(spotRows)*8,18);
+    const targetRaw=targetFresh?Math.tanh(targetGap/targetScale):null;
+    const swingRaw=state.swingInfo&&state.swingInfo.ready&&now-state.swingInfo.updatedAt<4000?state.swingInfo.score:null;
+    const hlBookFresh=!!state.hlBook.ts&&now-state.hlBook.ts<8000;
+    const bids=state.hlBook.bids.slice(0,5),asks=state.hlBook.asks.slice(0,5);
+    const bidDepth=bids.reduce((a,x)=>a+x.s,0),askDepth=asks.reduce((a,x)=>a+x.s,0),totalDepth=bidDepth+askDepth;
+    const hlRaw=hlBookFresh&&totalDepth>0?Math.max(-1,Math.min(1,(bidDepth-askDepth)/totalDepth/.30)):null;
+    const votes=[];
+    let weighted=0,totalWeight=0,valid=0;
+    const add=(name,value,weight)=>{
+      if(value===null||!Number.isFinite(value))return;
+      valid++;weighted+=value*weight;totalWeight+=weight;
+      if(Math.abs(value)>=.16)votes.push({name,side:Math.sign(value),value});
+    };
+    add("POLY CLOB",clobRaw,.30);
+    add("TAKER FLOW",flowRaw,.25);
+    add("CHAINLINK SPEED",spotRaw,.14);
+    add("TWAP VS START",targetRaw,.12);
+    add("SWING STRUCTURE",swingRaw,.14);
+    add("HYPERLIQUID L2",hlRaw,.05);
+    const score=totalWeight?Math.max(-1,Math.min(1,weighted/totalWeight)):0;
+    const up=votes.filter(x=>x.side>0).length,down=votes.filter(x=>x.side<0).length;
+    const enough=bookFresh&&targetFresh&&flowRaw!==null&&spotRaw!==null&&swingRaw!==null&&valid>=4;
+    const side=enough&&score>=.34&&up>=3&&down<=1?"UP":enough&&score<=-.34&&down>=3&&up<=1?"DOWN":"WAIT";
+    const forecast={side,score,up,down,votes,valid,elapsed,remaining,flowNet:f10.net,flowNotional:f10.total,targetGap,updatedAt:now};
+    state.trendForecast=forecast;
+    $("confluenceCall").textContent=side==="WAIT"?"WAIT · NO CONFIRMED EDGE":side+" · STRUCTURE + FLOW AGREE";
+    $("confluenceCall").className="confluence-call "+(side==="UP"?"up":side==="DOWN"?"down":"");
+    $("confluenceScore").textContent=totalWeight?(score>=0?"UP ":"DOWN ")+Math.round(Math.abs(score)*100)+"/100":"—";
+    $("confluenceMeter").style.width=Math.round((score+1)*50)+"%";
+    $("confluenceStatus").textContent=!bookFresh?"POLY BOOK STALE":!targetFresh?"TARGET / TWAP STALE":!flowRaw?"WAITING FOR TAKER FLOW":!spotRaw?"WAITING FOR CHAINLINK":!swingRaw?"BUILDING SWING STRUCTURE":valid+" INPUTS · "+votes.length+" VOTES";
+    $("confluenceStatus").className="feature-status "+(side!=="WAIT"?"ok":valid?"":"bad");
+    const fmtVote=x=>x===null?"—":(x>0?"+":"")+Math.round(x*100);
+    $("confluenceDetail").textContent="CLOB "+fmtVote(clobRaw)+" · taker flow "+fmtVote(flowRaw)+" · Chainlink speed "+fmtVote(spotRaw)+" · swing "+fmtVote(swingRaw)+" · TWAP gap "+(targetGap===null?"—":(targetGap>=0?"+$":"−$")+fmt(Math.abs(targetGap)))+" · "+up+" UP votes / "+down+" DOWN votes. Requires 3 aligned votes, score ≥34/100 and fresh core feeds.";
+    const chips=$("confluenceChips");chips.textContent="";
+    for(const v of votes){const el=document.createElement("span");el.className=v.side>0?"up":"down";el.textContent=v.name+" "+(v.side>0?"UP":"DOWN");chips.appendChild(el);}
+    if(!votes.length){const el=document.createElement("span");el.textContent="No strong directional agreement";chips.appendChild(el);}
+    $("confluenceClock").textContent="Market elapsed "+Math.floor(elapsed)+"s · "+Math.ceil(remaining)+"s left · target gap "+(targetGap===null?"not synchronized":(targetGap>=0?"+$":"−$")+fmt(Math.abs(targetGap)))+". Confluence score is not a win probability.";
+    captureTrendCheckpoint(forecast);
+  }
+  function captureTrendCheckpoint(forecast){
+    const r=state.activeRecord;if(!r||r.start!==boundaryAtOrBefore(Date.now())||state.target===null||state.targetTs!==r.start)return;
+    if(!r.trendCheckpoints)r.trendCheckpoints={};
+    const elapsed=(Date.now()-r.start)/1000;
+    [60,180,240].forEach(mark=>{
+      const key=String(mark);
+      if(!r.trendCheckpoints[key]&&elapsed>=mark&&elapsed<=mark+15){
+        r.trendCheckpoints[key]={side:forecast.side,score:Math.round(forecast.score*1000)/1000,up:forecast.up,down:forecast.down,valid:forecast.valid,at:Date.now(),seconds:Math.round(elapsed)};
+        saveMarketLab();renderMarketLab();
+      }
+    });
+  }
+  function startFlowAndSwingSystems(){
+    connectFuturesTakerTape();
+    updateSwingEngine();
+    updateConfluenceForecast();
+    state.flowTimer=setInterval(()=>{
+      updateSwingEngine();
+      renderFlowPressure();
+    },1000);
+  }
+
   function forecastLabel(score,minimum=.30){
     if(Math.abs(score)<minimum)return {label:"WAIT · NO CLEAR EDGE",side:"WAIT",cls:"",strength:Math.round(Math.abs(score)*100)};
     return {label:score>0?"UP":"DOWN",side:score>0?"UP":"DOWN",cls:score>0?"up":"down",strength:Math.min(99,Math.round(Math.abs(score)*100))};
@@ -489,6 +887,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     polyText("polyDetail",!polyFresh?"Waiting for fresh UP and DOWN CLOB books · UP age "+(Number.isFinite(upAge)?(upAge/1000).toFixed(1)+"s":"—")+" · DOWN age "+(Number.isFinite(downAge)?(downAge/1000).toFixed(1)+"s":"—"):"CLOB-only edge "+edge+"/100 · contract price gap "+(oddsRaw>=0?"+":"")+(oddsRaw*100).toFixed(1)+"¢ · depth confirmation "+(depth>=0?"UP ":"DOWN ")+Math.round(Math.abs(depth)*100)+"/100 · not a calibrated probability");
     polyText("polyMomentum",polyFresh?(score>=0?"UP ":"DOWN ")+edge+"/100":"WAIT");
     captureCheckpoint(score,side);
+    updateConfluenceForecast();
   }
 
 
@@ -719,7 +1118,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const start=boundaryAtOrBefore(Date.now()),ref=state.twapHistory.find(x=>x.ts===start);
     if(ref){state.target=ref.value;state.targetTs=start;$("targetLarge").textContent="$"+fmt(ref.value);$("targetTime").textContent="Recovered exact Chainlink TWAP60 start observation"}
     try{const active=JSON.parse(localStorage.getItem(LAB_KEY+":active")||"null");if(active&&active.start===start)state.activeRecord=active}catch(_){}
-    if(ref&&!state.activeRecord)state.activeRecord={start,target:ref.value,checkpoints:{}};
+    if(ref&&!state.activeRecord)state.activeRecord={start,target:ref.value,checkpoints:{},trendCheckpoints:{}};
     renderMarketLab();
   }
   function persistTwapHistory(){
@@ -745,7 +1144,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       state.target=value;state.targetTs=start;
       $("targetLarge").textContent="$"+fmt(value);
       $("targetTime").textContent="Exact Chainlink TWAP60 start observation · "+new Date(ts).toLocaleTimeString();
-      state.activeRecord={start,target:value,checkpoints:{}};
+      state.activeRecord={start,target:value,checkpoints:{},trendCheckpoints:{}};
       saveMarketLab();
       setChartTargetLine();setChartWindow(start);
       updateDirection();
@@ -784,12 +1183,18 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       const hits=calls.filter(x=>x.checkpoints[String(mark)].side===x.outcome).length;
       $("lab"+mark).textContent=calls.length?Math.round(hits/calls.length*100)+"% · "+hits+"/"+calls.length+" calls · "+calls.length+"/"+observed.length+" active":"—";
     });
+    [60,180,240].forEach(mark=>{
+      const observed=done.filter(x=>x.trendCheckpoints&&x.trendCheckpoints[String(mark)]);
+      const calls=observed.filter(x=>x.trendCheckpoints[String(mark)].side!=="WAIT");
+      const hits=calls.filter(x=>x.trendCheckpoints[String(mark)].side===x.outcome).length;
+      $("labTrend"+mark).textContent=calls.length?Math.round(hits/calls.length*100)+"% · "+hits+"/"+calls.length+" · "+observed.length+" observed":"—";
+    });
     $("labStatus").textContent=done.length?"TRACKING · "+done.length+" SETTLED":"COLLECTING";
-    $("labDetail").textContent=done.length?"Accuracy is shown separately by decision time. WAIT calls are excluded from directional hit rate; no untested score is presented as a probability.":"No completed exact-reference markets yet. Keep the page open through market boundaries to build a real sample.";
+    $("labDetail").textContent=done.length?"Accuracy is measured against exact Chainlink TWAP60 settlement. WAIT calls are excluded from directional hit rate; new swing + flow scores are stored at 60s, 180s and 240s.":"No completed exact-reference markets yet. Keep the page open through market boundaries to build a real sample.";
   }
   function exportMarketLab(){
-    const rows=[["start_utc","target_twap60","final_twap60","outcome","checkpoint_60s_side","checkpoint_60s_score","checkpoint_180s_side","checkpoint_180s_score","checkpoint_240s_side","checkpoint_240s_score"]];
-    state.journal.forEach(r=>rows.push([new Date(r.start).toISOString(),r.target,r.final,r.outcome,...[60,180,240].flatMap(m=>r.checkpoints&&r.checkpoints[String(m)]?[r.checkpoints[String(m)].side,r.checkpoints[String(m)].score] : ["",""])]));
+    const rows=[["start_utc","target_twap60","final_twap60","outcome","checkpoint_60s_side","checkpoint_60s_score","checkpoint_180s_side","checkpoint_180s_score","checkpoint_240s_side","checkpoint_240s_score","swing_flow_60s_side","swing_flow_60s_score","swing_flow_60s_up_votes","swing_flow_60s_down_votes","swing_flow_180s_side","swing_flow_180s_score","swing_flow_240s_side","swing_flow_240s_score"]];
+    state.journal.forEach(r=>rows.push([new Date(r.start).toISOString(),r.target,r.final,r.outcome,...[60,180,240].flatMap(m=>r.checkpoints&&r.checkpoints[String(m)]?[r.checkpoints[String(m)].side,r.checkpoints[String(m)].score]:["",""]),...(r.trendCheckpoints&&r.trendCheckpoints["60"]?[r.trendCheckpoints["60"].side,r.trendCheckpoints["60"].score,r.trendCheckpoints["60"].up,r.trendCheckpoints["60"].down]:["","","",""]),...(r.trendCheckpoints&&r.trendCheckpoints["180"]?[r.trendCheckpoints["180"].side,r.trendCheckpoints["180"].score]:["",""]),...(r.trendCheckpoints&&r.trendCheckpoints["240"]?[r.trendCheckpoints["240"].side,r.trendCheckpoints["240"].score]:["",""])]));
     const csv=rows.map(row=>row.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\n");
     const url=URL.createObjectURL(new Blob([csv],{type:"text/csv"})),a=document.createElement("a");a.href=url;a.download="btc-5m-market-results.csv";a.click();URL.revokeObjectURL(url);
   }
@@ -817,7 +1222,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       }
       if(m.channel==="market_trades")for(const ev of (m.events||[]))for(const t of (ev.trades||[])){
         const p=Number(t.price),size=Number(t.size),ts=Date.parse(t.time)||now;
-        if(p>0&&size>0){state.coinbaseTrades.push({ts,price:p,size,buy:String(t.side||"").toUpperCase()==="BUY"});state.coinbaseTrades=state.coinbaseTrades.filter(x=>now-x.ts<65000);state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,ts,p);renderCrossVenue()}
+        if(p>0&&size>0){state.coinbaseTrades.push({ts,price:p,size,buy:String(t.side||"").toUpperCase()==="BUY"});pushFlowTrade("COINBASE",t.trade_id??(ts+"-"+p+"-"+size),ts,p,size,String(t.side||"").toUpperCase()==="BUY");state.coinbaseTrades=state.coinbaseTrades.filter(x=>now-x.ts<65000);state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,ts,p);renderCrossVenue()}
       }
     };
     ws.onerror=()=>crossStatus("COINBASE FEED ERROR","bad");
@@ -835,7 +1240,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       let m;try{m=JSON.parse(e.data)}catch(_){return}
       const d=m.data||{},now=Date.now();
       if(m.channel==="trades"&&Array.isArray(d)){
-        for(const t of d){const p=Number(t.px),size=Number(t.sz),ts=Number(t.time)||now;if(p>0&&size>0){state.hlPrice=p;state.hlTs=now;state.hlTrades.push({ts,price:p,size,buy:String(t.side).toUpperCase()==="B"});addCrossPrice(state.hlPrices,ts,p)}}
+        for(const t of d){const p=Number(t.px),size=Number(t.sz),ts=Number(t.time)||now;if(p>0&&size>0){state.hlPrice=p;state.hlTs=now;state.hlTrades.push({ts,price:p,size,buy:String(t.side).toUpperCase()==="B"});pushFlowTrade("HYPERLIQUID",t.tid??(ts+"-"+p+"-"+size),ts,p,size,String(t.side).toUpperCase()==="B");addCrossPrice(state.hlPrices,ts,p)}}
         state.hlTrades=state.hlTrades.filter(x=>now-x.ts<65000);renderCrossVenue();
       }else if(m.channel==="l2Book"&&d.levels){
         const parse=xs=>(xs||[]).map(x=>({p:Number(x.px),s:Number(x.sz)})).filter(x=>x.p>0&&x.s>0);
@@ -1069,7 +1474,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 
   $("reconnect").addEventListener("click",connect);
   $("exportLab").addEventListener("click",exportMarketLab);
-  loadMarketLab();initLiveChart();connect();connectTrades();startCrossVenue();startPolymarketMarketData();tick();updateMomentum();startLiveMomentum();state.timer=setInterval(tick,500);
+  loadMarketLab();initLiveChart();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();state.timer=setInterval(tick,500);
 })();
 
 </script>

@@ -1032,6 +1032,12 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     for(const x of recent)if(x.score*sign>=.12)aligned++;
     return {ratio:aligned/recent.length,count:recent.length};
   }
+  function roundTurnPersistence(memory,side,windowMs=12000){
+    const recent=memory.history.filter(x=>Date.now()-x.ts<=windowMs);
+    if(recent.length<5)return {ratio:0,count:recent.length};
+    const aligned=recent.filter(x=>x.turnSide===side).length;
+    return {ratio:aligned/recent.length,count:recent.length};
+  }
   function updateConfluenceForecast(){
     if(!$("confluenceCall"))return;
     const now=Date.now(),start=boundaryAtOrBefore(now),elapsed=(now-start)/1000,remaining=Math.max(0,300-elapsed);
@@ -1148,7 +1154,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       memory.contextUpdatedAt=now;
     }
     if(!memory.lastSampleAt||now-memory.lastSampleAt>=850){
-      memory.history.push({ts:now,score:memory.score,context:rawContext===null?null:memory.contextScore});
+      memory.history.push({ts:now,score:memory.score,context:rawContext===null?null:memory.contextScore,turnSide:edge.fastTurnSide||null});
       memory.history=memory.history.filter(x=>now-x.ts<=600000);
       memory.lastSampleAt=now;
     }
@@ -1162,7 +1168,12 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 
     const votes=inputs.filter(x=>x.side!==0);
     const up=votes.filter(x=>x.side>0).length,down=votes.filter(x=>x.side<0).length;
-    const scoreSide=score>=.27?"UP":score<=-.27?"DOWN":"WAIT";
+    const turnHoldActive=!!memory.turnHoldUntil&&now<memory.turnHoldUntil&&
+      memory.turnHoldSide&&edge.spotScore!==null&&edge.perpScore!==null&&
+      Math.sign(edge.spotScore)===(memory.turnHoldSide==="UP"?1:-1)&&
+      Math.sign(edge.perpScore)===(memory.turnHoldSide==="UP"?1:-1)&&
+      edge.price30!==null&&Math.sign(edge.price30)===(memory.turnHoldSide==="UP"?1:-1);
+    const scoreSide=fastTurn?edge.fastTurnSide:turnHoldActive?memory.turnHoldSide:score>=.27?"UP":score<=-.27?"DOWN":"WAIT";
     const enough=bookFresh&&targetFresh&&spotFresh&&valid>=4;
 
     if(!enough){
@@ -1183,7 +1194,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
         memory.candidate="WAIT";memory.candidateSince=0;
       }else{
         if(memory.candidate!==scoreSide){memory.candidate=scoreSide;memory.candidateSince=now;}
-        const persistence=roundPersistence(memory,scoreSide,20000);
+        const persistence=fastTurn?roundTurnPersistence(memory,scoreSide,12000):roundPersistence(memory,scoreSide,20000);
         const targetConflict=filtered.target!==null&&Math.abs(filtered.target)>.45&&Math.sign(filtered.target)!==(scoreSide==="UP"?1:-1);
         const contextConflict=contextFresh&&Math.abs(contextScore)>.38&&Math.sign(contextScore)!==(scoreSide==="UP"?1:-1);
         const requiredSeconds=fastTurn?7:(targetConflict?20:(contextConflict?24:(memory.leader==="WAIT"?12:14)));
@@ -1197,6 +1208,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
         if(now-memory.candidateSince>=requiredSeconds*1000&&persistence.count>=minSamples&&persistence.ratio>=requiredPersistence&&alignedVotes>=3&&opposingVotes<=2&&(!fastTurn||alignedCvd)){
           if(memory.leader!=="WAIT"&&memory.leader!==scoreSide)memory.leadChanges++;
           memory.leader=scoreSide;memory.leaderSince=now;
+          if(fastTurn){memory.turnHoldSide=scoreSide;memory.turnHoldUntil=now+15000;}
           memory.candidate="WAIT";memory.candidateSince=0;
         }
       }
@@ -1205,7 +1217,10 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const leaderPersistence=memory.leader==="WAIT"?{ratio:0,count:0}:roundPersistence(memory,memory.leader,20000);
     const leaderAge=memory.leaderSince?Math.max(0,(now-memory.leaderSince)/1000):0;
     const scoreMatchesLeader=memory.leader!=="WAIT"&&Math.sign(score)===(memory.leader==="UP"?1:-1);
-    const confirmed=enough&&memory.leader!=="WAIT"&&scoreMatchesLeader&&leaderPersistence.ratio>=.58&&Math.abs(score)>=.22;
+    const confirmed=enough&&memory.leader!=="WAIT"&&(
+      (scoreMatchesLeader&&leaderPersistence.ratio>=.58&&Math.abs(score)>=.22)||
+      (turnHoldActive&&memory.turnHoldSide===memory.leader&&edge.volumeSurge!==null&&edge.volumeSurge>=1.15)
+    );
     const side=confirmed?memory.leader:"WAIT";
 
     const flowOpposes=memory.leader==="UP"

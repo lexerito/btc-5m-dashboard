@@ -415,7 +415,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresPrice:null,flowTimer:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresPrice:null,flowTimer:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -682,8 +682,9 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     }
     const currentBin=Math.floor(now/30000),prior=[];
     for(let i=1;i<=10;i++)prior.push(bins.get(currentBin-i)||0);
+    const activeBins=prior.filter(x=>x>0).length;
     const avg=prior.reduce((a,b)=>a+b,0)/prior.length;
-    return {current,baseline:avg,ratio:avg>0?current/avg:null};
+    return {current,baseline:avg,activeBins,ratio:avg>0&&activeBins>=5?current/avg:null};
   }
   function oiChangePct(ms,now=Date.now()){
     const rows=state.hlOiHistory;
@@ -803,9 +804,9 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     set("flowOiRead",oi);
     set("flowLiqRead",e.longShortLiq.total?"LONG LIQ "+compactUsd(e.longShortLiq.longs)+" · SHORT LIQ "+compactUsd(e.longShortLiq.shorts):"NO RECENT LIQUIDATION PRINTS");
     set("flowAbsorbRead",e.absorptionLabel);
-    const feedOk=e.sourceCount>0&&now-e.updatedAt<2500;
+    const spotPerpReady=e.spotScore!==null&&e.perpScore!==null&&now-e.updatedAt<2500;
     const status=$("flowEdgeStatus");
-    if(status){status.textContent=feedOk?"LIVE · SPOT / PERP FLOW":"COLLECTING INDEPENDENT TAPES";status.className="feature-status "+(feedOk?"ok":"");}
+    if(status){status.textContent=spotPerpReady?"LIVE · SPOT + PERP CONFIRMATION":e.sourceCount?"PARTIAL · NEED BOTH TAPES":"COLLECTING INDEPENDENT TAPES";status.className="feature-status "+(spotPerpReady?"ok":"");}
     if(state.flowSpotSeries&&state.flowPerpSeries){
       try{
         state.flowSpotSeries.setData(buildCvdPoints(["BINANCE SPOT","COINBASE"],now));
@@ -1681,7 +1682,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
     const marks=[30,60,120,180,240];
     const rows=[["start_utc","target_twap60","final_twap60","outcome",
       "checkpoint_60s_side","checkpoint_60s_score","checkpoint_180s_side","checkpoint_180s_score","checkpoint_240s_side","checkpoint_240s_score",
-      ...marks.flatMap(m=>["leader_"+m+"s_call","leader_"+m+"s_score","leader_"+m+"s_side","leader_"+m+"s_persistence","leader_"+m+"s_lead_changes","leader_"+m+"s_hold_seconds"])]];
+      ...marks.flatMap(m=>["leader_"+m+"s_call","leader_"+m+"s_score","leader_"+m+"s_side","leader_"+m+"s_persistence","leader_"+m+"s_lead_changes","leader_"+m+"s_hold_seconds","spot_cvd","perp_cvd","volume_surge","oi_1m_pct","absorption","hold_read"])]];
     state.journal.forEach(r=>{
       const row=[new Date(r.start).toISOString(),r.target,r.final,r.outcome,
         ...(r.checkpoints&&r.checkpoints["60"]?[r.checkpoints["60"].side,r.checkpoints["60"].score]:["",""]),
@@ -1689,7 +1690,8 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
         ...(r.checkpoints&&r.checkpoints["240"]?[r.checkpoints["240"].side,r.checkpoints["240"].score]:["",""])];
       for(const m of marks){
         const x=r.trendCheckpoints&&r.trendCheckpoints[String(m)];
-        row.push(x?x.side:"",x?x.score:"",x?x.leader:"",x?x.persistence:"",x?x.leadChanges:"",x?x.leaderAge:"");
+        row.push(x?x.side:"",x?x.score:"",x?x.leader:"",x?x.persistence:"",x?x.leadChanges:"",x?x.leaderAge:"",
+          x?x.spotCvd:"",x?x.perpCvd:"",x?x.volumeSurge:"",x?x.oi1m:"",x?x.absorption:"",x?x.hold:"");
       }
       rows.push(row);
     });
@@ -1794,6 +1796,14 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
       let m;try{m=JSON.parse(e.data)}catch(_){return}
       const o=m.o||{},price=Number(o.ap||o.p),qty=Number(o.z||o.l||o.q),ts=Number(o.T||m.E||Date.now());
       if(o.s!=="BTCUSDT"||!(price>0)||!(qty>0)||!["BUY","SELL"].includes(o.S))return;
+      const key=[ts,o.S,o.q,o.p,o.ap].join(":");
+      if(state.liquidationSeen[key])return;
+      state.liquidationSeen[key]=ts;
+      if(Object.keys(state.liquidationSeen).length>5000){
+        const cutoff=Date.now()-300000,keep={};
+        for(const [k,v] of Object.entries(state.liquidationSeen))if(v>=cutoff)keep[k]=v;
+        state.liquidationSeen=keep;
+      }
       state.liquidations.push({ts,side:o.S,notional:price*qty,price,qty});
       state.liquidations=state.liquidations.filter(x=>Date.now()-x.ts<300000).slice(-1000);
       renderFlowIntelligence();

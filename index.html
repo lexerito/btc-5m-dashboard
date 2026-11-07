@@ -205,6 +205,16 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .confluence-memory.up{color:#59efb5;border-color:#276c55;background:#0c2827}
 .confluence-memory.down{color:#ff83a4;border-color:#784052;background:#2a1323}
 .confluence-memory.wait{color:#b8c3dd;border-color:#3b4567}
+.flip-radar{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px;padding:10px 12px;border:1px solid #344456;border-radius:9px;background:#0b121b;font-size:9px;line-height:1.5}
+.flip-radar b{font-size:9px;font-weight:900;letter-spacing:.08em;color:#aebed0}
+.flip-radar span{color:#8598ab;flex:1;min-width:180px;text-align:right}
+.flip-radar.minor{border-color:#7b6537;background:#1b180f}
+.flip-radar.minor b{color:#f0cb7b}.flip-radar.minor span{color:#bca878}
+.flip-radar.pressure{border-color:#4d5e80;background:#101a29}
+.flip-radar.pressure b{color:#9dc7f5}.flip-radar.pressure span{color:#9aabc0}
+.flip-radar.major{border-color:#247c5e;background:#0d211c}
+.flip-radar.major b{color:#63e4b1}.flip-radar.major span{color:#a1c8b7}
+@media(max-width:620px){.flip-radar span{text-align:left;min-width:100%}}
 
 
 .flow-edge-panel{margin-top:13px;padding:13px;border:1px solid #394b81;border-radius:12px;background:linear-gradient(145deg,#0d1428,#090d1b 80%)}
@@ -623,6 +633,7 @@ button{font-family:inherit}
   </div>
   <div class="confluence-meter"><span id="confluenceMeter"></span></div>
   <div id="confluenceMemory" class="confluence-memory">CONTINUOUS BTC TREND · COLLECTING</div>
+  <div id="flipRadar" class="flip-radar wait"><b id="flipRadarStatus">FLIP RADAR · STARTING</b><span id="flipRadarDetail">Separating small counter-breaks from major reversals.</span></div>
   <div class="flow-edge-panel">
     <div class="feature-head"><div><div class="label">REAL VOLUME EDGE · SPOT CVD vs PERP CVD</div><div class="small">Separate aggressor flow · cumulative delta pressure · price absorption · open-interest context</div></div><div class="flow-status-tools"><span id="flowEdgeStatus" class="feature-status">COLLECTING</span><button id="flowRestartBtn" class="flow-restart-btn" type="button" title="Reconnect live momentum feeds and rebuild flow calculations">RESTART FEEDS</button></div></div>
     <div class="flow-cvd-legend"><span><i class="spot-line"></i> SPOT CVD</span><span><i class="perp-line"></i> PERP CVD</span><span>1-SECOND UPDATES · 15-MINUTE CONTINUOUS NORMALIZED DELTA</span></div>
@@ -1016,6 +1027,24 @@ button{font-family:inherit}
       weighted+=((x.buy-x.sell)/x.total)*w;weights+=w;
     }
     return {buy,sell,total,count,imbalance:weights?weighted/weights:null,sources:active.map(x=>x.name),maxTradeShare:maxTrade/total};
+  }
+  function fastTapeMove(venues,windowMs,now=Date.now()){
+    const wanted=new Set(venues),byVenue=new Map();
+    for(const name of venues)byVenue.set(name,{firstTs:Infinity,firstPrice:null,lastTs:0,lastPrice:null,count:0,total:0});
+    for(const t of state.flowTrades){
+      if(!wanted.has(t.venue)||now-t.ts<0||now-t.ts>windowMs||!(t.price>0))continue;
+      const row=byVenue.get(t.venue);if(!row)continue;
+      if(t.ts<row.firstTs){row.firstTs=t.ts;row.firstPrice=t.price;}
+      if(t.ts>=row.lastTs){row.lastTs=t.ts;row.lastPrice=t.price;}
+      row.count++;row.total+=Math.max(0,Number(t.notional)||0);
+    }
+    const active=Array.from(byVenue.entries()).map(([name,x])=>({name,...x}))
+      .filter(x=>x.count>=2&&x.total>=5000&&x.firstPrice!==null&&x.lastPrice!==null);
+    const count=active.reduce((n,x)=>n+x.count,0),total=active.reduce((n,x)=>n+x.total,0);
+    if(!active.length||count<3||total<10000)return null;
+    let delta=0,weight=0;
+    for(const x of active){const w=Math.sqrt(Math.min(x.total,5000000));delta+=(x.lastPrice-x.firstPrice)*w;weight+=w;}
+    return {delta:weight?delta/weight:null,count,total,sources:active.map(x=>x.name)};
   }
   function fastVolumeSurgeFor(venues,now=Date.now()){
     const set=new Set(venues),currentBin=Math.floor(now/5000),bins=new Map();
@@ -1589,18 +1618,21 @@ button{font-family:inherit}
       state.roundMemory={
         marketStart:start,lastSampleAt:0,inputs:{},score:0,history:[],
         leader:"WAIT",leaderSince:0,candidate:"WAIT",candidateSince:0,
-        weakSince:0,leadChanges:0,scoreUpdatedAt:0,
+        weakSince:0,leadChanges:0,scoreUpdatedAt:0,flipHistory:[],fastFlipCandidateSide:"WAIT",fastFlipCandidateSince:0,fastFlipLastEvidenceAt:0,fastFlipSide:"WAIT",fastFlipUntil:0,lastFlipEdgeAt:0,
         contextScore:0,contextUpdatedAt:0,contextHistory:[],marketChanges:0
       };
     }
     const memory=state.roundMemory;
+    if(!Array.isArray(memory.flipHistory))memory.flipHistory=[];
+    if(memory.fastFlipCandidateSide===undefined)memory.fastFlipCandidateSide="WAIT";
+    if(memory.fastFlipSide===undefined)memory.fastFlipSide="WAIT";
     if(memory.marketStart!==start){
       memory.marketStart=start;memory.marketChanges=(memory.marketChanges||0)+1;
       memory.inputs.clob=null;memory.inputs.target=null;
       memory.candidate="WAIT";memory.candidateSince=0;memory.weakSince=0;
     }
 
-    const edge=state.volumeEdge&&now-state.volumeEdge.updatedAt<3000?state.volumeEdge:(state.volumeEdge=calculateRealVolumeEdge(now));
+    const edge=state.volumeEdge&&now-state.volumeEdge.updatedAt<450?state.volumeEdge:(state.volumeEdge=calculateRealVolumeEdge(now));
     const f30=getFlowWindow(30000);
     const latestSpot=state.chainlinkHistory.length?state.chainlinkHistory[state.chainlinkHistory.length-1]:null;
     const spotAge=latestSpot?now-latestSpot.ts:Infinity;
@@ -1678,10 +1710,95 @@ button{font-family:inherit}
     const absorptionAdjust=edge.absorptionRaw===null?0:edge.absorptionRaw*.055;
     const rawScore=totalWeight?Math.max(-1,Math.min(1,weighted/totalWeight+volumeBoost+absorptionAdjust)):0;
 
+    // Fast flip radar: separate a short counter-break from a full regime change.
+    // Trade-tape prices provide an early hint; Chainlink remains the settlement-side check.
+    const tapeSpot5=fastTapeMove(["BINANCE SPOT","COINBASE"],5000,now);
+    const tapePerp5=fastTapeMove(["BINANCE PERP","HYPERLIQUID"],5000,now);
+    const tapeSpot10=fastTapeMove(["BINANCE SPOT","COINBASE"],10000,now);
+    const tapePerp10=fastTapeMove(["BINANCE PERP","HYPERLIQUID"],10000,now);
+    const noiseStep=averageAbsoluteStep(spotRows);
+    const fastPriceFloor=Math.max(.55,Math.min(2.5,noiseStep*1.15));
+    const price5Side=edge.price5!==null&&Math.abs(edge.price5)>=fastPriceFloor?Math.sign(edge.price5):0;
+    const price10Side=edge.price10!==null&&Math.abs(edge.price10)>=Math.max(.85,noiseStep*1.7)?Math.sign(edge.price10):0;
+    const price30Side=edge.price30!==null&&Math.abs(edge.price30)>=Math.max(1.5,noiseStep*2.6)?Math.sign(edge.price30):0;
+    const flow5Side=edge.fastSpot5&&edge.fastPerp5&&
+      Math.sign(edge.fastSpot5.imbalance)===Math.sign(edge.fastPerp5.imbalance)&&
+      Math.abs(edge.fastSpot5.imbalance)>=.18&&Math.abs(edge.fastPerp5.imbalance)>=.18
+      ?Math.sign(edge.fastSpot5.imbalance):0;
+    const flow10Side=edge.fastSpot10&&edge.fastPerp10&&
+      Math.sign(edge.fastSpot10.imbalance)===Math.sign(edge.fastPerp10.imbalance)&&
+      Math.abs(edge.fastSpot10.imbalance)>=.12&&Math.abs(edge.fastPerp10.imbalance)>=.12
+      ?Math.sign(edge.fastSpot10.imbalance):0;
+    const flow30Side=edge.spot30&&edge.perp30&&
+      Math.sign(edge.spot30.imbalance)===Math.sign(edge.perp30.imbalance)&&
+      Math.abs(edge.spot30.imbalance)>=.13&&Math.abs(edge.perp30.imbalance)>=.13
+      ?Math.sign(edge.spot30.imbalance):0;
+    const tape5Side=tapeSpot5&&tapePerp5&&tapeSpot5.delta*tapePerp5.delta>0&&
+      Math.abs(tapeSpot5.delta)>=fastPriceFloor&&Math.abs(tapePerp5.delta)>=fastPriceFloor
+      ?Math.sign(tapeSpot5.delta):0;
+    const tape10Side=tapeSpot10&&tapePerp10&&tapeSpot10.delta*tapePerp10.delta>0&&
+      Math.abs(tapeSpot10.delta)>=Math.max(.8,fastPriceFloor*1.35)&&Math.abs(tapePerp10.delta)>=Math.max(.8,fastPriceFloor*1.35)
+      ?Math.sign(tapeSpot10.delta):0;
+    const volumeConfirmed=!!(
+      (edge.fastSpot5?.total>=45000&&edge.fastPerp5?.total>=45000)||
+      (edge.fastSpotSurge?.ratio!==null&&edge.fastPerpSurge?.ratio!==null&&
+       edge.fastSpotSurge.ratio>=1.15&&edge.fastPerpSurge.ratio>=1.15)||
+      (edge.largePrintPulse&&((edge.largePrintPulse==="UP"?1:-1)===flow5Side&&flow5Side!==0))
+    );
+    const swingSide=swingRaw!==null&&Math.abs(swingRaw)>=.18?Math.sign(swingRaw):0;
+    const fastFlipMetrics=sideSign=>{
+      const flow5=flow5Side===sideSign,flow10=flow10Side===sideSign,flow30=flow30Side===sideSign;
+      const p5=price5Side===sideSign,p10=price10Side===sideSign,p30=price30Side===sideSign;
+      const t5=tape5Side===sideSign,t10=tape10Side===sideSign;
+      const target=targetSideNow===sideSign;
+      const clobOpposes=filtered.clob!==null&&filtered.clob*sideSign<-.55;
+      const points=(flow5?2:0)+(p5?1:0)+(t5?.8:0)+(flow10?1:0)+(p10?.8:0)+(t10?.55:0)+
+        (flow30?.7:0)+(p30?.45:0)+(volumeConfirmed?.8:0)+(swingSide===sideSign?.45:0)+(target?.35:0)-(clobOpposes?.9:0);
+      const major=flow5&&(p5||t5||target)&&(flow10||p10||t10)&&
+        (volumeConfirmed||(flow30&&p30))&&!clobOpposes&&points>=4.0;
+      const minor=(p5&&(flow5||flow10||t5||edge.fastTurnSide===(sideSign>0?"UP":"DOWN")))||
+        (t5&&(flow5||flow10))||(target&&flow5);
+      const pressure=flow5||flow10||t5||t10;
+      return {points,major,minor,pressure};
+    };
+    const upFlip=fastFlipMetrics(1),downFlip=fastFlipMetrics(-1);
+    const flipCandidateSide=upFlip.major&&(!downFlip.major||upFlip.points>=downFlip.points)?"UP":
+      downFlip.major?"DOWN":upFlip.minor&&(!downFlip.minor||upFlip.points>=downFlip.points)?"UP":
+      downFlip.minor?"DOWN":upFlip.pressure&&(!downFlip.pressure||upFlip.points>=downFlip.points)?"UP":
+      downFlip.pressure?"DOWN":"WAIT";
+    const flipCandidateSign=flipCandidateSide==="UP"?1:flipCandidateSide==="DOWN"?-1:0;
+    const flipMetrics=flipCandidateSign>0?upFlip:flipCandidateSign<0?downFlip:null;
+    const majorQualified=!!flipMetrics&&flipMetrics.major;
+    const minorBreak=!!flipMetrics&&!majorQualified&&flipMetrics.minor;
+    const pressureOnly=!!flipMetrics&&!majorQualified&&!minorBreak&&flipMetrics.pressure;
+    const enough=bookFresh&&targetFresh&&spotFresh&&valid>=4;
+
+    if(majorQualified){
+      if(memory.fastFlipCandidateSide!==flipCandidateSide){
+        memory.fastFlipCandidateSide=flipCandidateSide;
+        memory.fastFlipCandidateSince=now;
+      }
+      memory.fastFlipLastEvidenceAt=now;
+    }else if(now-(memory.fastFlipLastEvidenceAt||0)>1200){
+      memory.fastFlipCandidateSide="WAIT";
+      memory.fastFlipCandidateSince=0;
+    }
+    if(memory.lastFlipEdgeAt!==edge.updatedAt){
+      memory.flipHistory.push({ts:now,side:majorQualified?flipCandidateSide:"WAIT",major:majorQualified});
+      memory.flipHistory=memory.flipHistory.filter(x=>now-x.ts<=6000);
+      memory.lastFlipEdgeAt=edge.updatedAt;
+    }
+    const flipRecent=memory.flipHistory.filter(x=>now-x.ts<=4500);
+    const flipAligned=majorQualified?flipRecent.filter(x=>x.major&&x.side===flipCandidateSide).length:0;
+    const flipPersistence=flipRecent.length?flipAligned/flipRecent.length:0;
+    const rapidMajorTurn=majorQualified&&memory.fastFlipCandidateSide===flipCandidateSide&&
+      now-(memory.fastFlipCandidateSince||now)>=1800&&flipAligned>=3&&flipPersistence>=.65
+      ?flipCandidateSide:null;
+    const fastRadarScore=flipMetrics?flipMetrics.points:0;
     const leaderSide=memory.leader;
     const fastTurn=!!edge.fastTurnSide&&edge.fastTurnSide!==leaderSide;
     const scoreDt=memory.scoreUpdatedAt?Math.max(0,Math.min(5000,now-memory.scoreUpdatedAt)):1000;
-    const scoreTau=fastTurn?4200:9500;
+    const scoreTau=rapidMajorTurn?2200:majorQualified?3200:fastTurn?4200:9500;
     const scoreAlpha=1-Math.exp(-scoreDt/scoreTau);
     memory.score=memory.scoreUpdatedAt?memory.score+scoreAlpha*(rawScore-memory.score):rawScore;
     memory.scoreUpdatedAt=now;
@@ -1699,9 +1816,21 @@ button{font-family:inherit}
       memory.contextUpdatedAt=now;
     }
     if(!memory.lastSampleAt||now-memory.lastSampleAt>=850){
-      memory.history.push({ts:now,score:memory.score,context:rawContext===null?null:memory.contextScore,turnSide:edge.fastTurnSide||null,targetSide:targetSideNow,marketStart:start});
+      memory.history.push({ts:now,score:memory.score,context:rawContext===null?null:memory.contextScore,turnSide:rapidMajorTurn||edge.fastTurnSide||null,targetSide:targetSideNow,marketStart:start});
       memory.history=memory.history.filter(x=>now-x.ts<=600000);
       memory.lastSampleAt=now;
+    }
+    // A verified major flip can reset the directional score faster than the slow trend EMA.
+    let rapidFlipJustChanged=false;
+    if(rapidMajorTurn&&enough&&memory.leader!==rapidMajorTurn){
+      const sign=rapidMajorTurn==="UP"?1:-1;
+      memory.leadChanges+=(memory.leader!=="WAIT"?1:0);
+      memory.leader=rapidMajorTurn;memory.leaderSince=now;
+      memory.fastFlipSide=rapidMajorTurn;memory.fastFlipUntil=now+7500;
+      memory.turnHoldSide=rapidMajorTurn;memory.turnHoldUntil=now+12000;
+      memory.score=sign*Math.max(.24,Math.min(.72,.30+Math.max(0,fastRadarScore-4)*.07));
+      memory.candidate="WAIT";memory.candidateSince=0;memory.weakSince=0;
+      rapidFlipJustChanged=true;
     }
     const score=Math.max(-1,Math.min(1,memory.score));
     const contextScore=Math.max(-1,Math.min(1,memory.contextScore||0));
@@ -1713,15 +1842,21 @@ button{font-family:inherit}
 
     const votes=inputs.filter(x=>x.side!==0);
     const up=votes.filter(x=>x.side>0).length,down=votes.filter(x=>x.side<0).length;
-    const turnHoldActive=!!memory.turnHoldUntil&&now<memory.turnHoldUntil&&
+    const flipSideSign=memory.fastFlipSide==="UP"?1:memory.fastFlipSide==="DOWN"?-1:0;
+    const fastFlipHoldActive=!!flipSideSign&&now<(memory.fastFlipUntil||0)&&
+      flow5Side===flipSideSign&&(price5Side===flipSideSign||tape5Side===flipSideSign)&&
+      (flow10Side===flipSideSign||price10Side===flipSideSign||tape10Side===flipSideSign);
+    const slowTurnHoldActive=!!memory.turnHoldUntil&&now<memory.turnHoldUntil&&
       memory.turnHoldSide&&edge.spotScore!==null&&edge.perpScore!==null&&
       Math.sign(edge.spotScore)===(memory.turnHoldSide==="UP"?1:-1)&&
       Math.sign(edge.perpScore)===(memory.turnHoldSide==="UP"?1:-1)&&
       edge.price30!==null&&Math.sign(edge.price30)===(memory.turnHoldSide==="UP"?1:-1);
-    const scoreSide=fastTurn?edge.fastTurnSide:turnHoldActive?memory.turnHoldSide:score>=.27?"UP":score<=-.27?"DOWN":"WAIT";
-    const enough=bookFresh&&targetFresh&&spotFresh&&valid>=4;
+    const turnHoldActive=fastFlipHoldActive||slowTurnHoldActive;
+    const scoreSide=rapidMajorTurn?rapidMajorTurn:fastTurn?edge.fastTurnSide:turnHoldActive?memory.turnHoldSide:score>=.27?"UP":score<=-.27?"DOWN":"WAIT";
 
-    if(!enough){
+    if(rapidFlipJustChanged){
+      memory.candidate="WAIT";memory.candidateSince=0;
+    }else if(!enough){
       memory.candidate="WAIT";memory.candidateSince=0;
     }else if(scoreSide==="WAIT"){
       memory.candidate="WAIT";memory.candidateSince=0;
@@ -1781,9 +1916,10 @@ button{font-family:inherit}
     const targetHeld=targetAcceptance.count>=5&&targetAcceptance.ratio>=.55;
     const leaderAge=memory.leaderSince?Math.max(0,(now-memory.leaderSince)/1000):0;
     const scoreMatchesLeader=memory.leader!=="WAIT"&&Math.sign(score)===(memory.leader==="UP"?1:-1);
-    const confirmed=enough&&memory.leader!=="WAIT"&&scoreMatchesLeader&&leaderPersistence.ratio>=.55&&Math.abs(score)>=.20&&targetMatchesLeader&&(
+    const rapidFlipConfirmed=enough&&fastFlipHoldActive&&memory.fastFlipSide===memory.leader&&targetMatchesLeader;
+    const confirmed=rapidFlipConfirmed||(enough&&memory.leader!=="WAIT"&&scoreMatchesLeader&&leaderPersistence.ratio>=.55&&Math.abs(score)>=.20&&targetMatchesLeader&&(
       targetHeld||(turnHoldActive&&memory.turnHoldSide===memory.leader)
-    );
+    ));
     const side=confirmed?memory.leader:"WAIT";
 
     const flowOpposes=memory.leader==="UP"
@@ -1822,6 +1958,34 @@ button{font-family:inherit}
     const holdEl=$("flowHoldRead");
     if(holdEl){holdEl.textContent=holdText;holdEl.className="flow-hold-read "+holdClass;}
 
+    const radar=$("flipRadar"),radarStatus=$("flipRadarStatus"),radarDetail=$("flipRadarDetail");
+    if(radar&&radarStatus&&radarDetail){
+      const sideName=flipCandidateSide==="WAIT"?"":flipCandidateSide;
+      const secondsIn=memory.fastFlipCandidateSince?Math.max(0,(now-memory.fastFlipCandidateSince)/1000):0;
+      const mainLeader=memory.leader==="WAIT"?"NO MAIN LEADER":"MAIN LEADER "+memory.leader;
+      if(rapidFlipConfirmed){
+        radar.className="flip-radar major";
+        radarStatus.textContent="MAJOR FLIP CONFIRMED · "+memory.leader;
+        radarDetail.textContent="Fast spot/perp order flow, price movement and follow-through agree · "+flipAligned+"/"+flipRecent.length+" recent checks · settlement target currently aligned.";
+      }else if(majorQualified&&sideName){
+        radar.className="flip-radar major";
+        radarStatus.textContent="MAJOR REVERSAL FORMING · "+sideName;
+        radarDetail.textContent="Strength "+fastRadarScore.toFixed(1)+"/8 · "+flipAligned+"/"+flipRecent.length+" aligned checks · forming "+secondsIn.toFixed(1)+"s · "+mainLeader;
+      }else if(minorBreak&&sideName){
+        radar.className="flip-radar minor";
+        radarStatus.textContent="MINOR BREAK · "+sideName;
+        radarDetail.textContent="Short-term price/flow break detected, but volume, 10s follow-through or broader confirmation is missing · "+mainLeader+" unchanged.";
+      }else if(pressureOnly&&sideName){
+        radar.className="flip-radar pressure";
+        radarStatus.textContent="COUNTER-PRESSURE · "+sideName;
+        radarDetail.textContent="Fast aggressive flow is leaning "+sideName+" but price has not confirmed a break yet · watching for absorption or follow-through.";
+      }else{
+        radar.className="flip-radar wait";
+        radarStatus.textContent="FLIP RADAR · NO ACTIVE BREAK";
+        radarDetail.textContent=memory.leader==="WAIT"?"Waiting for aligned spot/perp flow and a price response.":"Watching for a move against "+memory.leader+" · minor breaks will not automatically replace the main leader.";
+      }
+    }
+
     const forecast={
       side,leader:memory.leader,score,rawScore,up,down,votes,valid,elapsed,remaining,
       targetGap,targetSideNow,targetAcceptance:targetAcceptance.ratio,targetAcceptanceSamples:targetAcceptance.count,
@@ -1834,7 +1998,7 @@ button{font-family:inherit}
 
     $("confluenceCall").textContent=side==="WAIT"
       ?(!targetFresh?"WAIT · NEW PRICE TO BEAT SYNCING":!correctMarketBook?"WAIT · NEW POLYMARKET BOOK SYNCING":"WAIT · NO CONFIRMED EDGE")
-      :side+" · "+(fastTurn?"HIGH-VOLUME TURN CONFIRMED":"SUSTAINED EDGE");
+      :side+" · "+(rapidFlipConfirmed?"MAJOR FLIP CONFIRMED":fastTurn?"HIGH-VOLUME TURN CONFIRMED":"SUSTAINED EDGE");
     $("confluenceCall").className="confluence-call "+(side==="UP"?"up":side==="DOWN"?"down":"");
     $("confluenceScore").textContent=totalWeight?(score>=0?"UP ":"DOWN ")+Math.round(Math.abs(score)*100)+"/100":"—";
     $("confluenceMeter").style.width=Math.round((score+1)*50)+"%";
@@ -1946,6 +2110,8 @@ button{font-family:inherit}
     renderLargePrintFootprint();
     renderFlowIntelligence();
     updateConfluenceForecast();
+    if(state.flipTimer)clearInterval(state.flipTimer);
+    state.flipTimer=setInterval(()=>{if(document.visibilityState!=="hidden")updateConfluenceForecast();},350);
     state.flowTimer=setInterval(()=>{
       updateMomentum();
       if(!state.flowChart&&typeof LightweightCharts!=="undefined")initFlowChart();

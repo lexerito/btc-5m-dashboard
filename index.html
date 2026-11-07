@@ -189,6 +189,9 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .flow-cvd-legend span{display:inline-flex;align-items:center;gap:6px}
 .flow-cvd-legend i{display:inline-block;width:18px;height:3px;border-radius:4px}
 .flow-cvd-legend .spot-line{background:#a78bfa}.flow-cvd-legend .perp-line{background:#42c7ff}
+.flow-status-tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.flow-restart-btn{appearance:none;border:1px solid #45566d;border-radius:7px;background:#111a25;color:#a9bed4;padding:6px 9px;font:800 8px/1.2 Inter,system-ui,sans-serif;letter-spacing:.08em;cursor:pointer}
+.flow-restart-btn:hover{border-color:#8ab9ee;color:#e5edf6}
 #flowCvdChart{height:164px;width:100%;border:1px solid #202d50;border-radius:9px;overflow:hidden;background:#090d1b}
 .flow-edge-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:10px}
 .flow-edge-cell{min-width:0;padding:9px;border:1px solid #2b3b61;border-radius:8px;background:#0b1123}
@@ -579,7 +582,7 @@ button{font-family:inherit}
   <div class="confluence-meter"><span id="confluenceMeter"></span></div>
   <div id="confluenceMemory" class="confluence-memory">CONTINUOUS BTC TREND · COLLECTING</div>
   <div class="flow-edge-panel">
-    <div class="feature-head"><div><div class="label">REAL VOLUME EDGE · SPOT CVD vs PERP CVD</div><div class="small">Separate aggressor flow · cumulative delta pressure · price absorption · open-interest context</div></div><span id="flowEdgeStatus" class="feature-status">COLLECTING</span></div>
+    <div class="feature-head"><div><div class="label">REAL VOLUME EDGE · SPOT CVD vs PERP CVD</div><div class="small">Separate aggressor flow · cumulative delta pressure · price absorption · open-interest context</div></div><div class="flow-status-tools"><span id="flowEdgeStatus" class="feature-status">COLLECTING</span><button id="flowRestartBtn" class="flow-restart-btn" type="button" title="Reconnect live momentum feeds and rebuild flow calculations">RESTART FEEDS</button></div></div>
     <div class="flow-cvd-legend"><span><i class="spot-line"></i> SPOT CVD</span><span><i class="perp-line"></i> PERP CVD</span><span>1-SECOND UPDATES · 5-MINUTE ROLLING NORMALIZED DELTA</span></div>
     <div id="flowCvdChart"></div>
     <div class="flow-edge-grid">
@@ -705,7 +708,7 @@ button{font-family:inherit}
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresPrice:null,flowTimer:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,hlLastAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -722,11 +725,13 @@ button{font-family:inherit}
     ]}));
   }
   function connect() {
+    if(state.rtdsReconnect){clearTimeout(state.rtdsReconnect);state.rtdsReconnect=null;}
     if(state.ws){try{state.ws.close()}catch(e){}}
-    status("Connecting to Polymarket RTDS…");
+    status("Connecting to Polymarket RTDS…");state.rtdsConnectAt=Date.now();
     const ws=new WebSocket(endpoint);state.ws=ws;
-    ws.onopen=()=>{status("Connected · listening for BTC feeds","ok");subscribe(ws)};
+    ws.onopen=()=>{if(state.ws!==ws)return;state.rtdsLastAt=Date.now();status("Connected · listening for BTC feeds","ok");subscribe(ws)};
     ws.onmessage=event=>{
+      if(state.ws!==ws)return;state.rtdsLastAt=Date.now();
       let msg;try{msg=JSON.parse(event.data)}catch(e){return}
       const payload=msg.payload||{};
       // RTDS sends a short replay snapshot in payload.data on subscription,
@@ -738,12 +743,12 @@ button{font-family:inherit}
         const value=Number(p.value),ts=Number(p.timestamp||p.observed_at);
         if(!Number.isFinite(value)||!Number.isFinite(ts))return;
         if(msg.topic==="crypto_prices_twap_sixty"&&symbol==="btc/usd"){
-          state.twap=value;state.twapTs=ts;
+          state.twapLastAt=Date.now();state.twap=value;state.twapTs=ts;
           $("twap").textContent="$"+fmt(value);$("liveTwapInline").textContent="$"+fmt(value);
           $("twapTime").textContent="Observed "+new Date(ts).toLocaleTimeString();
           addTwapObservation(ts,value);updateDirection();
         }else if(msg.topic==="crypto_prices_chainlink"&&symbol==="btc/usd"){
-          state.chainlink=value;$("chainlink").textContent="$"+fmt(value);addChainlinkObservation(ts,value);
+          state.chainlinkLastAt=Date.now();state.chainlink=value;$("chainlink").textContent="$"+fmt(value);addChainlinkObservation(ts,value);
         }else if(msg.topic==="crypto_prices"&&symbol==="btcusdt"){
           state.binance=value;$("binance").textContent="$"+fmt(value);
           addPriceSample(ts,value);updateMomentum();
@@ -754,8 +759,11 @@ button{font-family:inherit}
         }
       });
     };
-    ws.onerror=()=>status("Feed connection error · reconnect","bad");
-    ws.onclose=()=>status("Disconnected · press reconnect","bad");
+    ws.onerror=()=>{if(state.ws===ws)status("Feed connection error · auto reconnecting","bad")};
+    ws.onclose=()=>{
+      if(state.ws!==ws)return;status("RTDS disconnected · auto reconnecting","bad");
+      if(!state.rtdsReconnect)state.rtdsReconnect=setTimeout(()=>{state.rtdsReconnect=null;if(state.ws===ws)connect()},2500);
+    };
   }
   function updateDirection(){
     if(state.twap===null||state.target===null)return;
@@ -805,15 +813,19 @@ button{font-family:inherit}
 
   // Binance public aggregate-trade stream provides granular price and aggressor-volume flow.
   function connectTrades(){
+    if(state.tradeReconnect){clearTimeout(state.tradeReconnect);state.tradeReconnect=null;}
     if(state.tradeWs){try{state.tradeWs.close()}catch(e){}}
+    state.spotTradeConnectAt=Date.now();
     const ws=new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@aggTrade");state.tradeWs=ws;
-    ws.onmessage=e=>{let t;try{t=JSON.parse(e.data)}catch(_){return}
+    ws.onopen=()=>{if(state.tradeWs===ws)state.spotTradeConnectAt=Date.now();};
+    ws.onmessage=e=>{if(state.tradeWs!==ws)return;let t;try{t=JSON.parse(e.data)}catch(_){return}
       const ts=Number(t.T||Date.now()),q=Number(t.q||0),price=Number(t.p||0);
-      if(!Number.isFinite(q)||!Number.isFinite(price))return;
+      if(!Number.isFinite(q)||!Number.isFinite(price)||q<=0||price<=0)return;
+      state.spotTradeLastAt=Date.now();
       addPriceSample(ts,price);state.trades.push({ts,q,buy:!t.m,price});pushFlowTrade("BINANCE SPOT",t.a,ts,price,q,!t.m);pruneHistory(ts);updateMomentum();
     };
-    ws.onclose=()=>{setTimeout(()=>{if(state.tradeWs===ws)connectTrades()},2500)};
-    ws.onerror=()=>{try{ws.close()}catch(_){}};
+    ws.onclose=()=>{if(state.tradeWs!==ws)return;state.tradeReconnect=setTimeout(()=>{state.tradeReconnect=null;if(state.tradeWs===ws)connectTrades()},2500)};
+    ws.onerror=()=>{if(state.tradeWs===ws)try{ws.close()}catch(_){}};
   }
   function pruneHistory(now){
     state.prices=state.prices.filter(x=>now-x.ts<=190000);
@@ -1177,9 +1189,16 @@ button{font-family:inherit}
     set("flowOiRead",oi);
     set("flowLiqRead",e.longShortLiq.total?"LONG LIQ "+compactUsd(e.longShortLiq.longs)+" · SHORT LIQ "+compactUsd(e.longShortLiq.shorts):"NO RECENT LIQUIDATION PRINTS");
     set("flowAbsorbRead",e.absorptionLabel);
-    const spotPerpReady=e.spotScore!==null&&e.perpScore!==null&&now-e.updatedAt<2500;
+    const latestFlowAt=venues=>{const wanted=new Set(venues);let ts=0;for(const t of state.flowTrades)if(wanted.has(t.venue)&&t.ts<=now&&t.ts>ts)ts=t.ts;return ts||null;};
+    const spotTapeAt=latestFlowAt(["BINANCE SPOT","COINBASE"]),perpTapeAt=latestFlowAt(["BINANCE PERP","HYPERLIQUID"]);
+    const spotAge=spotTapeAt?now-spotTapeAt:Infinity,perpAge=perpTapeAt?now-perpTapeAt:Infinity;
+    const spotPerpReady=!!e.spot30&&!!e.perp30&&spotAge<10000&&perpAge<10000;
     const status=$("flowEdgeStatus");
-    if(status){status.textContent=spotPerpReady?"LIVE · SPOT + PERP CONFIRMATION":e.sourceCount?"PARTIAL · NEED BOTH TAPES":"COLLECTING INDEPENDENT TAPES";status.className="feature-status "+(spotPerpReady?"ok":"");}
+    if(status){
+      const ageText=x=>Number.isFinite(x)?(x/1000).toFixed(1)+"s":"—";
+      status.textContent=spotPerpReady?"LIVE · SPOT "+ageText(spotAge)+" / PERP "+ageText(perpAge):"PARTIAL · SPOT "+ageText(spotAge)+" / PERP "+ageText(perpAge);
+      status.className="feature-status "+(spotPerpReady?"ok":"bad");
+    }
     if(state.flowSpotSeries&&state.flowPerpSeries){
       try{
         state.flowSpotSeries.setData(buildCvdPoints(["BINANCE SPOT","COINBASE"],now));
@@ -1347,16 +1366,17 @@ button{font-family:inherit}
   function connectFuturesTakerTape(){
     if(state.futuresWs){try{state.futuresWs.close();}catch(_){}}
     if(state.futuresReconnect){clearTimeout(state.futuresReconnect);state.futuresReconnect=null;}
+    state.futuresConnectAt=Date.now();
     const ws=new WebSocket("wss://fstream.binance.com/market/ws/btcusdt@aggTrade");
     state.futuresWs=ws;
-    ws.onopen=()=>{state.futuresLastAt=Date.now();};
+    ws.onopen=()=>{if(state.futuresWs===ws)state.futuresLastAt=Date.now();};
     ws.onmessage=e=>{
       let t;try{t=JSON.parse(e.data)}catch(_){return}
       if(t&&t.data)t=t.data;
       if(!t||t.e!=="aggTrade")return;
       const ts=Number(t.T||t.E||Date.now()),price=Number(t.p),size=Number(t.q);
       if(!(price>0&&size>0))return;
-      state.futuresLastAt=Date.now();state.futuresPrice=price;
+      state.futuresLastAt=Date.now();state.futuresTradeLastAt=state.futuresLastAt;state.futuresPrice=price;
       pushFlowTrade("BINANCE PERP",t.a,ts,price,size,!t.m);
     };
     ws.onerror=()=>{try{ws.close();}catch(_){}};
@@ -1863,8 +1883,37 @@ button{font-family:inherit}
     });
   }
 
+  function restartMomentumFeeds(){
+    const now=Date.now();if(state.lastFeedRecoveryAt&&now-state.lastFeedRecoveryAt<2500)return;
+    state.lastFeedRecoveryAt=now;state.volumeEdge=null;
+    const statusEl=$("flowEdgeStatus");if(statusEl){statusEl.textContent="RESTARTING LIVE FEEDS…";statusEl.className="feature-status";}
+    connect();connectTrades();connectFuturesTakerTape();connectCoinbase();connectHyperliquid();
+    setTimeout(()=>{state.volumeEdge=null;updateMomentum();renderFlowIntelligence();renderFlowPressure();updateConfluenceForecast()},1200);
+  }
+  function feedSocketStale(ws,lastAt,connectAt,threshold,now){
+    if(!ws||ws.readyState===WebSocket.CLOSED)return true;
+    if(ws.readyState===WebSocket.CONNECTING)return now-(connectAt||now)>15000;
+    if(ws.readyState===WebSocket.OPEN)return now-(lastAt||connectAt||now)>threshold;
+    return false;
+  }
+  function startMomentumFeedWatchdog(){
+    if(state.flowWatchdog)clearInterval(state.flowWatchdog);
+    state.flowWatchdog=setInterval(()=>{
+      if(document.visibilityState==="hidden")return;
+      const now=Date.now();
+      const rtdsStale=feedSocketStale(state.ws,state.rtdsLastAt,state.rtdsConnectAt,12000,now)||
+        (state.twapLastAt&&now-state.twapLastAt>15000)||(state.chainlinkLastAt&&now-state.chainlinkLastAt>15000);
+      if(rtdsStale){connect();return;}
+      if(feedSocketStale(state.tradeWs,state.spotTradeLastAt,state.spotTradeConnectAt,12000,now)){connectTrades();return;}
+      if(feedSocketStale(state.futuresWs,state.futuresTradeLastAt,state.futuresConnectAt,12000,now)){connectFuturesTakerTape();return;}
+      if(feedSocketStale(state.cbWs,state.coinbaseLastAt,state.coinbaseLastAt,25000,now)){connectCoinbase();return;}
+      if(feedSocketStale(state.hlWs,state.hlLastAt,state.hlLastAt,25000,now)){connectHyperliquid();return;}
+    },5000);
+  }
+
   function startFlowAndSwingSystems(){
     connectFuturesTakerTape();
+    startMomentumFeedWatchdog();
     initFlowChart();
     updateSwingEngine();
     renderLargePrintFootprint();
@@ -2257,6 +2306,7 @@ button{font-family:inherit}
   function crossDelta(arr,secs){if(!arr.length)return null;const last=arr[arr.length-1],cut=last.ts-secs*1000;let base=null;for(let i=arr.length-1;i>=0;i--){if(arr[i].ts<=cut){base=arr[i];break}}return base?last.price-base.price:null}
   function crossFlow(arr){const cutoff=Date.now()-60000;let buy=0,sell=0;for(const t of arr){if(t.ts<cutoff)continue;if(t.buy)buy+=t.price*t.size;else sell+=t.price*t.size}return {buy,sell,ratio:buy+sell?(buy-sell)/(buy+sell):0}}
   function connectCoinbase(){
+    if(state.cbReconnect){clearTimeout(state.cbReconnect);state.cbReconnect=null;}
     if(state.cbWs){try{state.cbWs.close()}catch(_){}}
     const ws=new WebSocket("wss://advanced-trade-ws.coinbase.com");state.cbWs=ws;
     ws.onopen=()=>{
@@ -2265,8 +2315,9 @@ button{font-family:inherit}
       ws.send(JSON.stringify({type:"subscribe",channel:"heartbeats"}));
     };
     ws.onmessage=e=>{
+      if(state.cbWs!==ws)return;
       let m;try{m=JSON.parse(e.data)}catch(_){return}
-      const now=Date.now();
+      const now=Date.now();state.coinbaseLastAt=now;
       if(m.channel==="ticker")for(const ev of (m.events||[]))for(const t of (ev.tickers||[])){
         const p=Number(t.price);if(t.product_id==="BTC-USD"&&p>0){state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,now,p);crossText("coinbasePrice","$"+fmt(p));renderCrossVenue()}
       }
@@ -2276,9 +2327,10 @@ button{font-family:inherit}
       }
     };
     ws.onerror=()=>crossStatus("COINBASE FEED ERROR","bad");
-    ws.onclose=()=>{if(state.cbReconnect)clearTimeout(state.cbReconnect);state.cbReconnect=setTimeout(connectCoinbase,3000)};
+    ws.onclose=()=>{if(state.cbWs!==ws)return;state.cbReconnect=setTimeout(()=>{state.cbReconnect=null;if(state.cbWs===ws)connectCoinbase()},3000)};
   }
   function connectHyperliquid(){
+    if(state.hlReconnect){clearTimeout(state.hlReconnect);state.hlReconnect=null;}
     if(state.hlWs){try{state.hlWs.close()}catch(_){}}
     const ws=new WebSocket("wss://api.hyperliquid.xyz/ws");state.hlWs=ws;
     ws.onopen=()=>{
@@ -2288,8 +2340,9 @@ button{font-family:inherit}
       ws.send(JSON.stringify({method:"subscribe",subscription:{type:"activeAssetCtx",coin:"BTC"}}));
     };
     ws.onmessage=e=>{
+      if(state.hlWs!==ws)return;
       let m;try{m=JSON.parse(e.data)}catch(_){return}
-      const d=m.data||{},now=Date.now();
+      const d=m.data||{},now=Date.now();state.hlLastAt=now;
       if(m.channel==="trades"&&Array.isArray(d)){
         for(const t of d){const p=Number(t.px),size=Number(t.sz),ts=Number(t.time)||now;if(p>0&&size>0){state.hlPrice=p;state.hlTs=now;state.hlTrades.push({ts,price:p,size,buy:String(t.side).toUpperCase()==="B"});pushFlowTrade("HYPERLIQUID",t.tid??(ts+"-"+p+"-"+size),ts,p,size,String(t.side).toUpperCase()==="B");addCrossPrice(state.hlPrices,ts,p)}}
         state.hlTrades=state.hlTrades.filter(x=>now-x.ts<65000);renderCrossVenue();
@@ -2309,7 +2362,7 @@ button{font-family:inherit}
       }
     };
     ws.onerror=()=>crossStatus("HYPERLIQUID FEED ERROR","bad");
-    ws.onclose=()=>{if(state.hlReconnect)clearTimeout(state.hlReconnect);state.hlReconnect=setTimeout(connectHyperliquid,3000)};
+    ws.onclose=()=>{if(state.hlWs!==ws)return;state.hlReconnect=setTimeout(()=>{state.hlReconnect=null;if(state.hlWs===ws)connectHyperliquid()},3000)};
   }
   function renderCrossVenue(){
     const now=Date.now(),cbAge=state.coinbaseTs?((now-state.coinbaseTs)/1000):null,hlAge=state.hlTs?((now-state.hlTs)/1000):null;
@@ -2568,6 +2621,7 @@ button{font-family:inherit}
   $("basisHeatmapBtn").addEventListener("click",()=>setBasisOrderflowView("heatmap"));
 
   $("reconnect").addEventListener("click",connect);
+  const flowRestartBtn=$("flowRestartBtn");if(flowRestartBtn)flowRestartBtn.addEventListener("click",restartMomentumFeeds);
   $("exportLab").addEventListener("click",exportMarketLab);
   loadMarketLab();initLiveChart();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();state.timer=setInterval(tick,500);
 })();

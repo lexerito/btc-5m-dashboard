@@ -236,6 +236,46 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 @media(max-width:620px){#flowCvdChart{height:145px}.flow-edge-grid{grid-template-columns:1fr}.flow-edge-panel{padding:10px}}
 
 
+/* Unified signal workspace and live Binance footprint */
+.metrics.momentum-grid,.momentum-card{display:none!important}
+.momentum-engine-card{grid-column:1/-1}
+.momentum-engine-card .swing-inline-card{margin:14px 0 0;padding:13px;border:1px solid var(--terminal-line);border-radius:10px;background:#0b121b;box-shadow:none}
+.momentum-engine-card .swing-inline-card .feature-head{margin-bottom:10px}
+.next-market-panel{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:14px;padding:13px;border:1px solid #34465a;border-radius:10px;background:linear-gradient(110deg,#0d1c24,#11182a)}
+.next-market-panel small{display:block;color:#93a8bd;font-size:9px;font-weight:900;letter-spacing:.11em}
+.next-market-panel b{display:block;margin-top:5px;font-size:17px;color:#d9e8f6}
+.next-market-panel b.up{color:#54d6a2}.next-market-panel b.down{color:#ef8194}
+.next-market-panel span{display:block;margin-top:5px;color:#91a2b4;font-size:10px;line-height:1.45}
+.next-market-panel strong{font-size:23px;color:#dbe7f4;font-variant-numeric:tabular-nums;white-space:nowrap}
+.basis-footprint-live{margin:12px 0;padding:12px;border:1px solid #2b3d50;border-radius:9px;background:#080f18}
+.basis-footprint-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.basis-footprint-head b{display:block;font-size:9px;letter-spacing:.1em;color:#c8d9e9}
+.basis-footprint-head span{display:block;margin-top:4px;font-size:9px;color:#8296aa;line-height:1.4}
+.basis-footprint-head> b:last-child{color:#8fb7d7}
+.basis-footprint-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-top:10px}
+.basis-footprint-metrics>div{padding:8px;border:1px solid #26384a;border-radius:7px;background:#0d1722;min-width:0}
+.basis-footprint-metrics small{display:block;color:#8498ac;font-size:8px;font-weight:850;letter-spacing:.08em}
+.basis-footprint-metrics b{display:block;color:#dbe7f4;font-size:12px;margin-top:5px;overflow-wrap:anywhere}
+.basis-footprint-metrics b.up{color:#54d6a2}.basis-footprint-metrics b.down{color:#ef8194}
+.basis-footprint-rows{margin-top:10px;display:grid;gap:3px}
+.basis-footprint-row{display:grid;grid-template-columns:minmax(76px,.7fr) minmax(90px,1fr) minmax(90px,1fr) minmax(90px,.8fr);align-items:center;gap:8px;padding:5px 7px;border-radius:5px;background:#0d1721;font:10px/1.25 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+.basis-footprint-row.head{background:#152231;color:#90a7bc;font:800 8px/1.3 Inter,system-ui,sans-serif;letter-spacing:.08em}
+.basis-footprint-row .price{color:#dbe7f4}
+.basis-footprint-row .bid{color:#ef8194;text-align:right}
+.basis-footprint-row .ask{color:#54d6a2;text-align:right}
+.basis-footprint-row .delta{text-align:right;color:#b9c8d8}
+.basis-footprint-row .delta.up{color:#54d6a2}.basis-footprint-row .delta.down{color:#ef8194}
+.basis-footprint-empty{color:#8195a9;font-size:10px;padding:8px}
+.basis-footprint-note{margin-top:8px;color:#778da2;font-size:8px;line-height:1.5}
+.direction-pill.engine-call{white-space:normal;text-align:center;line-height:1.25}
+.direction-pill.engine-call.up{background:#102a23;border-color:#28775a;color:#62e1b0}
+.direction-pill.engine-call.down{background:#2a1720;border-color:#794050;color:#ff8ca3}
+.direction-pill.engine-call.minor{background:#2a2416;border-color:#846b36;color:#f0cb7b}
+.direction-pill.engine-call.major{background:#102a23;border-color:#28775a;color:#62e1b0;box-shadow:0 0 22px #54d6a222}
+.direction-pill.engine-call.wait{background:#141e29;border-color:#405268;color:#adc0d2}
+@media(max-width:760px){.basis-footprint-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:520px){.basis-footprint-row{grid-template-columns:58px 1fr 1fr 1fr;gap:4px;font-size:9px;padding:5px 4px}.basis-footprint-row.head{font-size:7px}.next-market-panel strong{font-size:18px}}
+
 /* INSTITUTIONAL MINIMAL TERMINAL REFRESH */
 :root{
   color-scheme:dark;
@@ -502,15 +542,16 @@ button{font-family:inherit}
 <section class="card live-chart-card">
   <div class="chart-head">
     <div>
-      <div class="label">LIVE BTC PRICE ACTION · CHAINLINK</div>
-      <div class="chart-subtitle">The TWAP60 line is the settlement reference. Chainlink spot shows the faster underlying move.</div>
+      <div class="label">LIVE BTC PRICE ACTION · MULTI-SOURCE</div>
+      <div class="chart-subtitle">Binance spot trades update in real time; Chainlink spot and TWAP60 remain the settlement-side reference.</div>
     </div>
-    <span id="chartStatus" class="poly-live">WAITING FOR CHAINLINK</span>
+    <span id="fastExchangeStatus" class="poly-live">WAITING FOR BINANCE TAPE</span><span id="chartStatus" class="poly-live">WAITING FOR CHAINLINK</span>
   </div>
   <div id="liveChart" aria-label="Live Chainlink BTC price and 60-second time-weighted average chart"></div>
   <div class="chart-legend">
     <span><i class="legend-twap"></i>CHAINLINK TWAP60</span>
     <span><i class="legend-spot"></i>CHAINLINK BTC/USD SPOT</span>
+    <span><i style="background:#54d6a2"></i>BINANCE BTCUSDT · LIVE TRADE TAPE</span>
     <span><i class="legend-target"></i>PRICE TO BEAT</span>
   </div>
 </section>
@@ -551,6 +592,25 @@ button{font-family:inherit}
   </div>
   <div class="pressure-track"><div id="pressureUpBar" class="up-fill" style="width:50%"></div><div id="pressureDownBar" class="down-fill" style="width:50%"></div></div>
   <div id="momentumFeedDetail" class="chart-foot">The momentum split is relative strength, not a win probability. Rising / falling samples count distinct Chainlink price updates, recorded once per second.</div>
+
+  <div class="next-market-panel" id="nextMarketPanel">
+    <div><small>NEXT MARKET OPENING LEAN · CONTINUOUS TAPE</small><b id="nextMarketSide">COLLECTING</b><span id="nextMarketDetail">Using closing momentum, spot/perpetual flow, footprint delta and swing structure.</span></div>
+    <strong id="nextMarketScore">—</strong>
+  </div>
+  <div class="swing-card swing-inline-card">
+  <div class="feature-head">
+    <div><div class="label">TREND-SWING ENGINE · MARKET STRUCTURE</div><div class="small">Confirmed highs/lows from Chainlink BTC/USD · 5-second and 15-second bars</div></div>
+    <span id="swingStatus" class="feature-status">COLLECTING STRUCTURE</span>
+  </div>
+  <div class="swing-stats">
+    <div class="feature-stat swing-stat"><span>FAST STRUCTURE · 5S</span><b id="swingFast">—</b><small id="swingFastDetail">Waiting for pivots</small></div>
+    <div class="feature-stat swing-stat"><span>CONFIRMATION · 15S</span><b id="swingSlow">—</b><small id="swingSlowDetail">Waiting for pivots</small></div>
+    <div class="feature-stat swing-stat"><span>LAST CONFIRMED HIGH</span><b id="swingHigh">—</b><small id="swingHighAge">—</small></div>
+    <div class="feature-stat swing-stat"><span>LAST CONFIRMED LOW</span><b id="swingLow">—</b><small id="swingLowAge">—</small></div>
+  </div>
+  <div id="swingEvent" class="swing-event">WAIT · BUILDING CONFIRMED SWING STRUCTURE</div>
+  <div id="swingNarrative" class="feature-foot">A swing is confirmed only after two bars form to its right. This avoids treating every one-second wiggle as a trend reversal.</div>
+</div>
 </section>
 
 
@@ -584,20 +644,7 @@ button{font-family:inherit}
   <div class="feature-foot">Binance aggregate trades combine fills from a single taker order. A BUY is an aggressive buyer; a SELL is an aggressive seller. Neither alone proves a new long or short—orders can also close or hedge positions.</div>
 </section>
 
-<section class="card swing-card">
-  <div class="feature-head">
-    <div><div class="label">TREND-SWING ENGINE · MARKET STRUCTURE</div><div class="small">Confirmed highs/lows from Chainlink BTC/USD · 5-second and 15-second bars</div></div>
-    <span id="swingStatus" class="feature-status">COLLECTING STRUCTURE</span>
-  </div>
-  <div class="swing-stats">
-    <div class="feature-stat swing-stat"><span>FAST STRUCTURE · 5S</span><b id="swingFast">—</b><small id="swingFastDetail">Waiting for pivots</small></div>
-    <div class="feature-stat swing-stat"><span>CONFIRMATION · 15S</span><b id="swingSlow">—</b><small id="swingSlowDetail">Waiting for pivots</small></div>
-    <div class="feature-stat swing-stat"><span>LAST CONFIRMED HIGH</span><b id="swingHigh">—</b><small id="swingHighAge">—</small></div>
-    <div class="feature-stat swing-stat"><span>LAST CONFIRMED LOW</span><b id="swingLow">—</b><small id="swingLowAge">—</small></div>
-  </div>
-  <div id="swingEvent" class="swing-event">WAIT · BUILDING CONFIRMED SWING STRUCTURE</div>
-  <div id="swingNarrative" class="feature-foot">A swing is confirmed only after two bars form to its right. This avoids treating every one-second wiggle as a trend reversal.</div>
-</section>
+
 
 <section class="card basis-orderflow-card">
   <div class="basis-orderflow-top">
@@ -616,6 +663,12 @@ button{font-family:inherit}
     loading="lazy"
     sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
     referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  <div class="basis-footprint-live">
+    <div class="basis-footprint-head"><div><b>LIVE BINANCE PERPETUAL FOOTPRINT · ENGINE READOUT</b><span>Same USD-M trade tape family as Basis; focused $2 price bands, all executed notional, refreshed every second.</span></div><b id="basisFootprintStatus">COLLECTING TAPE</b></div>
+    <div class="basis-footprint-metrics"><div><small>5S DELTA</small><b id="basisFpDelta5">—</b></div><div><small>15S DELTA</small><b id="basisFpDelta15">—</b></div><div><small>30S DELTA</small><b id="basisFpDelta30">—</b></div><div><small>FOOTPRINT EDGE</small><b id="basisFpScore">—</b></div><div><small>ABSORPTION</small><b id="basisFpAbsorption">—</b></div></div>
+    <div id="basisFootprintRows" class="basis-footprint-rows"><div class="basis-footprint-empty">Waiting for recent Binance perpetual trades.</div></div>
+    <div class="basis-footprint-note">ASK / BUY = aggressive buyers lifting offers · BID / SELL = aggressive sellers hitting bids · values are USD notional, not contract counts. The iframe's zoom and row-merging controls remain controlled by Basis.</div>
+  </div>
   <div class="basis-orderflow-foot">
     <span id="basisViewDescription">Footprint shows executed buy/sell volume and delta at each price. It is not a full order book.</span>
     <span>Basis data · Binance · <a href="https://www.basischarts.com/" target="_blank" rel="noopener noreferrer">Open Basis terminal</a></span>
@@ -761,7 +814,7 @@ button{font-family:inherit}
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,liveMomentumUpdatedAt:0,liveMomentumSide:"WAIT",liveMomentumCandidate:"WAIT",liveMomentumCandidateSince:0,liveMomentumWeakSince:0,liveMomentumHistory:[],flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,liveMomentumUpdatedAt:0,liveMomentumSide:"WAIT",liveMomentumCandidate:"WAIT",liveMomentumCandidateSince:0,liveMomentumWeakSince:0,liveMomentumHistory:[],flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,flipTimer:null,binanceFastHistory:[],fastSpotSeries:null,lastFastChartUpdate:0,binanceBbo:null,bboWs:null,bboReconnect:null,bboConnectAt:0,bboLastAt:0,basisFootprint:null,nextRoundForecast:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -828,8 +881,6 @@ button{font-family:inherit}
     $("distanceMetric").className="metric-value "+(above?"up":"down");
     $("marketDirection").textContent=above?"POSITIVE LEADING":"NEGATIVE LEADING";
     $("marketDirection").className="metric-value "+(above?"up":"down");
-    $("directionPill").textContent=above?"POSITIVE · ABOVE TARGET":"NEGATIVE · BELOW TARGET";
-    $("directionPill").className="direction-pill"+(above?" above":"");
     $("distanceBar").style.width=Math.min(100,Math.abs(diff)/Math.max(state.target*.001,1)*100)+"%";
     updateForecasts();
   }
@@ -865,6 +916,24 @@ button{font-family:inherit}
   }
 
   // Binance public aggregate-trade stream provides granular price and aggressor-volume flow.
+  function addFastExchangeObservation(ts,price){
+    if(!Number.isFinite(ts)||!Number.isFinite(price)||price<=0)return;
+    if(!Array.isArray(state.binanceFastHistory))state.binanceFastHistory=[];
+    const last=state.binanceFastHistory[state.binanceFastHistory.length-1];
+    if(!last||ts>last.ts){
+      if(!last||ts-last.ts>=100||Math.abs(price-last.value)>=.05)state.binanceFastHistory.push({ts,value:price});
+    }
+    const cutoff=Date.now()-1800000;
+    state.binanceFastHistory=state.binanceFastHistory.filter(x=>x.ts>=cutoff).slice(-18000);
+    if(state.fastSpotSeries&&Date.now()-(state.lastFastChartUpdate||0)>=100){
+      try{state.fastSpotSeries.update({time:Math.floor(ts/1000),value:price});state.lastFastChartUpdate=Date.now();}catch(_){}
+    }
+    state.binanceFastPrice=price;state.binanceFastTs=ts;
+    const priceEl=$("binance");if(priceEl)priceEl.textContent="$"+fmt(price);
+    const statusEl=$("fastExchangeStatus");
+    if(statusEl){statusEl.textContent="BINANCE SPOT · LIVE TAPE";statusEl.className="poly-live ok";}
+  }
+
   function connectTrades(){
     if(state.tradeReconnect){clearTimeout(state.tradeReconnect);state.tradeReconnect=null;}
     if(state.tradeWs){try{state.tradeWs.close()}catch(e){}}
@@ -875,6 +944,7 @@ button{font-family:inherit}
       const ts=Number(t.T||Date.now()),q=Number(t.q||0),price=Number(t.p||0);
       if(!Number.isFinite(q)||!Number.isFinite(price)||q<=0||price<=0)return;
       state.spotTradeLastAt=Date.now();
+      addFastExchangeObservation(ts,price);
       addPriceSample(ts,price);state.trades.push({ts,q,buy:!t.m,price});pushFlowTrade("BINANCE SPOT",t.a,ts,price,q,!t.m);pruneHistory(ts);updateMomentum();
     };
     ws.onclose=()=>{if(state.tradeWs!==ws)return;state.tradeReconnect=setTimeout(()=>{state.tradeReconnect=null;if(state.tradeWs===ws)connectTrades()},2500)};
@@ -1434,6 +1504,33 @@ button{font-family:inherit}
       $("flowAlertToggle").className="flow-toggle";
     }
   }
+  function connectBinanceBookTicker(){
+    if(state.bboReconnect){clearTimeout(state.bboReconnect);state.bboReconnect=null;}
+    if(state.bboWs){try{state.bboWs.close()}catch(_){}}
+    state.bboConnectAt=Date.now();
+    const ws=new WebSocket("wss://stream.binance.com:9443/ws/btcusdt@bookTicker");
+    state.bboWs=ws;
+    ws.onopen=()=>{if(state.bboWs===ws)state.bboLastAt=Date.now();};
+    ws.onmessage=e=>{
+      if(state.bboWs!==ws)return;
+      let m;try{m=JSON.parse(e.data)}catch(_){return}
+      const bid=Number(m.b),ask=Number(m.a),bidSize=Number(m.B),askSize=Number(m.A);
+      if(!(bid>0&&ask>bid&&bidSize>0&&askSize>0))return;
+      const total=bidSize+askSize,mid=(bid+ask)/2;
+      const micro=(ask*bidSize+bid*askSize)/total;
+      state.binanceBbo={bid,ask,bidSize,askSize,mid,micro,spread:ask-bid,
+        imbalance:(bidSize-askSize)/total,microEdge:mid?(micro-mid)/Math.max(ask-bid,.01):0,ts:Date.now()};
+      state.bboLastAt=Date.now();
+      const el=$("fastBookDetail");
+      if(el)el.textContent="BID "+fmt(bid)+" · ASK "+fmt(ask)+" · SIZE SKEW "+Math.round(state.binanceBbo.imbalance*100)+"%";
+    };
+    ws.onerror=()=>{if(state.bboWs===ws)try{ws.close()}catch(_){}};
+    ws.onclose=()=>{
+      if(state.bboWs!==ws)return;
+      state.bboReconnect=setTimeout(()=>{state.bboReconnect=null;if(state.bboWs===ws)connectBinanceBookTicker()},2200);
+    };
+  }
+
   function connectFuturesTakerTape(){
     if(state.futuresWs){try{state.futuresWs.close();}catch(_){}}
     if(state.futuresReconnect){clearTimeout(state.futuresReconnect);state.futuresReconnect=null;}
@@ -2096,6 +2193,7 @@ button{font-family:inherit}
       const rtdsStale=feedSocketStale(state.ws,state.rtdsLastAt,state.rtdsConnectAt,12000,now)||topicAgeStale;
       if(rtdsStale){connect();return;}
       if(feedSocketStale(state.tradeWs,state.spotTradeLastAt,state.spotTradeConnectAt,12000,now)){connectTrades();return;}
+      if(feedSocketStale(state.bboWs,state.bboLastAt,state.bboConnectAt,12000,now)){connectBinanceBookTicker();return;}
       if(feedSocketStale(state.futuresWs,state.futuresTradeLastAt,state.futuresConnectAt,12000,now)){connectFuturesTakerTape();return;}
       if(feedSocketStale(state.cbWs,state.coinbaseLastAt,state.coinbaseConnectAt,25000,now)){connectCoinbase();return;}
       if(feedSocketStale(state.hlWs,state.hlLastAt,state.hlConnectAt,25000,now)){connectHyperliquid();return;}
@@ -2104,6 +2202,7 @@ button{font-family:inherit}
 
   function startFlowAndSwingSystems(){
     connectFuturesTakerTape();
+    connectBinanceBookTicker();
     startMomentumFeedWatchdog();
     initFlowChart();
     updateSwingEngine();
@@ -2235,9 +2334,14 @@ button{font-family:inherit}
         color:"#8ab9ee",lineWidth:1,title:"Chainlink BTC/USD",
         priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:true
       });
+      state.fastSpotSeries=state.liveChart.addSeries(L.LineSeries,{
+        color:"#54d6a2",lineWidth:2,title:"Binance BTCUSDT · real-time trades",
+        priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:true
+      });
       const from=Date.now()-1800000;
       state.twapSeries.setData(chartSeriesData(state.twapHistory,from));
       state.spotSeries.setData(chartSeriesData(state.chainlinkHistory,from));
+      state.fastSpotSeries.setData(chartSeriesData(state.binanceFastHistory||[],from));
       if(state.target!==null)setChartTargetLine();
       setChartWindow();
       $("chartStatus").textContent="CHAINLINK STREAM · LIVE";
@@ -2992,6 +3096,7 @@ button{font-family:inherit}
 
   const basisOrderflowFrame=$("basisOrderflowFrame");
   function setBasisOrderflowView(view){
+    try{localStorage.setItem("btc5m_basis_view",view)}catch(_){}
     const heatmap=view==="heatmap";
     const src="https://www.basischarts.com/embed/chart?symbol=BTCUSDT&view="+(heatmap?"heatmap":"footprint");
     if(basisOrderflowFrame.getAttribute("src")!==src)basisOrderflowFrame.src=src;
@@ -3003,6 +3108,7 @@ button{font-family:inherit}
   }
   $("basisFootprintBtn").addEventListener("click",()=>setBasisOrderflowView("footprint"));
   $("basisHeatmapBtn").addEventListener("click",()=>setBasisOrderflowView("heatmap"));
+  try{const savedView=localStorage.getItem("btc5m_basis_view");if(savedView==="heatmap")setBasisOrderflowView("heatmap")}catch(_){}
 
   $("reconnect").addEventListener("click",connect);
   const flowRestartBtn=$("flowRestartBtn");if(flowRestartBtn)flowRestartBtn.addEventListener("click",restartMomentumFeeds);

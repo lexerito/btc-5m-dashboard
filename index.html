@@ -1644,13 +1644,8 @@ button{font-family:inherit}
 
     const filtered={
       clob:smoothRoundInput(memory,"clob",clobRaw,6500,now),
-      spotFlow:smoothRoundInput(memory,"spotFlow",
-        edge.fastSpotScore!==null&&edge.spotScore!==null?edge.spotScore*.62+edge.fastSpotScore*.38:(edge.fastSpotScore??edge.spotScore),
-        edge.microTurn?2600:edge.fastSpotScore!==null?4800:9000,now),
-      perpFlow:smoothRoundInput(memory,"perpFlow",
-        edge.fastPerpScore!==null&&edge.perpScore!==null?edge.perpScore*.62+edge.fastPerpScore*.38:(edge.fastPerpScore??edge.perpScore),
-        edge.microTurn?2600:edge.fastPerpScore!==null?4800:8500,now),
-      largePrint:smoothRoundInput(memory,"largePrint",edge.largePrintScore,2500,now),
+      spotFlow:smoothRoundInput(memory,"spotFlow",edge.spotScore,9000,now),
+      perpFlow:smoothRoundInput(memory,"perpFlow",edge.perpScore,8500,now),
       speed:smoothRoundInput(memory,"speed",spotRaw,6500,now),
       target:smoothRoundInput(memory,"target",targetRaw,14000,now),
       swing:smoothRoundInput(memory,"swing",swingRaw,16000,now),
@@ -1660,17 +1655,16 @@ button{font-family:inherit}
 
     const progress=Math.max(0,Math.min(1,elapsed/300));
     const weights={
-      clob:.19-progress*.02,
-      spotFlow:.14,
-      perpFlow:.14,
-      largePrint:.10,
-      speed:.13-progress*.02,
+      clob:.21-progress*.02,
+      spotFlow:.16,
+      perpFlow:.16,
+      speed:.14-progress*.02,
       target:.14+progress*.08,
-      swing:.08,
-      oi:.05,
-      hl:.03
+      swing:.09,
+      oi:.06,
+      hl:.04
     };
-    const names={clob:"POLY CLOB",spotFlow:"SPOT CVD",perpFlow:"PERP CVD",largePrint:"LARGE-PRINT DELTA",speed:"CHAINLINK SPEED",target:"TWAP VS START",swing:"SWING STRUCTURE",oi:"OPEN INTEREST",hl:"HYPERLIQUID L2"};
+    const names={clob:"POLY CLOB",spotFlow:"SPOT CVD",perpFlow:"PERP CVD",speed:"CHAINLINK SPEED",target:"TWAP VS START",swing:"SWING STRUCTURE",oi:"OPEN INTEREST",hl:"HYPERLIQUID L2"};
     let weighted=0,totalWeight=0,valid=0;
     const inputs=[];
     for(const key of Object.keys(weights)){
@@ -1719,15 +1713,11 @@ button{font-family:inherit}
 
     const votes=inputs.filter(x=>x.side!==0);
     const up=votes.filter(x=>x.side>0).length,down=votes.filter(x=>x.side<0).length;
-    const holdSign=memory.turnHoldSide==="UP"?1:-1;
-    const fastHoldConfirm=memory.turnHoldSide&&edge.fastSpotScore!==null&&edge.fastPerpScore!==null&&
-      Math.sign(edge.fastSpotScore)===holdSign&&Math.sign(edge.fastPerpScore)===holdSign&&
-      edge.price5!==null&&Math.sign(edge.price5)===holdSign;
-    const slowHoldConfirm=memory.turnHoldSide&&edge.spotScore!==null&&edge.perpScore!==null&&
-      Math.sign(edge.spotScore)===holdSign&&Math.sign(edge.perpScore)===holdSign&&
-      edge.price30!==null&&Math.sign(edge.price30)===holdSign;
     const turnHoldActive=!!memory.turnHoldUntil&&now<memory.turnHoldUntil&&
-      !!memory.turnHoldSide&&(fastHoldConfirm||slowHoldConfirm);
+      memory.turnHoldSide&&edge.spotScore!==null&&edge.perpScore!==null&&
+      Math.sign(edge.spotScore)===(memory.turnHoldSide==="UP"?1:-1)&&
+      Math.sign(edge.perpScore)===(memory.turnHoldSide==="UP"?1:-1)&&
+      edge.price30!==null&&Math.sign(edge.price30)===(memory.turnHoldSide==="UP"?1:-1);
     const scoreSide=fastTurn?edge.fastTurnSide:turnHoldActive?memory.turnHoldSide:score>=.27?"UP":score<=-.27?"DOWN":"WAIT";
     const enough=bookFresh&&targetFresh&&spotFresh&&valid>=4;
 
@@ -1756,22 +1746,19 @@ button{font-family:inherit}
           Math.sign(edge.spot30.imbalance)===turnSign&&Math.sign(edge.perp30.imbalance)===turnSign&&
           Math.abs(edge.spot30.imbalance)>.22&&Math.abs(edge.perp30.imbalance)>.22&&
           edge.price30!==null&&Math.sign(edge.price30)===turnSign;
-        const alignedFastCvd=edge.microTurn&&edge.fastSpotScore!==null&&edge.fastPerpScore!==null&&
-          Math.sign(edge.fastSpotScore)===turnSign&&Math.sign(edge.fastPerpScore)===turnSign&&
-          edge.price5!==null&&Math.sign(edge.price5)===turnSign;
-        const fastTurnEligible=fastTurn&&(alignedCvd||alignedFastCvd)&&alignedVotes>=2&&opposingVotes<=3&&
+        const fastTurnEligible=fastTurn&&alignedCvd&&alignedVotes>=2&&opposingVotes<=3&&
           (filtered.clob===null||filtered.clob*turnSign>-.62);
+        const persistence=fastTurnEligible
+          ?roundTurnPersistence(memory,scoreSide,14000)
+          :roundPersistence(memory,scoreSide,20000);
         const targetConflict=filtered.target!==null&&Math.abs(filtered.target)>.45&&Math.sign(filtered.target)!==turnSign;
         const contextConflict=contextFresh&&Math.abs(contextScore)>.38&&Math.sign(contextScore)!==turnSign;
         const targetAcceptance=roundTargetAcceptance(memory,scoreSide,15000,start);
         const targetAccepted=targetAcceptance.count>=5&&targetAcceptance.ratio>=.62;
-        const persistence=fastTurnEligible
-          ?roundTurnPersistence(memory,scoreSide,edge.microTurn?12000:14000)
-          :roundPersistence(memory,scoreSide,20000);
         // Balanced switching: accelerate only when independent spot/perp flow and price agree.
         // The longer trend is context, not a veto against a verified local reversal.
-        const requiredSeconds=fastTurnEligible?(edge.microTurn?(targetAccepted?6:8):7):(targetConflict?(targetAccepted?13:17):(contextConflict?(targetAccepted?14:18):(targetAccepted?10:12)));
-        const requiredPersistence=fastTurnEligible?(edge.microTurn?.62:.55):(targetConflict?.68:contextConflict?.70:.62);
+        const requiredSeconds=fastTurnEligible?7:(targetConflict?(targetAccepted?13:17):(contextConflict?(targetAccepted?14:18):(targetAccepted?10:12)));
+        const requiredPersistence=fastTurnEligible?.55:(targetConflict?.68:contextConflict?.70:.62);
         const minSamples=fastTurnEligible?5:6;
         const voteOK=fastTurnEligible
           ?alignedVotes>=2&&opposingVotes<=3
@@ -1799,12 +1786,9 @@ button{font-family:inherit}
     );
     const side=confirmed?memory.leader:"WAIT";
 
-    const largePrintOpposes=memory.leader==="UP"
-      ?edge.largePrintScore!==null&&edge.largePrintScore<-.26
-      :memory.leader==="DOWN"&&edge.largePrintScore!==null&&edge.largePrintScore>.26;
     const flowOpposes=memory.leader==="UP"
-      ?(edge.spotScore!==null&&edge.perpScore!==null&&edge.spotScore<-.22&&edge.perpScore<-.22)||largePrintOpposes
-      :memory.leader==="DOWN"&&((edge.spotScore!==null&&edge.perpScore!==null&&edge.spotScore>.22&&edge.perpScore>.22)||largePrintOpposes);
+      ?edge.spotScore!==null&&edge.perpScore!==null&&edge.spotScore<-.22&&edge.perpScore<-.22
+      :memory.leader==="DOWN"&&edge.spotScore!==null&&edge.perpScore!==null&&edge.spotScore>.22&&edge.perpScore>.22;
     let holdText="HOLD READ · WAITING FOR INDEPENDENT FLOW",holdClass="";
     if(memory.leader==="WAIT"){
       holdText="NO ESTABLISHED EDGE · WAIT FOR SPOT + PERP CONFIRMATION";
@@ -1840,7 +1824,6 @@ button{font-family:inherit}
 
     const forecast={
       side,leader:memory.leader,score,rawScore,up,down,votes,valid,elapsed,remaining,
-      largePrintScore:edge.largePrintScore,largePrintPulse:edge.largePrintPulse,largePrint10:edge.largePrint10,largePrint30:edge.largePrint30,
       targetGap,targetSideNow,targetAcceptance:targetAcceptance.ratio,targetAcceptanceSamples:targetAcceptance.count,
       updatedAt:now,persistence:leaderPersistence.ratio,samples:leaderPersistence.count,
       leaderAge,leadChanges:memory.leadChanges,candidate:memory.candidate,
@@ -1861,7 +1844,7 @@ button{font-family:inherit}
     const fmtVote=x=>x===null||!Number.isFinite(x)?"—":(x>0?"+":"")+Math.round(x*100);
     $("confluenceDetail").textContent=
       "CLOB "+fmtVote(filtered.clob)+" · spot CVD "+fmtVote(filtered.spotFlow)+
-      " · perp CVD "+fmtVote(filtered.perpFlow)+" · fast 5s "+fmtVote(edge.fastSpot5?.imbalance??null)+"/"+fmtVote(edge.fastPerp5?.imbalance??null)+" · Chainlink speed "+fmtVote(filtered.speed)+
+      " · perp CVD "+fmtVote(filtered.perpFlow)+" · Chainlink speed "+fmtVote(filtered.speed)+
       " · swing "+fmtVote(filtered.swing)+" · OI "+fmtVote(filtered.oi)+
       " · TWAP gap "+(targetGap===null?"—":(targetGap>=0?"+$":"−$")+fmt(Math.abs(targetGap)))+
       " · "+up+" UP votes / "+down+" DOWN votes · target acceptance "+(targetAcceptance.count?Math.round(targetAcceptance.ratio*100)+"% "+(memory.leader==="WAIT"?"leader":memory.leader)+" ("+targetAcceptance.count+" samples)":"collecting")+" · spot/perp volume kept independent.";

@@ -257,14 +257,26 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .basis-footprint-metrics small{display:block;color:#8498ac;font-size:8px;font-weight:850;letter-spacing:.08em}
 .basis-footprint-metrics b{display:block;color:#dbe7f4;font-size:12px;margin-top:5px;overflow-wrap:anywhere}
 .basis-footprint-metrics b.up{color:#54d6a2}.basis-footprint-metrics b.down{color:#ef8194}
-.basis-footprint-rows{margin-top:10px;display:grid;gap:3px}
-.basis-footprint-row{display:grid;grid-template-columns:minmax(76px,.7fr) minmax(90px,1fr) minmax(90px,1fr) minmax(90px,.8fr);align-items:center;gap:8px;padding:5px 7px;border-radius:5px;background:#0d1721;font:10px/1.25 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+.basis-footprint-bars{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.basis-footprint-bars>div{min-width:0;padding:9px 10px;border:1px solid #2b3d50;border-radius:7px;background:#0d1722}
+.basis-footprint-bars>div:last-child{border-color:#34735f;background:#0d211d}
+.basis-footprint-bars b{display:block;color:#b7c9dc;font-size:9px;letter-spacing:.08em}
+.basis-footprint-bars span{display:block;margin-top:5px;color:#8ca2b8;font:10px/1.5 ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.basis-footprint-rows{margin-top:10px;overflow-x:auto;display:grid;gap:3px;scrollbar-color:#3b5368 #0d1722}
+.basis-footprint-row{display:grid;grid-template-columns:66px repeat(6,minmax(87px,1fr));align-items:center;gap:5px;min-width:650px;padding:5px 7px;border-radius:5px;background:#0d1721;font:10px/1.25 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
 .basis-footprint-row.head{background:#152231;color:#90a7bc;font:800 8px/1.3 Inter,system-ui,sans-serif;letter-spacing:.08em}
-.basis-footprint-row .price{color:#dbe7f4}
+.basis-footprint-row.subhead{background:#101d2b;color:#a7b9ca;font:800 8px/1.3 Inter,system-ui,sans-serif;letter-spacing:.04em}
+.basis-footprint-row .group-head{grid-column:span 3;text-align:center;color:#a9bfd2}
+.basis-footprint-row .live-head{color:#69ddb0}
+.basis-footprint-row .price{color:#dbe7f4;font-weight:900}
 .basis-footprint-row .bid{color:#ef8194;text-align:right}
 .basis-footprint-row .ask{color:#54d6a2;text-align:right}
 .basis-footprint-row .delta{text-align:right;color:#b9c8d8}
 .basis-footprint-row .delta.up{color:#54d6a2}.basis-footprint-row .delta.down{color:#ef8194}
+.basis-footprint-row .live-cell{background:#10221e;border-radius:4px}
+.basis-footprint-row .fp-number{display:block;white-space:nowrap}
+.basis-footprint-row small{display:block;margin-top:2px;color:#71879b;font:8px/1.2 ui-monospace,monospace;white-space:nowrap}
+.basis-footprint-row small.up{color:#51c89b}.basis-footprint-row small.down{color:#e77a8d}
 .basis-footprint-empty{color:#8195a9;font-size:10px;padding:8px}
 .basis-footprint-note{margin-top:8px;color:#778da2;font-size:8px;line-height:1.5}
 .direction-pill.engine-call{white-space:normal;text-align:center;line-height:1.25}
@@ -274,7 +286,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .direction-pill.engine-call.major{background:#102a23;border-color:#28775a;color:#62e1b0;box-shadow:0 0 22px #54d6a222}
 .direction-pill.engine-call.wait{background:#141e29;border-color:#405268;color:#adc0d2}
 @media(max-width:760px){.basis-footprint-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media(max-width:520px){.basis-footprint-row{grid-template-columns:58px 1fr 1fr 1fr;gap:4px;font-size:9px;padding:5px 4px}.basis-footprint-row.head{font-size:7px}.next-market-panel strong{font-size:18px}}
+@media(max-width:520px){.basis-footprint-bars{grid-template-columns:1fr}.basis-footprint-row{font-size:9px;padding:5px 4px}.basis-footprint-row.head,.basis-footprint-row.subhead{font-size:7px}.next-market-panel strong{font-size:18px}}
 
 /* INSTITUTIONAL MINIMAL TERMINAL REFRESH */
 :root{
@@ -668,10 +680,11 @@ button{font-family:inherit}
     sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
     referrerpolicy="strict-origin-when-cross-origin"></iframe>
   <div class="basis-footprint-live">
-    <div class="basis-footprint-head"><div><b>LIVE BINANCE PERPETUAL FOOTPRINT · ENGINE READOUT</b><span>Same USD-M trade tape family as Basis; focused $2 price bands, all executed notional, refreshed every second.</span></div><b id="basisFootprintStatus">COLLECTING TAPE</b></div>
+    <div class="basis-footprint-head"><div><b>LIVE BINANCE PERPETUAL FOOTPRINT · ENGINE READOUT</b><span>Same Binance USD-M trade tape family as Basis. The closed 5m bar stays on the left; the current bar updates as trades arrive, with BTC quantity and USD notional at matching $2 price levels.</span></div><b id="basisFootprintStatus">COLLECTING TAPE</b></div>
     <div class="basis-footprint-metrics"><div><small>5S DELTA</small><b id="basisFpDelta5">—</b></div><div><small>15S DELTA</small><b id="basisFpDelta15">—</b></div><div><small>30S DELTA</small><b id="basisFpDelta30">—</b></div><div><small>FOOTPRINT EDGE</small><b id="basisFpScore">—</b></div><div><small>ABSORPTION</small><b id="basisFpAbsorption">—</b></div></div>
+    <div class="basis-footprint-bars"><div id="basisFpClosedSummary"><b>LAST CLOSED 5M BAR</b><span>Waiting for captured data.</span></div><div id="basisFpLiveSummary"><b>CURRENT 5M BAR · FILLING NOW</b><span>Waiting for live trades.</span></div></div>
     <div id="basisFootprintRows" class="basis-footprint-rows"><div class="basis-footprint-empty">Waiting for recent Binance perpetual trades.</div></div>
-    <div class="basis-footprint-note">ASK / BUY = aggressive buyers lifting offers · BID / SELL = aggressive sellers hitting bids · values are USD notional, not contract counts. The iframe's zoom and row-merging controls remain controlled by Basis.</div>
+    <div class="basis-footprint-note">ASK / BUY = aggressive buyers lifting offers · BID / SELL = aggressive sellers hitting bids · main figures are BTC quantity; smaller figures beneath are USD notional. Current-bar numbers update live and are saved across page reloads.</div>
   </div>
   <div class="basis-orderflow-foot">
     <span id="basisViewDescription">Footprint shows executed buy/sell volume and delta at each price. It is not a full order book.</span>
@@ -2488,6 +2501,8 @@ button{font-family:inherit}
     updateConfluenceForecast();
     if(state.flipTimer)clearInterval(state.flipTimer);
     state.flipTimer=setInterval(()=>{if(document.visibilityState!=="hidden")updateConfluenceForecast();},350);
+    if(state.basisFootprintRenderTimer)clearInterval(state.basisFootprintRenderTimer);
+    state.basisFootprintRenderTimer=setInterval(()=>{if(document.visibilityState!=="hidden")renderBasisFootprint();},250);
     state.flowTimer=setInterval(()=>{
       updateMomentum();
       if(!state.flowChart&&typeof LightweightCharts!=="undefined")initFlowChart();

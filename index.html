@@ -1265,16 +1265,63 @@ button{font-family:inherit}
     put("basisFpDelta30",pct(f.delta30),f.delta30>0?"up":f.delta30<0?"down":"");
     put("basisFpScore",f.score===null?"BUILDING":(f.score>=0?"UP ":"DOWN ")+Math.round(Math.abs(f.score)*100)+"/100",f.score>0?"up":f.score<0?"down":"");
     put("basisFpAbsorption",f.absorption,f.absorption.includes("ABSORBED")?"down":"");
-    put("basisFootprintStatus",f.coverage?"LIVE · "+f.count30+" PRINTS / 30S":"BUILDING · "+f.count30+" PRINTS");
     const host=$("basisFootprintRows");
     if(!host)return;
+    const elapsed=Math.max(0,Math.min(299,Math.floor(f.liveSpan||0)));
+    const clock=Math.floor(elapsed/60)+":"+String(elapsed%60).padStart(2,"0");
+    const liveCount=f.liveBar?.count||0,closedCount=f.closedBar?.count||0;
+    put("basisFootprintStatus",liveCount?"LIVE FILLING · "+clock+" / 5:00 · "+liveCount.toLocaleString("en-US")+" TRADES":"LIVE BAR · WAITING FOR FIRST TRADE");
+    const closedSummary=$("basisFpClosedSummary");
+    if(closedSummary){
+      const closedStart=f.closedBar?.start;
+      const title=f.closedBar?(f.closedIsAdjacent?"LAST CLOSED 5M BAR":"LAST CAPTURED CLOSED BAR"):"LAST CLOSED BAR · NOT CAPTURED YET";
+      const volume=f.closedBar?f.closedBar.buyQty+f.closedBar.sellQty:0;
+      const delta=f.closedBar?f.closedBar.buyQty-f.closedBar.sellQty:0;
+      const time=closedStart?new Date(closedStart).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"";
+      closedSummary.innerHTML="<b>"+title+"</b><span>"+(closedStart?time+" · ":"")+
+        volume.toFixed(4)+" BTC · DELTA "+(delta>=0?"+":"−")+Math.abs(delta).toFixed(4)+" BTC · "+
+        closedCount.toLocaleString("en-US")+" trades</span>";
+    }
+    const liveSummary=$("basisFpLiveSummary");
+    if(liveSummary){
+      const volume=f.liveBar?f.liveBar.buyQty+f.liveBar.sellQty:0;
+      const delta=f.liveBar?f.liveBar.buyQty-f.liveBar.sellQty:0;
+      liveSummary.innerHTML="<b>CURRENT 5M BAR · FILLING NOW</b><span>"+
+        new Date(f.marketStart).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})+" · "+
+        volume.toFixed(4)+" BTC · DELTA "+(delta>=0?"+":"−")+Math.abs(delta).toFixed(4)+" BTC · "+
+        liveCount.toLocaleString("en-US")+" trades · "+clock+" elapsed</span>";
+    }
     if(!f.rows.length){
-      host.innerHTML='<div class="basis-footprint-empty">Waiting for recent Binance perpetual trades around the current price.</div>';
+      const note=f.closedBar
+        ?"Current bar has not printed in the visible price range yet."
+        :"Waiting for live Binance perpetual trades. The closed-bar column fills after this page captures a complete five-minute interval.";
+      host.innerHTML="<div class='basis-footprint-empty'>"+note+"</div>";
       return;
     }
-    const money=x=>"$"+Math.round(x||0).toLocaleString("en-US");
-    host.innerHTML='<div class="basis-footprint-row head"><span>PRICE · $2 ROWS</span><span style="text-align:right">BID / SELL</span><span style="text-align:right">ASK / BUY</span><span style="text-align:right">NET DELTA</span></div>'+
-      f.rows.map(r=>'<div class="basis-footprint-row"><span class="price">'+money(r.price)+'</span><span class="bid">'+money(r.sell)+'</span><span class="ask">'+money(r.buy)+'</span><span class="delta '+(r.delta>0?"up":r.delta<0?"down":"")+'">'+(r.delta>0?"+":r.delta<0?"−":"")+money(Math.abs(r.delta))+'</span></div>').join("");
+    const qty=x=>x>0?x.toFixed(4):"—";
+    const usd=x=>x>0?compactUsd(x):"";
+    const qtyCell=(q,n)=>"<span class='fp-number'>"+qty(q)+"</span>"+(n>0?"<small>"+usd(n)+"</small>":"");
+    const deltaCell=(q,n)=>{
+      const cls=q>0?"up":q<0?"down":"";
+      const usdLine=n!==0?(n>0?"+":"−")+usd(Math.abs(n)):"";
+      return "<span class='fp-number "+cls+"'>"+(q>0?"+":q<0?"−":"")+Math.abs(q).toFixed(4)+"</span>"+
+        (usdLine?"<small class='"+cls+"'>"+usdLine+"</small>":"");
+    };
+    const header="<div class='basis-footprint-row head'>"+
+      "<span>PRICE · $2 ROWS</span><span class='group-head'>LAST CLOSED BAR · BID / ASK / Δ</span>"+
+      "<span class='group-head live-head'>CURRENT BAR · FILLING NOW</span></div>"+
+      "<div class='basis-footprint-row subhead'><span></span><span>BID / SELL</span><span>ASK / BUY</span>"+
+      "<span>DELTA</span><span>BID / SELL</span><span>ASK / BUY</span><span>DELTA</span></div>";
+    const rows=f.rows.map(r=>
+      "<div class='basis-footprint-row data-row'><span class='price'>"+Math.round(r.price).toLocaleString("en-US")+"</span>"+
+      "<span class='bid'>"+qtyCell(r.prevBid,r.prevBidUsd)+"</span>"+
+      "<span class='ask'>"+qtyCell(r.prevAsk,r.prevAskUsd)+"</span>"+
+      "<span class='delta'>"+deltaCell(r.prevDelta,r.prevDeltaUsd)+"</span>"+
+      "<span class='bid live-cell'>"+qtyCell(r.liveBid,r.liveBidUsd)+"</span>"+
+      "<span class='ask live-cell'>"+qtyCell(r.liveAsk,r.liveAskUsd)+"</span>"+
+      "<span class='delta live-cell'>"+deltaCell(r.liveDelta,r.liveDeltaUsd)+"</span></div>"
+    ).join("");
+    host.innerHTML=header+rows;
   }
 
   function fastTapeMove(venues,windowMs,now=Date.now()){

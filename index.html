@@ -241,7 +241,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .momentum-engine-card{grid-column:1/-1}
 .momentum-engine-card .swing-inline-card{margin:14px 0 0;padding:13px;border:1px solid var(--terminal-line);border-radius:10px;background:#0b121b;box-shadow:none}
 .momentum-engine-card .swing-inline-card .feature-head{margin-bottom:10px}
-.next-market-panel{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:14px;padding:13px;border:1px solid #34465a;border-radius:10px;background:linear-gradient(110deg,#0d1c24,#11182a)}
+.trend-momentum-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;padding:11px 13px;border:1px solid #33435a;border-radius:9px;background:#0b1520}\n.trend-momentum-summary small{display:block;color:#8ea4bb;font-size:9px;font-weight:900;letter-spacing:.1em}.trend-momentum-summary b{display:block;margin-top:5px;color:#dce9f5;font-size:14px}.trend-momentum-summary b.up{color:#54d6a2}.trend-momentum-summary b.down{color:#ef8194}.trend-momentum-summary span{display:block;margin-top:4px;color:#889cb0;font-size:9px;line-height:1.45}.trend-momentum-summary strong{font-size:20px;white-space:nowrap;color:#dbe7f4;font-variant-numeric:tabular-nums}\n.next-market-panel{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:14px;padding:13px;border:1px solid #34465a;border-radius:10px;background:linear-gradient(110deg,#0d1c24,#11182a)}
 .next-market-panel small{display:block;color:#93a8bd;font-size:9px;font-weight:900;letter-spacing:.11em}
 .next-market-panel b{display:block;margin-top:5px;font-size:17px;color:#d9e8f6}
 .next-market-panel b.up{color:#54d6a2}.next-market-panel b.down{color:#ef8194}
@@ -592,6 +592,10 @@ button{font-family:inherit}
   </div>
   <div class="pressure-track"><div id="pressureUpBar" class="up-fill" style="width:50%"></div><div id="pressureDownBar" class="down-fill" style="width:50%"></div></div>
   <div id="momentumFeedDetail" class="chart-foot">The momentum split is relative strength, not a win probability. Rising / falling samples count distinct Chainlink price updates, recorded once per second.</div>
+  <div class="trend-momentum-summary">
+    <div><small>UNIFIED TREND + MOMENTUM READ</small><b id="trendMomentumSide">COLLECTING</b><span id="trendMomentumDetail">Blending the rolling 60-second momentum pulse with confirmed swing structure and live Chainlink price movement.</span></div>
+    <strong id="trendMomentumScore">—</strong>
+  </div>
 
   <div class="next-market-panel" id="nextMarketPanel">
     <div><small>NEXT MARKET OPENING LEAN · CONTINUOUS TAPE</small><b id="nextMarketSide">COLLECTING</b><span id="nextMarketDetail">Using closing momentum, spot/perpetual flow, footprint delta and swing structure.</span></div>
@@ -1860,6 +1864,11 @@ button{font-family:inherit}
     const targetSideNow=targetGap===null||Math.abs(targetGap)<=targetDeadband?0:Math.sign(targetGap);
 
     const swingRaw=state.swingInfo&&state.swingInfo.ready&&now-state.swingInfo.updatedAt<4000?Math.max(-1,Math.min(1,state.swingInfo.score)):null;
+    const livePulseFresh=!!state.liveMomentumUpdatedAt&&now-state.liveMomentumUpdatedAt<3500&&Number.isFinite(state.liveMomentumEma);
+    const livePulseRaw=livePulseFresh?Math.max(-1,Math.min(1,state.liveMomentumEma)):null;
+    const trendParts=[{v:livePulseRaw,w:.60},{v:swingRaw,w:.25},{v:spotRaw,w:.15}].filter(x=>x.v!==null&&Number.isFinite(x.v));
+    const trendWeight=trendParts.reduce((a,x)=>a+x.w,0);
+    const trendPulseRaw=trendWeight?Math.max(-1,Math.min(1,trendParts.reduce((a,x)=>a+x.v*x.w,0)/trendWeight)):null;
     const hlBookFresh=!!state.hlBook.ts&&now-state.hlBook.ts<8000;
     const bids=state.hlBook.bids.slice(0,5),asks=state.hlBook.asks.slice(0,5);
     const bidDepth=bids.reduce((a,x)=>a+x.s,0),askDepth=asks.reduce((a,x)=>a+x.s,0),totalDepth=bidDepth+askDepth;
@@ -1871,27 +1880,25 @@ button{font-family:inherit}
       perpFlow:smoothRoundInput(memory,"perpFlow",edge.perpScore,8500,now),
       footprint:smoothRoundInput(memory,"footprint",footprint.score,1200,now),
       book:smoothRoundInput(memory,"book",bboRaw,850,now),
-      speed:smoothRoundInput(memory,"speed",spotRaw,6500,now),
+      trendPulse:smoothRoundInput(memory,"trendPulse",trendPulseRaw,2800,now),
       target:smoothRoundInput(memory,"target",targetRaw,14000,now),
-      swing:smoothRoundInput(memory,"swing",swingRaw,16000,now),
       oi:smoothRoundInput(memory,"oi",edge.oiRaw,18000,now),
       hl:smoothRoundInput(memory,"hl",hlRaw,10000,now)
     };
 
     const progress=Math.max(0,Math.min(1,elapsed/300));
     const weights={
-      clob:.18-progress*.02,
-      spotFlow:.15,
-      perpFlow:.13,
+      clob:.17-progress*.02,
+      spotFlow:.14,
+      perpFlow:.12,
       footprint:.08,
       book:.03,
-      speed:.13-progress*.02,
-      target:.14+progress*.06,
-      swing:.08,
+      trendPulse:.13,
+      target:.15+progress*.04,
       oi:.06,
       hl:.04
     };
-    const names={clob:"POLY CLOB",spotFlow:"SPOT CVD",perpFlow:"PERP CVD",footprint:"BINANCE PERP FOOTPRINT",book:"BINANCE TOP-OF-BOOK",speed:"CHAINLINK SPEED",target:"TWAP VS START",swing:"SWING STRUCTURE",oi:"OPEN INTEREST",hl:"HYPERLIQUID L2"};
+    const names={clob:"POLY CLOB",spotFlow:"SPOT CVD",perpFlow:"PERP CVD",footprint:"BINANCE PERP FOOTPRINT",book:"BINANCE TOP-OF-BOOK",trendPulse:"COMBINED TREND + MOMENTUM",target:"TWAP VS START",oi:"OPEN INTEREST",hl:"HYPERLIQUID L2"};
     let weighted=0,totalWeight=0,valid=0;
     const inputs=[];
     for(const key of Object.keys(weights)){
@@ -1999,8 +2006,8 @@ button{font-family:inherit}
     memory.scoreUpdatedAt=now;
 
     const contextParts=[
-      {key:"spotFlow",weight:.25},{key:"perpFlow",weight:.23},{key:"footprint",weight:.10},
-      {key:"speed",weight:.19},{key:"swing",weight:.14},{key:"oi",weight:.07},{key:"book",weight:.02}
+      {key:"spotFlow",weight:.24},{key:"perpFlow",weight:.22},{key:"footprint",weight:.10},
+      {key:"trendPulse",weight:.30},{key:"oi",weight:.08},{key:"book",weight:.06}
     ].filter(x=>filtered[x.key]!==null&&Number.isFinite(filtered[x.key]));
     const contextWeight=contextParts.reduce((sum,x)=>sum+x.weight,0);
     const rawContext=contextWeight?contextParts.reduce((sum,x)=>sum+filtered[x.key]*x.weight,0)/contextWeight:null;
@@ -2036,13 +2043,12 @@ button{font-family:inherit}
     const contextPersistence=contextRecent.length?contextAligned/contextRecent.length:0;
 
     const nextParts=[
-      {v:edge.fastSpotScore??edge.spotScore,w:.23},
-      {v:edge.fastPerpScore??edge.perpScore,w:.22},
-      {v:footprint.score,w:.22},
-      {v:spotRaw,w:.15},
+      {v:edge.fastSpotScore??edge.spotScore,w:.22},
+      {v:edge.fastPerpScore??edge.perpScore,w:.20},
+      {v:footprint.score,w:.23},
+      {v:trendPulseRaw,w:.20},
       {v:contextFresh?contextScore:null,w:.10},
-      {v:swingRaw,w:.05},
-      {v:bboRaw,w:.03}
+      {v:bboRaw,w:.05}
     ].filter(x=>x.v!==null&&Number.isFinite(x.v));
     const nextWeight=nextParts.reduce((a,x)=>a+x.w,0);
     const nextScore=nextWeight?Math.max(-1,Math.min(1,nextParts.reduce((a,x)=>a+x.v*x.w,0)/nextWeight)):0;
@@ -2053,6 +2059,13 @@ button{font-family:inherit}
       ?nextParts.length+" live inputs · spot/perp pressure "+(flowSidesAligned?"aligned":"diverging")+" · footprint "+(footprint.score===null?"building":((footprint.score>=0?"+":"")+Math.round(footprint.score*100)))+" · continuous tape carries into the next round."
       :"Collecting at least three fresh sources before assigning a next-market lean.";
     state.nextRoundForecast={side:nextSide,score:nextScore,strength:nextStrength,valid:nextParts.length,detail:nextDetail,updatedAt:now};
+    const trendSide=trendPulseRaw===null||Math.abs(trendPulseRaw)<.18?"MIXED":trendPulseRaw>0?"UP":"DOWN";
+    const trendSideEl=$("trendMomentumSide");
+    if(trendSideEl){trendSideEl.textContent=trendSide==="MIXED"?"TREND / MOMENTUM MIXED":trendSide+" TREND + MOMENTUM";trendSideEl.className=trendSide==="UP"?"up":trendSide==="DOWN"?"down":"";}
+    const trendScoreEl=$("trendMomentumScore");if(trendScoreEl)trendScoreEl.textContent=trendPulseRaw===null?"—":Math.round(Math.abs(trendPulseRaw)*100)+"/100";
+    const trendDetailEl=$("trendMomentumDetail");
+    if(trendDetailEl)trendDetailEl.textContent=(livePulseFresh?"60s momentum pulse live":"waiting for fresh rolling momentum")+" · "+(swingRaw===null?"swing structure still forming":(swingRaw>0?"bullish":"bearish")+" confirmed swing structure")+" · price impulse "+(spotRaw===null?"—":(spotRaw>=0?"+":"")+Math.round(spotRaw*100))+" · one unified read, not a probability.";
+
     const nextSideEl=$("nextMarketSide");
     if(nextSideEl){nextSideEl.textContent=nextSide==="MIXED"?"NO CLEAR OPENING LEAN":nextSide+" OPENING LEAN";nextSideEl.className=nextSide==="UP"?"up":nextSide==="DOWN"?"down":"";}
     const nextScoreEl=$("nextMarketScore");if(nextScoreEl)nextScoreEl.textContent=nextParts.length>=3?nextStrength+"/100":"—";
@@ -2236,8 +2249,8 @@ button{font-family:inherit}
     const fmtVote=x=>x===null||!Number.isFinite(x)?"—":(x>0?"+":"")+Math.round(x*100);
     $("confluenceDetail").textContent=
       "CLOB "+fmtVote(filtered.clob)+" · spot CVD "+fmtVote(filtered.spotFlow)+
-      " · perp CVD "+fmtVote(filtered.perpFlow)+" · footprint "+fmtVote(filtered.footprint)+" · Binance book "+fmtVote(filtered.book)+" · Chainlink speed "+fmtVote(filtered.speed)+
-      " · swing "+fmtVote(filtered.swing)+" · OI "+fmtVote(filtered.oi)+
+      " · perp CVD "+fmtVote(filtered.perpFlow)+" · footprint "+fmtVote(filtered.footprint)+" · Binance book "+fmtVote(filtered.book)+" · combined trend/momentum "+fmtVote(filtered.trendPulse)+
+      " · OI "+fmtVote(filtered.oi)+
       " · TWAP gap "+(targetGap===null?"—":(targetGap>=0?"+$":"−$")+fmt(Math.abs(targetGap)))+
       " · "+up+" UP votes / "+down+" DOWN votes · target acceptance "+(targetAcceptance.count?Math.round(targetAcceptance.ratio*100)+"% "+(memory.leader==="WAIT"?"leader":memory.leader)+" ("+targetAcceptance.count+" samples)":"collecting")+" · spot/perp volume kept independent.";
 

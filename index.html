@@ -708,7 +708,7 @@ button{font-family:inherit}
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,hlLastAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -1901,13 +1901,15 @@ button{font-family:inherit}
     state.flowWatchdog=setInterval(()=>{
       if(document.visibilityState==="hidden")return;
       const now=Date.now();
-      const rtdsStale=feedSocketStale(state.ws,state.rtdsLastAt,state.rtdsConnectAt,12000,now)||
-        (state.twapLastAt&&now-state.twapLastAt>15000)||(state.chainlinkLastAt&&now-state.chainlinkLastAt>15000);
+      const topicAgeStale=(!state.twapLastAt||!state.chainlinkLastAt)
+        ?now-state.rtdsConnectAt>15000
+        :(now-state.twapLastAt>15000||now-state.chainlinkLastAt>15000);
+      const rtdsStale=feedSocketStale(state.ws,state.rtdsLastAt,state.rtdsConnectAt,12000,now)||topicAgeStale;
       if(rtdsStale){connect();return;}
       if(feedSocketStale(state.tradeWs,state.spotTradeLastAt,state.spotTradeConnectAt,12000,now)){connectTrades();return;}
       if(feedSocketStale(state.futuresWs,state.futuresTradeLastAt,state.futuresConnectAt,12000,now)){connectFuturesTakerTape();return;}
-      if(feedSocketStale(state.cbWs,state.coinbaseLastAt,state.coinbaseLastAt,25000,now)){connectCoinbase();return;}
-      if(feedSocketStale(state.hlWs,state.hlLastAt,state.hlLastAt,25000,now)){connectHyperliquid();return;}
+      if(feedSocketStale(state.cbWs,state.coinbaseLastAt,state.coinbaseConnectAt,25000,now)){connectCoinbase();return;}
+      if(feedSocketStale(state.hlWs,state.hlLastAt,state.hlConnectAt,25000,now)){connectHyperliquid();return;}
     },5000);
   }
 
@@ -1920,6 +1922,8 @@ button{font-family:inherit}
     renderFlowIntelligence();
     updateConfluenceForecast();
     state.flowTimer=setInterval(()=>{
+      updateMomentum();
+      if(!state.flowChart&&typeof LightweightCharts!=="undefined")initFlowChart();
       updateSwingEngine();
       renderFlowIntelligence();
       renderFlowPressure();
@@ -2308,8 +2312,9 @@ button{font-family:inherit}
   function connectCoinbase(){
     if(state.cbReconnect){clearTimeout(state.cbReconnect);state.cbReconnect=null;}
     if(state.cbWs){try{state.cbWs.close()}catch(_){}}
+    state.coinbaseConnectAt=Date.now();
     const ws=new WebSocket("wss://advanced-trade-ws.coinbase.com");state.cbWs=ws;
-    ws.onopen=()=>{
+    ws.onopen=()=>{if(state.cbWs!==ws)return;state.coinbaseConnectAt=Date.now();
       ws.send(JSON.stringify({type:"subscribe",product_ids:["BTC-USD"],channel:"ticker"}));
       ws.send(JSON.stringify({type:"subscribe",product_ids:["BTC-USD"],channel:"market_trades"}));
       ws.send(JSON.stringify({type:"subscribe",channel:"heartbeats"}));
@@ -2332,8 +2337,9 @@ button{font-family:inherit}
   function connectHyperliquid(){
     if(state.hlReconnect){clearTimeout(state.hlReconnect);state.hlReconnect=null;}
     if(state.hlWs){try{state.hlWs.close()}catch(_){}}
+    state.hlConnectAt=Date.now();
     const ws=new WebSocket("wss://api.hyperliquid.xyz/ws");state.hlWs=ws;
-    ws.onopen=()=>{
+    ws.onopen=()=>{if(state.hlWs!==ws)return;state.hlConnectAt=Date.now();
       ws.send(JSON.stringify({method:"subscribe",subscription:{type:"trades",coin:"BTC"}}));
       ws.send(JSON.stringify({method:"subscribe",subscription:{type:"l2Book",coin:"BTC"}}));
       ws.send(JSON.stringify({method:"subscribe",subscription:{type:"allMids"}}));

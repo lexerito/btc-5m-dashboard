@@ -247,7 +247,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .next-market-panel b.up{color:#54d6a2}.next-market-panel b.down{color:#ef8194}
 .next-market-panel span{display:block;margin-top:5px;color:#91a2b4;font-size:10px;line-height:1.45}
 .next-market-panel strong{font-size:23px;color:#dbe7f4;font-variant-numeric:tabular-nums;white-space:nowrap}
-.basis-footprint-live{margin:12px 0;padding:12px;border:1px solid #2b3d50;border-radius:9px;background:#080f18}
+.basis-widget-frame{height:640px!important}\n.basis-footprint-live{margin:12px 0;padding:12px;border:1px solid #2b3d50;border-radius:9px;background:#080f18}
 .basis-footprint-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .basis-footprint-head b{display:block;font-size:9px;letter-spacing:.1em;color:#c8d9e9}
 .basis-footprint-head span{display:block;margin-top:4px;font-size:9px;color:#8296aa;line-height:1.4}
@@ -532,8 +532,8 @@ button{font-family:inherit}
 <section class="market-focus">
   <div class="focus-top"><div class="focus-tag"><span></span> ACTIVE MARKET · 5 MINUTES</div><div><div class="label">TIME LEFT</div><div id="countdown" class="timer">5:00</div></div></div>
   <div class="focus-main">
-    <div><div class="label">PRICE TO BEAT · EXACT CHAINLINK TWAP60</div><div id="targetLarge" class="target-number">Waiting for next market…</div><div id="targetTime" class="small">Exact boundary observation · missing data means WAIT</div></div>
-    <div id="directionPill" class="direction-pill">WAITING FOR TARGET</div>
+    <div><div class="label">PRICE TO BEAT · EXACT CHAINLINK TWAP60 REFERENCE</div><div id="targetLarge" class="target-number">Waiting for next market…</div><div id="targetTime" class="small">Exact boundary observation · missing data means WAIT</div></div>
+    <div><div class="label">OUTCOME ENGINE · STRONGEST LIVE EVIDENCE</div><div id="directionPill" class="direction-pill engine-call wait">WAIT · COLLECTING MARKET EDGE</div></div>
   </div>
   <div class="focus-foot"><span>Live TWAP: <b id="liveTwapInline">—</b></span><span>Distance: <b id="distance">—</b></span><span>Next reset: <b>every 5 minutes UTC</b></span></div>
 </section>
@@ -545,7 +545,7 @@ button{font-family:inherit}
       <div class="label">LIVE BTC PRICE ACTION · MULTI-SOURCE</div>
       <div class="chart-subtitle">Binance spot trades update in real time; Chainlink spot and TWAP60 remain the settlement-side reference.</div>
     </div>
-    <span id="fastExchangeStatus" class="poly-live">WAITING FOR BINANCE TAPE</span><span id="chartStatus" class="poly-live">WAITING FOR CHAINLINK</span>
+    <span id="fastExchangeStatus" class="poly-live">WAITING FOR BINANCE TAPE</span><span id="fastBookDetail" class="poly-live">BINANCE BBO · CONNECTING</span><span id="chartStatus" class="poly-live">WAITING FOR CHAINLINK</span>
   </div>
   <div id="liveChart" aria-label="Live Chainlink BTC price and 60-second time-weighted average chart"></div>
   <div class="chart-legend">
@@ -724,7 +724,7 @@ button{font-family:inherit}
 </section>
 
 <section class="metrics">
-  <div class="card"><div class="label">Market direction · TWAP vs target</div><div id="marketDirection" class="metric-value">WAIT</div><div class="small">Above = positive · Below = negative</div></div>
+  <div class="card"><div class="label">Settlement reference status</div><div id="marketDirection" class="metric-value">WAIT</div><div class="small">Above = positive · Below = negative</div></div>
   <div class="card"><div class="label">Distance from target</div><div id="distanceMetric" class="metric-value">—</div><div class="bar"><span id="distanceBar"></span></div></div>
   <div class="card"><div class="label">Feed freshness</div><div id="freshness" class="metric-value">WAIT</div><div id="freshnessDetail" class="small">Waiting for live updates</div></div>
 </section>
@@ -879,8 +879,8 @@ button{font-family:inherit}
     $("distance").className=above?"up":"down";
     $("distanceMetric").textContent=sign+amount;
     $("distanceMetric").className="metric-value "+(above?"up":"down");
-    $("marketDirection").textContent=above?"POSITIVE LEADING":"NEGATIVE LEADING";
-    $("marketDirection").className="metric-value "+(above?"up":"down");
+    $("marketDirection").textContent="TWAP60 REFERENCE LOCKED";
+    $("marketDirection").className="metric-value";
     $("distanceBar").style.width=Math.min(100,Math.abs(diff)/Math.max(state.target*.001,1)*100)+"%";
     updateForecasts();
   }
@@ -1613,7 +1613,7 @@ button{font-family:inherit}
         imbalance:(bidSize-askSize)/total,microEdge:mid?(micro-mid)/Math.max(ask-bid,.01):0,ts:Date.now()};
       state.bboLastAt=Date.now();
       const el=$("fastBookDetail");
-      if(el)el.textContent="BID "+fmt(bid)+" · ASK "+fmt(ask)+" · SIZE SKEW "+Math.round(state.binanceBbo.imbalance*100)+"%";
+      if(el){el.textContent="BBO "+fmt(bid)+" / "+fmt(ask)+" · SKEW "+Math.round(state.binanceBbo.imbalance*100)+"%";el.className="poly-live ok";}
     };
     ws.onerror=()=>{if(state.bboWs===ws)try{ws.close()}catch(_){}};
     ws.onclose=()=>{

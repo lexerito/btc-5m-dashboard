@@ -1098,6 +1098,96 @@ button{font-family:inherit}
     }
     return {buy,sell,total,count,imbalance:weights?weighted/weights:null,sources:active.map(x=>x.name),maxTradeShare:maxTrade/total};
   }
+  function buildBasisFootprint(now=Date.now()){
+    if(state.basisFootprint&&now-state.basisFootprint.updatedAt<450)return state.basisFootprint;
+    const tape=state.flowTrades.filter(t=>t.venue==="BINANCE PERP"&&t.ts<=now&&now-t.ts<=60000&&t.notional>0&&t.price>0);
+    const windowStats=ms=>{
+      const rows=tape.filter(t=>now-t.ts<=ms);
+      let buy=0,sell=0,first=null,last=null;
+      for(const t of rows){
+        if(t.buy)buy+=t.notional;else sell+=t.notional;
+        if(!first||t.ts<first.ts)first=t;
+        if(!last||t.ts>=last.ts)last=t;
+      }
+      const total=buy+sell;
+      return {buy,sell,total,count:rows.length,imbalance:total?(buy-sell)/total:null,
+        move:first&&last?last.price-first.price:null,first,last};
+    };
+    const w5=windowStats(5000),w15=windowStats(15000),w30=windowStats(30000),w60=windowStats(60000);
+    const latest=tape.length?tape[tape.length-1]:null;
+    const current=latest?latest.price:(state.futuresPrice||state.binanceFastPrice||state.binance);
+    const byPrice=new Map();
+    for(const t of tape){
+      if(now-t.ts>30000)continue;
+      const price=Math.floor(t.price/2)*2;
+      const row=byPrice.get(price)||{price,buy:0,sell:0,count:0};
+      if(t.buy)row.buy+=t.notional;else row.sell+=t.notional;
+      row.count++;byPrice.set(price,row);
+    }
+    const allRows=Array.from(byPrice.values()).map(x=>({...x,total:x.buy+x.sell,delta:x.buy-x.sell,
+      imbalance:(x.buy+x.sell)?(x.buy-x.sell)/(x.buy+x.sell):0}));
+    const rows=current?allRows.filter(x=>Math.abs(x.price+1-current)<=22):allRows;
+    const ordered=[...rows].sort((a,b)=>a.price-b.price);
+    let buyRun=0,sellRun=0,maxBuyRun=0,maxSellRun=0;
+    for(const r of ordered){
+      const active=r.total>=5000;
+      if(active&&r.imbalance>=.28){buyRun++;sellRun=0;maxBuyRun=Math.max(maxBuyRun,buyRun);}
+      else if(active&&r.imbalance<=-.28){sellRun++;buyRun=0;maxSellRun=Math.max(maxSellRun,sellRun);}
+      else{buyRun=0;sellRun=0;}
+    }
+    const deltas=[{x:w5,w:.46},{x:w15,w:.30},{x:w30,w:.18},{x:w60,w:.06}].filter(z=>z.x.imbalance!==null&&z.x.total>=10000&&z.x.count>=2);
+    const deltaWeight=deltas.reduce((a,z)=>a+z.w,0);
+    const deltaBlend=deltaWeight?deltas.reduce((a,z)=>a+z.x.imbalance*z.w,0)/deltaWeight:null;
+    const move15=w15.move;
+    const stepNoise=averageAbsoluteStep(state.chainlinkHistory.slice(-45));
+    const moveFloor=Math.max(.65,stepNoise*1.6);
+    const priceSide=move15!==null&&Math.abs(move15)>=moveFloor?Math.sign(move15):0;
+    const priceConfirm=deltaBlend===null||!priceSide?0:(Math.sign(deltaBlend)===priceSide?.16:-.18);
+    const stackScore=Math.max(-1,Math.min(1,(maxBuyRun-maxSellRun)/3));
+    const targetRows=state.target===null?[]:allRows.filter(x=>Math.abs(x.price+1-state.target)<=10);
+    const targetTotal=targetRows.reduce((a,x)=>a+x.total,0);
+    const targetDelta=targetRows.reduce((a,x)=>a+x.delta,0);
+    const targetScore=targetTotal>=10000?Math.max(-1,Math.min(1,targetDelta/targetTotal)):0;
+    let absorption=0,absorptionText="NO CLEAR ABSORPTION";
+    if(deltaBlend!==null&&Math.abs(deltaBlend)>=.25&&move15!==null&&Math.abs(move15)<moveFloor){
+      absorption=-Math.sign(deltaBlend)*.18;
+      absorptionText=deltaBlend>0?"BUYERS ABSORBED · PRICE STALLING":"SELLERS ABSORBED · PRICE HOLDING";
+    }
+    let score=deltaBlend===null?null:Math.max(-1,Math.min(1,deltaBlend*.62+stackScore*.14+priceConfirm*.14+targetScore*.10+absorption));
+    const coverage=w30.count>=6&&w30.total>=40000;
+    if(!coverage)score=null;
+    const visibleRows=[...rows].sort((a,b)=>Math.abs(a.price+1-current)-Math.abs(b.price+1-current)).slice(0,13).sort((a,b)=>b.price-a.price);
+    state.basisFootprint={updatedAt:now,score,delta5:w5.imbalance,delta15:w15.imbalance,delta30:w30.imbalance,delta60:w60.imbalance,
+      buy30:w30.buy,sell30:w30.sell,total30:w30.total,count30:w30.count,absorption:absorptionText,
+      absorptionRaw:absorption,stackBuy:maxBuyRun,stackSell:maxSellRun,priceMove15:move15,targetScore,
+      rows:visibleRows,current,coverage};
+    return state.basisFootprint;
+  }
+
+  function renderBasisFootprint(){
+    const f=buildBasisFootprint(Date.now());
+    const put=(id,value,cls)=>{
+      const el=$(id);if(!el)return;el.textContent=value;el.className="";
+      if(cls)el.classList.add(cls);
+    };
+    const pct=x=>x===null||!Number.isFinite(x)?"—":(x>=0?"+":"")+Math.round(x*100)+"%";
+    put("basisFpDelta5",pct(f.delta5),f.delta5>0?"up":f.delta5<0?"down":"");
+    put("basisFpDelta15",pct(f.delta15),f.delta15>0?"up":f.delta15<0?"down":"");
+    put("basisFpDelta30",pct(f.delta30),f.delta30>0?"up":f.delta30<0?"down":"");
+    put("basisFpScore",f.score===null?"BUILDING":(f.score>=0?"UP ":"DOWN ")+Math.round(Math.abs(f.score)*100)+"/100",f.score>0?"up":f.score<0?"down":"");
+    put("basisFpAbsorption",f.absorption,f.absorption.includes("ABSORBED")?"down":"");
+    put("basisFootprintStatus",f.coverage?"LIVE · "+f.count30+" PRINTS / 30S":"BUILDING · "+f.count30+" PRINTS");
+    const host=$("basisFootprintRows");
+    if(!host)return;
+    if(!f.rows.length){
+      host.innerHTML='<div class="basis-footprint-empty">Waiting for recent Binance perpetual trades around the current price.</div>';
+      return;
+    }
+    const money=x=>"$"+Math.round(x||0).toLocaleString("en-US");
+    host.innerHTML='<div class="basis-footprint-row head"><span>PRICE · $2 ROWS</span><span style="text-align:right">BID / SELL</span><span style="text-align:right">ASK / BUY</span><span style="text-align:right">NET DELTA</span></div>'+
+      f.rows.map(r=>'<div class="basis-footprint-row"><span class="price">'+money(r.price)+'</span><span class="bid">'+money(r.sell)+'</span><span class="ask">'+money(r.buy)+'</span><span class="delta '+(r.delta>0?"up":r.delta<0?"down":"")+'">'+(r.delta>0?"+":r.delta<0?"−":"")+money(Math.abs(r.delta))+'</span></div>').join("");
+  }
+
   function fastTapeMove(venues,windowMs,now=Date.now()){
     const wanted=new Set(venues),byVenue=new Map();
     for(const name of venues)byVenue.set(name,{firstTs:Infinity,firstPrice:null,lastTs:0,lastPrice:null,count:0,total:0});
@@ -1317,6 +1407,7 @@ button{font-family:inherit}
   function renderFlowIntelligence(){
     if(!state.volumeEdge||Date.now()-state.volumeEdge.updatedAt>=850)state.volumeEdge=calculateRealVolumeEdge();
     const e=state.volumeEdge,now=Date.now();
+    renderBasisFootprint();
     const spotText="30s "+fmtDeltaRatio(e.spot30?.imbalance??null)+" · 2m "+fmtDeltaRatio(e.spot120?.imbalance??null)+" · 5m "+fmtDeltaRatio(e.spot300?.imbalance??null);
     const perpText="30s "+fmtDeltaRatio(e.perp30?.imbalance??null)+" · 2m "+fmtDeltaRatio(e.perp120?.imbalance??null)+" · 5m "+fmtDeltaRatio(e.perp300?.imbalance??null);
     const fastText=(fast5,fast10,surge)=>"5s "+fmtDeltaRatio(fast5?.imbalance??null)+" · 10s "+fmtDeltaRatio(fast10?.imbalance??null)+" · "+(surge.ratio===null?"baseline building":surge.ratio.toFixed(2)+"× vol");
@@ -1730,6 +1821,9 @@ button{font-family:inherit}
     }
 
     const edge=state.volumeEdge&&now-state.volumeEdge.updatedAt<450?state.volumeEdge:(state.volumeEdge=calculateRealVolumeEdge(now));
+    const footprint=buildBasisFootprint(now);
+    const bboFresh=!!state.binanceBbo&&now-state.binanceBbo.ts<1800;
+    const bboRaw=bboFresh?Math.max(-1,Math.min(1,state.binanceBbo.imbalance*1.65+state.binanceBbo.microEdge*.42)):null;
     const f30=getFlowWindow(30000);
     const latestSpot=state.chainlinkHistory.length?state.chainlinkHistory[state.chainlinkHistory.length-1]:null;
     const spotAge=latestSpot?now-latestSpot.ts:Infinity;
@@ -1775,6 +1869,8 @@ button{font-family:inherit}
       clob:smoothRoundInput(memory,"clob",clobRaw,6500,now),
       spotFlow:smoothRoundInput(memory,"spotFlow",edge.spotScore,9000,now),
       perpFlow:smoothRoundInput(memory,"perpFlow",edge.perpScore,8500,now),
+      footprint:smoothRoundInput(memory,"footprint",footprint.score,1200,now),
+      book:smoothRoundInput(memory,"book",bboRaw,850,now),
       speed:smoothRoundInput(memory,"speed",spotRaw,6500,now),
       target:smoothRoundInput(memory,"target",targetRaw,14000,now),
       swing:smoothRoundInput(memory,"swing",swingRaw,16000,now),
@@ -1784,16 +1880,18 @@ button{font-family:inherit}
 
     const progress=Math.max(0,Math.min(1,elapsed/300));
     const weights={
-      clob:.21-progress*.02,
-      spotFlow:.16,
-      perpFlow:.16,
-      speed:.14-progress*.02,
-      target:.14+progress*.08,
-      swing:.09,
+      clob:.18-progress*.02,
+      spotFlow:.15,
+      perpFlow:.13,
+      footprint:.08,
+      book:.03,
+      speed:.13-progress*.02,
+      target:.14+progress*.06,
+      swing:.08,
       oi:.06,
       hl:.04
     };
-    const names={clob:"POLY CLOB",spotFlow:"SPOT CVD",perpFlow:"PERP CVD",speed:"CHAINLINK SPEED",target:"TWAP VS START",swing:"SWING STRUCTURE",oi:"OPEN INTEREST",hl:"HYPERLIQUID L2"};
+    const names={clob:"POLY CLOB",spotFlow:"SPOT CVD",perpFlow:"PERP CVD",footprint:"BINANCE PERP FOOTPRINT",book:"BINANCE TOP-OF-BOOK",speed:"CHAINLINK SPEED",target:"TWAP VS START",swing:"SWING STRUCTURE",oi:"OPEN INTEREST",hl:"HYPERLIQUID L2"};
     let weighted=0,totalWeight=0,valid=0;
     const inputs=[];
     for(const key of Object.keys(weights)){
@@ -1901,8 +1999,8 @@ button{font-family:inherit}
     memory.scoreUpdatedAt=now;
 
     const contextParts=[
-      {key:"spotFlow",weight:.28},{key:"perpFlow",weight:.28},
-      {key:"speed",weight:.20},{key:"swing",weight:.15},{key:"oi",weight:.09}
+      {key:"spotFlow",weight:.25},{key:"perpFlow",weight:.23},{key:"footprint",weight:.10},
+      {key:"speed",weight:.19},{key:"swing",weight:.14},{key:"oi",weight:.07},{key:"book",weight:.02}
     ].filter(x=>filtered[x.key]!==null&&Number.isFinite(filtered[x.key]));
     const contextWeight=contextParts.reduce((sum,x)=>sum+x.weight,0);
     const rawContext=contextWeight?contextParts.reduce((sum,x)=>sum+filtered[x.key]*x.weight,0)/contextWeight:null;
@@ -1936,6 +2034,29 @@ button{font-family:inherit}
     const contextRecent=memory.history.filter(x=>x.context!==null&&now-x.ts<=300000);
     const contextAligned=contextSide==="UP"||contextSide==="DOWN"?contextRecent.filter(x=>Math.sign(x.context)===(contextSide==="UP"?1:-1)).length:0;
     const contextPersistence=contextRecent.length?contextAligned/contextRecent.length:0;
+
+    const nextParts=[
+      {v:edge.fastSpotScore??edge.spotScore,w:.23},
+      {v:edge.fastPerpScore??edge.perpScore,w:.22},
+      {v:footprint.score,w:.22},
+      {v:spotRaw,w:.15},
+      {v:contextFresh?contextScore:null,w:.10},
+      {v:swingRaw,w:.05},
+      {v:bboRaw,w:.03}
+    ].filter(x=>x.v!==null&&Number.isFinite(x.v));
+    const nextWeight=nextParts.reduce((a,x)=>a+x.w,0);
+    const nextScore=nextWeight?Math.max(-1,Math.min(1,nextParts.reduce((a,x)=>a+x.v*x.w,0)/nextWeight)):0;
+    const nextSide=nextParts.length>=3&&Math.abs(nextScore)>=.22?(nextScore>0?"UP":"DOWN"):"MIXED";
+    const nextStrength=Math.round(Math.abs(nextScore)*100);
+    const flowSidesAligned=Math.sign(edge.fastSpotScore??edge.spotScore??0)===Math.sign(edge.fastPerpScore??edge.perpScore??0);
+    const nextDetail=nextParts.length>=3
+      ?nextParts.length+" live inputs · spot/perp pressure "+(flowSidesAligned?"aligned":"diverging")+" · footprint "+(footprint.score===null?"building":((footprint.score>=0?"+":"")+Math.round(footprint.score*100)))+" · continuous tape carries into the next round."
+      :"Collecting at least three fresh sources before assigning a next-market lean.";
+    state.nextRoundForecast={side:nextSide,score:nextScore,strength:nextStrength,valid:nextParts.length,detail:nextDetail,updatedAt:now};
+    const nextSideEl=$("nextMarketSide");
+    if(nextSideEl){nextSideEl.textContent=nextSide==="MIXED"?"NO CLEAR OPENING LEAN":nextSide+" OPENING LEAN";nextSideEl.className=nextSide==="UP"?"up":nextSide==="DOWN"?"down":"";}
+    const nextScoreEl=$("nextMarketScore");if(nextScoreEl)nextScoreEl.textContent=nextParts.length>=3?nextStrength+"/100":"—";
+    const nextDetailEl=$("nextMarketDetail");if(nextDetailEl)nextDetailEl.textContent=nextDetail+" Evidence strength, not a win probability.";
 
     const votes=inputs.filter(x=>x.side!==0);
     const up=votes.filter(x=>x.side>0).length,down=votes.filter(x=>x.side<0).length;
@@ -2086,6 +2207,7 @@ button{font-family:inherit}
     const forecast={
       side,leader:memory.leader,score,rawScore,up,down,votes,valid,elapsed,remaining,
       targetGap,targetSideNow,targetAcceptance:targetAcceptance.ratio,targetAcceptanceSamples:targetAcceptance.count,
+      footprintScore:footprint.score,footprintDelta30:footprint.delta30,bookImbalance:bboRaw,nextRoundSide:nextSide,nextRoundScore:nextScore,
       updatedAt:now,persistence:leaderPersistence.ratio,samples:leaderPersistence.count,
       leaderAge,leadChanges:memory.leadChanges,candidate:memory.candidate,
       spotCvd:edge.spotScore,perpCvd:edge.perpScore,volumeSurge:edge.volumeSurge,
@@ -2097,6 +2219,15 @@ button{font-family:inherit}
       ?(!targetFresh?"WAIT · NEW PRICE TO BEAT SYNCING":!correctMarketBook?"WAIT · NEW POLYMARKET BOOK SYNCING":"WAIT · NO CONFIRMED EDGE")
       :side+" · "+(rapidFlipConfirmed?"MAJOR FLIP CONFIRMED":fastTurn?"HIGH-VOLUME TURN CONFIRMED":"SUSTAINED EDGE");
     $("confluenceCall").className="confluence-call "+(side==="UP"?"up":side==="DOWN"?"down":"");
+    const primaryCall=$("directionPill");
+    if(primaryCall){
+      let callText="WAIT · COLLECTING MARKET EDGE",callClass="wait";
+      if(side==="UP"||side==="DOWN"){callText=side+" · ENGINE CONFIRMED";callClass=side.toLowerCase();}
+      else if(majorQualified){callText="MAJOR REVERSAL FORMING · "+flipCandidateSide;callClass="major";}
+      else if(minorBreak){callText="MINOR BREAK · "+flipCandidateSide;callClass="minor";}
+      else if(memory.leader!=="WAIT"){callText=memory.leader+" LEAN · WAITING FOR FULL CONFIRMATION";callClass=memory.leader.toLowerCase();}
+      primaryCall.textContent=callText;primaryCall.className="direction-pill engine-call "+callClass;
+    }
     $("confluenceScore").textContent=totalWeight?(score>=0?"UP ":"DOWN ")+Math.round(Math.abs(score)*100)+"/100":"—";
     $("confluenceMeter").style.width=Math.round((score+1)*50)+"%";
     $("confluenceStatus").textContent=!bookFresh?"POLY BOOK STALE":!targetFresh?"TARGET / TWAP STALE":!spotFresh?"CHAINLINK STALE":valid+" INPUTS · "+votes.length+" VOTES";
@@ -2105,7 +2236,7 @@ button{font-family:inherit}
     const fmtVote=x=>x===null||!Number.isFinite(x)?"—":(x>0?"+":"")+Math.round(x*100);
     $("confluenceDetail").textContent=
       "CLOB "+fmtVote(filtered.clob)+" · spot CVD "+fmtVote(filtered.spotFlow)+
-      " · perp CVD "+fmtVote(filtered.perpFlow)+" · Chainlink speed "+fmtVote(filtered.speed)+
+      " · perp CVD "+fmtVote(filtered.perpFlow)+" · footprint "+fmtVote(filtered.footprint)+" · Binance book "+fmtVote(filtered.book)+" · Chainlink speed "+fmtVote(filtered.speed)+
       " · swing "+fmtVote(filtered.swing)+" · OI "+fmtVote(filtered.oi)+
       " · TWAP gap "+(targetGap===null?"—":(targetGap>=0?"+$":"−$")+fmt(Math.abs(targetGap)))+
       " · "+up+" UP votes / "+down+" DOWN votes · target acceptance "+(targetAcceptance.count?Math.round(targetAcceptance.ratio*100)+"% "+(memory.leader==="WAIT"?"leader":memory.leader)+" ("+targetAcceptance.count+" samples)":"collecting")+" · spot/perp volume kept independent.";

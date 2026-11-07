@@ -2054,7 +2054,8 @@ button{font-family:inherit}
     const nextScore=nextWeight?Math.max(-1,Math.min(1,nextParts.reduce((a,x)=>a+x.v*x.w,0)/nextWeight)):0;
     const nextSide=nextParts.length>=3&&Math.abs(nextScore)>=.22?(nextScore>0?"UP":"DOWN"):"MIXED";
     const nextStrength=Math.round(Math.abs(nextScore)*100);
-    const flowSidesAligned=Math.sign(edge.fastSpotScore??edge.spotScore??0)===Math.sign(edge.fastPerpScore??edge.perpScore??0);
+    const nextSpotFlow=edge.fastSpotScore??edge.spotScore,nextPerpFlow=edge.fastPerpScore??edge.perpScore;
+    const flowSidesAligned=nextSpotFlow!==null&&nextSpotFlow!==undefined&&nextPerpFlow!==null&&nextPerpFlow!==undefined&&Math.sign(nextSpotFlow)===Math.sign(nextPerpFlow);
     const nextDetail=nextParts.length>=3
       ?nextParts.length+" live inputs · spot/perp pressure "+(flowSidesAligned?"aligned":"diverging")+" · footprint "+(footprint.score===null?"building":((footprint.score>=0?"+":"")+Math.round(footprint.score*100)))+" · continuous tape carries into the next round."
       :"Collecting at least three fresh sources before assigning a next-market lean.";

@@ -2321,7 +2321,8 @@ button{font-family:inherit}
       const recent=state.liveMomentumHistory.filter(x=>now-x.ts<=4500);
       const votes=recent.filter(x=>x.side===candidateSide||x.pulseSide===candidateSide||(fastConfirm&&x.fastSide===candidateSide)).length;
       const quick=fastConfirm&&fastSide===candidateSide;
-      const initialEvidence=rawSide===candidateSide||Math.abs(score)>=.18;
+      const candidateSign=candidateSide==="UP"?1:-1;
+      const initialEvidence=rawSide===candidateSide||(Math.sign(score)===candidateSign&&Math.abs(score)>=.18);
       if(now-state.liveMomentumCandidateSince>=(quick?1800:2800)&&votes>=(quick?2:3)&&initialEvidence){
         chosenSide=candidateSide;state.liveMomentumSide=chosenSide;state.liveMomentumCandidate="WAIT";state.liveMomentumCandidateSince=0;
       }
@@ -2332,7 +2333,8 @@ button{font-family:inherit}
       const votes=recent.filter(x=>x.side===candidateSide||x.pulseSide===candidateSide||(quick&&x.fastSide===candidateSide)).length;
       const minimumVotes=quick?2:4;
       const minimumTime=quick?2200:4800;
-      const scoreConfirmed=quick?Math.abs(fastPriceScore||0)>=.18:Math.abs(score)>=.22;
+      const candidateSign=candidateSide==="UP"?1:-1;
+      const scoreConfirmed=quick?Math.sign(fastPriceScore||0)===candidateSign&&Math.abs(fastPriceScore||0)>=.18:Math.sign(score)===candidateSign&&Math.abs(score)>=.22;
       if(now-state.liveMomentumCandidateSince>=minimumTime&&votes>=minimumVotes&&scoreConfirmed){
         chosenSide=candidateSide;state.liveMomentumSide=chosenSide;state.liveMomentumCandidate="WAIT";state.liveMomentumCandidateSince=0;state.liveMomentumWeakSince=0;
       }

@@ -2239,7 +2239,9 @@ button{font-family:inherit}
     const score=Math.max(-1,Math.min(1,state.liveMomentumEma));
     const upShare=Math.round((score+1)*50),downShare=100-upShare;
     const rawSide=score>=.16?"UP":score<=-.16?"DOWN":"WAIT";
-    const fastSide=fastConfirm?(fastSideSign>0?"UP":"DOWN"):"WAIT";
+    // Record aligned short-term pressure even before it qualifies as a confirmed turn.
+    // This lets the confirmation rule measure persistence across successive updates.
+    const fastSide=fastPriceAgreement?(fastSideSign>0?"UP":"DOWN"):"WAIT";
     if(!Array.isArray(state.liveMomentumHistory))state.liveMomentumHistory=[];
     state.liveMomentumHistory.push({ts:now,side:rawSide,fastSide,score});
     state.liveMomentumHistory=state.liveMomentumHistory.filter(x=>now-x.ts<=12000);

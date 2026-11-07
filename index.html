@@ -103,25 +103,47 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .chart-legend span{display:inline-flex;align-items:center;gap:6px}
 .chart-legend i{display:inline-block;width:17px;height:3px;border-radius:4px}
 .legend-twap{background:#9b82ff}.legend-spot{background:#42c7ff}.legend-target{height:0!important;border-top:2px dashed #f1cb79}
-.live-momentum-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:12px;margin-top:14px;align-items:stretch}
-.momentum-leader-box{border:1px solid #34436c;border-radius:12px;padding:13px;background:#0b1123;min-width:0}
-.momentum-leader-value{font-size:clamp(19px,3vw,27px);font-weight:950;letter-spacing:-.03em;margin-top:7px;color:#b5c4e2}
+.momentum-engine-card{margin-top:13px;border:1px solid #3c477c;background:linear-gradient(145deg,#11172d,#090f20 78%);box-shadow:0 12px 38px #0005}
+.momentum-engine-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.momentum-engine-sub{font-size:10px;line-height:1.5;color:#8297bd;margin-top:5px;max-width:680px}
+.momentum-pulse-status{font-size:9px;font-weight:900;letter-spacing:.1em;color:#9bb0d5;border:1px solid #3b4b75;background:#0a1225;border-radius:30px;padding:7px 10px}
+.live-momentum-layout{display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.35fr);gap:12px;margin-top:14px;align-items:stretch}
+.momentum-leader-box{border:1px solid #34436c;border-radius:12px;padding:15px;background:linear-gradient(150deg,#0d152b,#090f20);min-width:0;display:flex;flex-direction:column;justify-content:center}
+.momentum-leader-value{font-size:clamp(20px,3vw,29px);font-weight:950;letter-spacing:-.03em;margin-top:9px;color:#b5c4e2}
 .momentum-leader-value.up{color:#4aefb2}.momentum-leader-value.down{color:#ff7298}
-.momentum-leader-detail{font-size:10px;color:#8fa4ca;line-height:1.5;margin-top:7px}
-.momentum-leader-why{font-size:9px;color:#b6c5d8;line-height:1.55;margin-top:8px;padding-top:8px;border-top:1px solid #273748}
-.momentum-score-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.momentum-score-box{border:1px solid #2d426b;border-radius:11px;padding:11px;background:#0b1123;min-width:0}
+.momentum-leader-detail{font-size:10px;color:#a3b6d5;line-height:1.65;margin-top:9px}
+.momentum-leader-why{font-size:9px;color:#b6c5d8;line-height:1.6;margin-top:10px;padding-top:9px;border-top:1px solid #273748}
+.momentum-pulse-panel{border:1px solid #283957;border-radius:12px;padding:12px;background:#0a1122;min-width:0}
+.sample-balance-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:9px;font-weight:900;letter-spacing:.09em;color:#9bb0d5}
+.sample-balance-head small{font-size:9px;color:#869cbe;letter-spacing:0;font-weight:700}
+.sample-count-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.sample-count{display:flex;align-items:baseline;gap:8px;min-width:0;border-radius:9px;padding:8px 10px;background:#0e1c25}
+.sample-count b{font-size:25px;font-weight:950;font-variant-numeric:tabular-nums}
+.sample-count span{font-size:9px;letter-spacing:.08em;font-weight:850;color:#9aacc7}
+.up-sample b{color:#4aefb2}.down-sample{background:#251321}.down-sample b{color:#ff7298}
+.sample-balance-track{display:flex;gap:3px;height:10px;border-radius:20px;overflow:hidden;background:#222a46;margin-top:9px}
+.sample-up-fill{height:100%;background:linear-gradient(90deg,#167d59,#4aefb2);transition:width .25s}
+.sample-down-fill{height:100%;background:linear-gradient(90deg,#ff7298,#a63e68);transition:width .25s}
+.sample-balance-legend{display:flex;justify-content:space-between;font-size:8px;letter-spacing:.08em;font-weight:800;color:#8297b8;margin-top:5px}
+.fast-pulse-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:12px}
+.fast-pulse-box{background:#0d172c;border:1px solid #243653;border-radius:9px;padding:8px;min-width:0}
+.fast-pulse-box small{display:block;font-size:8px;letter-spacing:.08em;font-weight:900;color:#8198bd}
+.fast-pulse-box b{display:block;font-size:13px;font-weight:950;margin-top:6px;color:#d7e2f5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fast-pulse-box span{display:block;font-size:8px;color:#869abd;margin-top:3px;line-height:1.4}
+.momentum-score-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}
+.momentum-score-box{border:1px solid #2d426b;border-radius:10px;padding:8px 10px;background:#0b1123;min-width:0}
 .momentum-score-box.up-box{border-color:#22684f}.momentum-score-box.down-box{border-color:#78364f}
-.momentum-score-box span{display:block;font-size:9px;font-weight:850;letter-spacing:.1em;color:#9bb0d5}
-.momentum-score-box b{display:block;font-size:clamp(23px,3vw,31px);font-weight:950;margin-top:6px;font-variant-numeric:tabular-nums}
+.momentum-score-box span{display:block;font-size:8px;font-weight:850;letter-spacing:.1em;color:#9bb0d5}
+.momentum-score-box b{display:block;font-size:clamp(21px,2.5vw,27px);font-weight:950;margin-top:4px;font-variant-numeric:tabular-nums}
 .momentum-score-box.up-box b{color:#4aefb2}.momentum-score-box.down-box b{color:#ff7298}
-.momentum-score-box small{display:block;font-size:9px;color:#879bbf;line-height:1.4;margin-top:4px}
+.momentum-score-box small{display:block;font-size:8px;color:#879bbf;line-height:1.4;margin-top:3px}
 .pressure-track{display:flex;gap:2px;height:8px;background:#222a46;border-radius:20px;overflow:hidden;margin-top:12px}
 .pressure-track .up-fill{height:100%;background:linear-gradient(90deg,#18885f,#4aefb2);transition:width .25s}
 .pressure-track .down-fill{height:100%;background:linear-gradient(90deg,#ff7298,#a63e68);transition:width .25s}
 .chart-foot{font-size:9px;color:#8398be;line-height:1.5;margin-top:9px}
 .chart-foot a{color:#a9baff;text-decoration:none}
-@media(max-width:620px){.live-chart-card{padding:13px}.live-momentum-layout{grid-template-columns:1fr}#liveChart{height:245px}.momentum-score-box{padding:9px}}
+@media(max-width:760px){.live-momentum-layout{grid-template-columns:1fr}}
+@media(max-width:620px){.live-chart-card{padding:13px}#liveChart{height:245px}.momentum-score-box{padding:8px}.fast-pulse-grid{gap:5px}.fast-pulse-box{padding:7px 5px}}
 
 
 /* Order-flow alerts, confirmed swing structure and unified five-minute forecast */
@@ -479,6 +501,16 @@ button{font-family:inherit}
     <span><i class="legend-spot"></i>CHAINLINK BTC/USD SPOT</span>
     <span><i class="legend-target"></i>PRICE TO BEAT</span>
   </div>
+</section>
+
+<section class="card momentum-engine-card">
+  <div class="momentum-engine-head">
+    <div>
+      <div class="label">MOMENTUM PULSE · CONTINUOUS BTC TAPE</div>
+      <div class="momentum-engine-sub">A rolling 60-second read, with a faster 5s / 10s pulse for early pressure. It does not reset when a new five-minute market begins.</div>
+    </div>
+    <span id="momentumPulseStatus" class="momentum-pulse-status">COLLECTING</span>
+  </div>
   <div class="live-momentum-layout">
     <div class="momentum-leader-box">
       <div class="label">STRONGER SIDE · ROLLING 60 SECONDS</div>
@@ -486,21 +518,27 @@ button{font-family:inherit}
       <div id="liveMomentumDetail" class="momentum-leader-detail">Waiting for fresh one-second Chainlink observations.</div>
       <div id="liveMomentumWhy" class="momentum-leader-why">The analyzer will explain price structure, spot/perpetual flow, participation and whether pressure is accelerating or fading.</div>
     </div>
-    <div class="momentum-score-grid">
-      <div class="momentum-score-box up-box">
-        <span>POSITIVE / UP MOMENTUM</span>
-        <b id="upMomentumScore">—</b>
-        <small id="upMomentumTicks">— rising seconds</small>
+    <div class="momentum-pulse-panel">
+      <div class="sample-balance-head"><span>60-SECOND DIRECTIONAL SAMPLES</span><small id="momentumSampleSummary">RISING — · FALLING —</small></div>
+      <div class="sample-count-row">
+        <div class="sample-count up-sample"><b id="momentumSampleUpCount">—</b><span>RISING SAMPLES</span></div>
+        <div class="sample-count down-sample"><b id="momentumSampleDownCount">—</b><span>FALLING SAMPLES</span></div>
       </div>
-      <div class="momentum-score-box down-box">
-        <span>NEGATIVE / DOWN MOMENTUM</span>
-        <b id="downMomentumScore">—</b>
-        <small id="downMomentumTicks">— falling seconds</small>
+      <div class="sample-balance-track"><div id="sampleUpBar" class="sample-up-fill" style="width:50%"></div><div id="sampleDownBar" class="sample-down-fill" style="width:50%"></div></div>
+      <div class="sample-balance-legend"><span>UP MOVES</span><span>DOWN MOVES</span></div>
+      <div class="fast-pulse-grid">
+        <div class="fast-pulse-box"><small>LAST 5 SECONDS</small><b id="momentumFast5">COLLECTING</b><span id="momentumFast5Bias">Fast pulse</span></div>
+        <div class="fast-pulse-box"><small>LAST 10 SECONDS</small><b id="momentumFast10">COLLECTING</b><span id="momentumFast10Bias">Short-term pressure</span></div>
+        <div class="fast-pulse-box"><small>LAST 60 SECONDS</small><b id="momentumFast60">COLLECTING</b><span id="momentumFast60Bias">Sustained direction</span></div>
+      </div>
+      <div class="momentum-score-grid">
+        <div class="momentum-score-box up-box"><span>UP PRESSURE SHARE</span><b id="upMomentumScore">—</b><small id="upMomentumTicks">— rising samples</small></div>
+        <div class="momentum-score-box down-box"><span>DOWN PRESSURE SHARE</span><b id="downMomentumScore">—</b><small id="downMomentumTicks">— falling samples</small></div>
       </div>
     </div>
   </div>
   <div class="pressure-track"><div id="pressureUpBar" class="up-fill" style="width:50%"></div><div id="pressureDownBar" class="down-fill" style="width:50%"></div></div>
-  <div id="momentumFeedDetail" class="chart-foot">The momentum split is a relative strength reading, not a win probability. Each distinct Chainlink second is counted once. Powered by <a href="https://www.tradingview.com/lightweight-charts/" target="_blank" rel="noopener">TradingView Lightweight Charts™</a>.</div>
+  <div id="momentumFeedDetail" class="chart-foot">The momentum split is relative strength, not a win probability. Rising / falling samples count distinct Chainlink price updates, recorded once per second.</div>
 </section>
 
 
@@ -2121,18 +2159,28 @@ button{font-family:inherit}
     const twapAge=latestTwap?Math.max(0,now-latestTwap.ts):Infinity;
     const spotRows=spotAll.filter(x=>latestSpot&&x.ts>=latestSpot.ts-65000);
     const twapRows=state.twapHistory.filter(x=>latestTwap&&x.ts>=latestTwap.ts-65000);
-
-    let upTicks=0,downTicks=0,flatTicks=0,upMove=0,downMove=0,samples=0,pathMove=0;
-    for(let i=1;i<spotRows.length;i++){
-      const dt=spotRows[i].ts-spotRows[i-1].ts;
-      if(dt<=0||dt>2500)continue;
-      const change=spotRows[i].value-spotRows[i-1].value;
-      samples++;pathMove+=Math.abs(change);
-      if(change>.005){upTicks++;upMove+=change;}
-      else if(change<-.005){downTicks++;downMove+=Math.abs(change);}
-      else flatTicks++;
-    }
-    const firstSpot=spotRows.length?spotRows[0]:null;
+    const sampleEnd=latestSpot?latestSpot.ts:now;
+    const countDirectionalSamples=(rows,windowMs)=>{
+      let up=0,down=0,flat=0,upMove=0,downMove=0,samples=0,pathMove=0;
+      for(let i=1;i<rows.length;i++){
+        const current=rows[i],previous=rows[i-1],dt=current.ts-previous.ts;
+        if(current.ts<sampleEnd-windowMs||dt<=0||dt>2500)continue;
+        const change=current.value-previous.value;
+        samples++;pathMove+=Math.abs(change);
+        if(change>.005){up++;upMove+=change;}
+        else if(change<-.005){down++;downMove+=Math.abs(change);}
+        else flat++;
+      }
+      return {up,down,flat,upMove,downMove,samples,pathMove};
+    };
+    const pulse5=countDirectionalSamples(spotRows,5000);
+    const pulse10=countDirectionalSamples(spotRows,10000);
+    const pulse60=countDirectionalSamples(spotRows,60000);
+    let upTicks=pulse60.up,downTicks=pulse60.down,flatTicks=pulse60.flat;
+    let upMove=pulse60.upMove,downMove=pulse60.downMove,samples=pulse60.samples,pathMove=pulse60.pathMove;
+    const sampleBias=stats=>(stats.up+stats.down)>=2?(stats.up-stats.down)/(stats.up+stats.down):null;
+    const bias5=sampleBias(pulse5),bias10=sampleBias(pulse10),bias60=sampleBias(pulse60);
+    const firstSpot=spotRows.find(x=>x.ts>=sampleEnd-60000)||(spotRows.length?spotRows[0]:null);
     const netMove=firstSpot&&latestSpot?latestSpot.value-firstSpot.value:null;
     const pathEfficiency=pathMove>0&&netMove!==null?Math.min(1,Math.abs(netMove)/pathMove):0;
     const tickBalance=samples?Math.abs(upTicks-downTicks)/samples:0;
@@ -2147,14 +2195,19 @@ button{font-family:inherit}
       const scale=Math.max(stepAverage*Math.sqrt(seconds)*1.45,price*.0000012,.20);
       return Math.tanh(delta/scale);
     };
+    const p2=impulseFor(spotRows,2,avgStep,refPrice);
     const p3=impulseFor(spotRows,3,avgStep,refPrice);
+    const p5=impulseFor(spotRows,5,avgStep,refPrice);
     const p8=impulseFor(spotRows,8,avgStep,refPrice);
     const p15=impulseFor(spotRows,15,avgStep,refPrice);
     const p30=impulseFor(spotRows,30,avgStep,refPrice);
     const p60=impulseFor(spotRows,60,avgStep,refPrice);
-    const fastRows=[{v:p3,w:.35},{v:p8,w:.65}].filter(x=>x.v!==null);
+    const fastRows=[{v:p2,w:.16},{v:p3,w:.25},{v:p5,w:.32},{v:p8,w:.27}].filter(x=>x.v!==null);
     const broadRows=[{v:p15,w:.30},{v:p30,w:.36},{v:p60,w:.34}].filter(x=>x.v!==null);
-    const fastPriceScore=fastRows.length?fastRows.reduce((a,x)=>a+x.v*x.w,0)/fastRows.reduce((a,x)=>a+x.w,0):null;
+    const fastPriceBaseScore=fastRows.length?fastRows.reduce((a,x)=>a+x.v*x.w,0)/fastRows.reduce((a,x)=>a+x.w,0):null;
+    const fastSampleBias=bias5!==null&&bias10!==null?bias5*.62+bias10*.38:bias5??bias10;
+    const fastPriceScore=fastPriceBaseScore!==null&&fastSampleBias!==null
+      ?Math.max(-1,Math.min(1,fastPriceBaseScore*.88+fastSampleBias*.12)):fastPriceBaseScore;
     const broadPriceScore=broadRows.length?broadRows.reduce((a,x)=>a+x.v*x.w,0)/broadRows.reduce((a,x)=>a+x.w,0):null;
     const priceImpulse=fastPriceScore!==null&&broadPriceScore!==null?fastPriceScore*.58+broadPriceScore*.42:fastPriceScore??broadPriceScore;
     const priceScore=priceImpulse===null?null:Math.max(-1,Math.min(1,priceImpulse*.82+(pathQuality??0)*Math.sign(netMove||priceImpulse)*.18));
@@ -2195,6 +2248,9 @@ button{font-family:inherit}
     const flowAgreement=bothFlowFresh&&Math.sign(spotFlowScore)===Math.sign(perpFlowScore)&&Math.abs(spotFlowScore)>.10&&Math.abs(perpFlowScore)>.10;
     const fastSideSign=flowAgreement?Math.sign(spotFlowScore):0;
     const fastPriceAgreement=fastSideSign!==0&&fastPriceScore!==null&&Math.sign(fastPriceScore)===fastSideSign&&Math.abs(fastPriceScore)>.18;
+    const pulseSideSign=(bias5!==null&&bias10!==null&&Math.sign(bias5)===Math.sign(bias10)&&Math.abs(bias5)>=.34&&Math.abs(bias10)>=.22)?Math.sign(bias5):0;
+    const sampleBurstSide=pulseSideSign!==0&&fastPriceScore!==null&&Math.sign(fastPriceScore)===pulseSideSign&&Math.abs(fastPriceScore)>.20
+      ?(pulseSideSign>0?"UP":"DOWN"):"WAIT";
     const fastConfirm=!!edge.microTurn&&fastPriceAgreement&&edge.fastSpotScore!==null&&edge.fastPerpScore!==null;
     const twapFresh=!!latestTwap&&twapAge<12000&&twapRows.length>=4;
     const twapAvgStep=averageAbsoluteStep(twapRows);
@@ -2223,7 +2279,15 @@ button{font-family:inherit}
       $("upMomentumScore").textContent="—";$("downMomentumScore").textContent="—";
       $("upMomentumTicks").textContent=upTicks+" rising samples";
       $("downMomentumTicks").textContent=downTicks+" falling samples";
+      $("momentumSampleUpCount").textContent=upTicks;$("momentumSampleDownCount").textContent=downTicks;
+      $("momentumSampleSummary").textContent="RISING "+upTicks+" · FALLING "+downTicks;
+      $("momentumFast5").textContent=pulse5.up+"↑ / "+pulse5.down+"↓";
+      $("momentumFast10").textContent=pulse10.up+"↑ / "+pulse10.down+"↓";
+      $("momentumFast60").textContent=pulse60.up+"↑ / "+pulse60.down+"↓";
+      $("momentumFast5Bias").textContent="Chainlink samples";$("momentumFast10Bias").textContent="Chainlink samples";$("momentumFast60Bias").textContent="Chainlink samples";
+      $("sampleUpBar").style.width="50%";$("sampleDownBar").style.width="50%";
       $("pressureUpBar").style.width="50%";$("pressureDownBar").style.width="50%";
+      $("momentumPulseStatus").textContent="FEED DELAYED";
       $("chartStatus").textContent="CHAINLINK FEED DELAYED";
       $("chartStatus").className="poly-live bad";
       $("momentumFeedDetail").textContent="Waiting for new Chainlink observations. TWAP60 is optional to this momentum read; the exact target/settlement reference is managed separately.";
@@ -2243,26 +2307,29 @@ button{font-family:inherit}
     // This lets the confirmation rule measure persistence across successive updates.
     const fastSide=fastPriceAgreement?(fastSideSign>0?"UP":"DOWN"):"WAIT";
     if(!Array.isArray(state.liveMomentumHistory))state.liveMomentumHistory=[];
-    state.liveMomentumHistory.push({ts:now,side:rawSide,fastSide,score});
+    state.liveMomentumHistory.push({ts:now,side:rawSide,fastSide,pulseSide:sampleBurstSide,score});
     state.liveMomentumHistory=state.liveMomentumHistory.filter(x=>now-x.ts<=12000);
     let chosenSide=state.liveMomentumSide||"WAIT";
     let candidateSide="WAIT";
     if(chosenSide!=="WAIT"&&fastPriceAgreement&&fastSide!=="WAIT"&&fastSide!==chosenSide)candidateSide=fastSide;
+    else if(chosenSide!=="WAIT"&&sampleBurstSide!=="WAIT"&&sampleBurstSide!==chosenSide)candidateSide=sampleBurstSide;
     else if(rawSide!=="WAIT")candidateSide=rawSide;
     else if(fastConfirm)candidateSide=fastSide;
+    else if(sampleBurstSide!=="WAIT")candidateSide=sampleBurstSide;
     if(chosenSide==="WAIT"&&candidateSide!=="WAIT"){
       if(state.liveMomentumCandidate!==candidateSide){state.liveMomentumCandidate=candidateSide;state.liveMomentumCandidateSince=now;}
       const recent=state.liveMomentumHistory.filter(x=>now-x.ts<=4500);
-      const votes=recent.filter(x=>x.side===candidateSide||(fastConfirm&&x.fastSide===candidateSide)).length;
+      const votes=recent.filter(x=>x.side===candidateSide||x.pulseSide===candidateSide||(fastConfirm&&x.fastSide===candidateSide)).length;
       const quick=fastConfirm&&fastSide===candidateSide;
-      if(now-state.liveMomentumCandidateSince>=(quick?1800:2800)&&votes>=(quick?2:3)){
+      const initialEvidence=rawSide===candidateSide||Math.abs(score)>=.18;
+      if(now-state.liveMomentumCandidateSince>=(quick?1800:2800)&&votes>=(quick?2:3)&&initialEvidence){
         chosenSide=candidateSide;state.liveMomentumSide=chosenSide;state.liveMomentumCandidate="WAIT";state.liveMomentumCandidateSince=0;
       }
     }else if(chosenSide!=="WAIT"&&candidateSide!==chosenSide&&candidateSide!=="WAIT"){
       if(state.liveMomentumCandidate!==candidateSide){state.liveMomentumCandidate=candidateSide;state.liveMomentumCandidateSince=now;}
       const quick=fastConfirm&&fastSide===candidateSide;
       const recent=state.liveMomentumHistory.filter(x=>now-x.ts<=(quick?3500:6500));
-      const votes=recent.filter(x=>x.side===candidateSide||(quick&&x.fastSide===candidateSide)).length;
+      const votes=recent.filter(x=>x.side===candidateSide||x.pulseSide===candidateSide||(quick&&x.fastSide===candidateSide)).length;
       const minimumVotes=quick?2:4;
       const minimumTime=quick?2200:4800;
       const scoreConfirmed=quick?Math.abs(fastPriceScore||0)>=.18:Math.abs(score)>=.22;
@@ -2287,14 +2354,23 @@ button{font-family:inherit}
     $("downMomentumScore").textContent=downShare+"/100";
     $("upMomentumTicks").textContent=upTicks+" rising samples · +$"+fmt(upMove);
     $("downMomentumTicks").textContent=downTicks+" falling samples · −$"+fmt(downMove);
-    $("pressureUpBar").style.width=upShare+"%";
-    $("pressureDownBar").style.width=downShare+"%";
+    $("pressureUpBar").style.width=upShare+"%";$("pressureDownBar").style.width=downShare+"%";
+    $("momentumSampleUpCount").textContent=upTicks;$("momentumSampleDownCount").textContent=downTicks;
+    $("momentumSampleSummary").textContent="RISING "+upTicks+" · FALLING "+downTicks;
+    const directionalTotal=upTicks+downTicks;
+    const sampleUpShare=directionalTotal?upTicks/directionalTotal*100:50;
+    $("sampleUpBar").style.width=sampleUpShare+"%";$("sampleDownBar").style.width=(100-sampleUpShare)+"%";
+    const pulseText=stats=>(stats.samples?stats.up+"↑ / "+stats.down+"↓":"—");
+    const pulseBiasText=bias=>bias===null?"NEED MORE SAMPLES":Math.abs(bias)<.18?"MIXED":(bias>0?"UP ":"DOWN ")+Math.round(Math.abs(bias)*100)+"% SAMPLE EDGE";
+    $("momentumFast5").textContent=pulseText(pulse5);$("momentumFast10").textContent=pulseText(pulse10);$("momentumFast60").textContent=pulseText(pulse60);
+    $("momentumFast5Bias").textContent=pulseBiasText(bias5);$("momentumFast10Bias").textContent=pulseBiasText(bias10);$("momentumFast60Bias").textContent=pulseBiasText(bias60);
 
     const moveText=v=>v===null?"—":(v>=0?"+$":"−$")+fmt(Math.abs(v));
     const d5=deltaFromHistory(spotRows,5),d15=deltaFromHistory(spotRows,15),d30=deltaFromHistory(spotRows,30),d60=deltaFromHistory(spotRows,60);
     const netText=netMove===null?"—":(netMove>=0?"+$":"−$")+fmt(Math.abs(netMove));
     const efficiencyText=Math.round(pathEfficiency*100)+"%";
-    $("liveMomentumDetail").textContent="60s net "+netText+" · "+downTicks+" falling / "+upTicks+" rising samples · path efficiency "+efficiencyText;
+    $("liveMomentumDetail").textContent="60s net "+netText+" · "+upTicks+" rising vs "+downTicks+" falling samples · path efficiency "+efficiencyText;
+    $("momentumPulseStatus").textContent=phase;
 
     const flowSideLabel=value=>value===null?"UNAVAILABLE":value>.10?"BUYERS "+fmtDeltaRatio(value):value<-.10?"SELLERS "+fmtDeltaRatio(value):"BALANCED "+fmtDeltaRatio(value);
     const flowNarrative=bothFlowFresh
@@ -2319,10 +2395,10 @@ button{font-family:inherit}
       stateRead=candidateSide+" CANDIDATE · CONFIRMING";
     }
     const why=$("liveMomentumWhy");
-    if(why)why.textContent=stateRead+" · "+flowNarrative+" · "+volumeText+" · EVIDENCE "+evidenceLabel+" ("+evidenceScore+"/100)";
+    if(why)why.textContent=stateRead+" · "+(sampleBurstSide!=="WAIT"?"FAST SAMPLE PULSE "+sampleBurstSide+" · ":"")+flowNarrative+" · "+volumeText+" · EVIDENCE "+evidenceLabel+" ("+evidenceScore+"/100)";
     $("chartStatus").textContent="CHAINLINK LIVE · "+samples+" SAMPLES / 60S";
     $("chartStatus").className="poly-live ok";
-    $("momentumFeedDetail").textContent="Updated each second · 5s "+moveText(d5)+" · 15s "+moveText(d15)+" · 30s "+moveText(d30)+" · 60s "+moveText(d60)+" · Chainlink "+(spotAge/1000).toFixed(1)+"s old · TWAP60 "+(Number.isFinite(twapAge)?(twapAge/1000).toFixed(1)+"s old":"—")+" · price path "+efficiencyText+" efficient · scores are relative momentum strength, not win probabilities.";
+    $("momentumFeedDetail").textContent="Updated each second · 5s "+moveText(d5)+" · 15s "+moveText(d15)+" · 30s "+moveText(d30)+" · 60s "+moveText(d60)+" · samples are distinct Chainlink rises / falls, not candles · Chainlink "+(spotAge/1000).toFixed(1)+"s old · TWAP60 "+(Number.isFinite(twapAge)?(twapAge/1000).toFixed(1)+"s old":"—")+" · path efficiency "+efficiencyText+" · relative strength is not a win probability.";
   }
 
   function startLiveMomentum(){

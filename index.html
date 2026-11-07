@@ -108,6 +108,7 @@ h1{font-size:clamp(23px,4vw,32px);margin:0;letter-spacing:-.035em}.sub{margin:4p
 .momentum-leader-value{font-size:clamp(19px,3vw,27px);font-weight:950;letter-spacing:-.03em;margin-top:7px;color:#b5c4e2}
 .momentum-leader-value.up{color:#4aefb2}.momentum-leader-value.down{color:#ff7298}
 .momentum-leader-detail{font-size:10px;color:#8fa4ca;line-height:1.5;margin-top:7px}
+.momentum-leader-why{font-size:9px;color:#b6c5d8;line-height:1.55;margin-top:8px;padding-top:8px;border-top:1px solid #273748}
 .momentum-score-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .momentum-score-box{border:1px solid #2d426b;border-radius:11px;padding:11px;background:#0b1123;min-width:0}
 .momentum-score-box.up-box{border-color:#22684f}.momentum-score-box.down-box{border-color:#78364f}
@@ -483,6 +484,7 @@ button{font-family:inherit}
       <div class="label">STRONGER SIDE · ROLLING 60 SECONDS</div>
       <div id="liveMomentumLeader" class="momentum-leader-value">COLLECTING DATA</div>
       <div id="liveMomentumDetail" class="momentum-leader-detail">Waiting for fresh one-second Chainlink observations.</div>
+      <div id="liveMomentumWhy" class="momentum-leader-why">The analyzer will explain price structure, spot/perpetual flow, participation and whether pressure is accelerating or fading.</div>
     </div>
     <div class="momentum-score-grid">
       <div class="momentum-score-box up-box">
@@ -708,7 +710,7 @@ button{font-family:inherit}
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,liveMomentumUpdatedAt:0,liveMomentumSide:"WAIT",liveMomentumCandidate:"WAIT",liveMomentumCandidateSince:0,liveMomentumWeakSince:0,liveMomentumHistory:[],flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -2117,65 +2119,207 @@ button{font-family:inherit}
     const latestTwap=state.twapHistory.length?state.twapHistory[state.twapHistory.length-1]:null;
     const spotAge=latestSpot?Math.max(0,now-latestSpot.ts):Infinity;
     const twapAge=latestTwap?Math.max(0,now-latestTwap.ts):Infinity;
-    const spotRows=spotAll.filter(x=>latestSpot&&x.ts>=latestSpot.ts-75000);
-    const twapRows=state.twapHistory.filter(x=>latestTwap&&x.ts>=latestTwap.ts-75000);
+    const spotRows=spotAll.filter(x=>latestSpot&&x.ts>=latestSpot.ts-65000);
+    const twapRows=state.twapHistory.filter(x=>latestTwap&&x.ts>=latestTwap.ts-65000);
 
-    let upTicks=0,downTicks=0,flatTicks=0,upMove=0,downMove=0,samples=0;
+    let upTicks=0,downTicks=0,flatTicks=0,upMove=0,downMove=0,samples=0,pathMove=0;
     for(let i=1;i<spotRows.length;i++){
       const dt=spotRows[i].ts-spotRows[i-1].ts;
       if(dt<=0||dt>2500)continue;
       const change=spotRows[i].value-spotRows[i-1].value;
-      samples++;
+      samples++;pathMove+=Math.abs(change);
       if(change>.005){upTicks++;upMove+=change;}
       else if(change<-.005){downTicks++;downMove+=Math.abs(change);}
       else flatTicks++;
     }
+    const firstSpot=spotRows.length?spotRows[0]:null;
+    const netMove=firstSpot&&latestSpot?latestSpot.value-firstSpot.value:null;
+    const pathEfficiency=pathMove>0&&netMove!==null?Math.min(1,Math.abs(netMove)/pathMove):0;
+    const tickBalance=samples?Math.abs(upTicks-downTicks)/samples:0;
+    const pathQuality=netMove===null?null:pathEfficiency*.58+tickBalance*.42;
+    const windowCoverage=firstSpot&&latestSpot?Math.min(1,(latestSpot.ts-firstSpot.ts)/60000):0;
+    const sampleCoverage=Math.min(1,samples/38);
+    const avgStep=averageAbsoluteStep(spotRows);
+    const refPrice=latestSpot?.value||70000;
+    const impulseFor=(rows,seconds,stepAverage,price)=>{
+      const delta=deltaFromHistory(rows,seconds);
+      if(delta===null)return null;
+      const scale=Math.max(stepAverage*Math.sqrt(seconds)*1.45,price*.0000012,.20);
+      return Math.tanh(delta/scale);
+    };
+    const p3=impulseFor(spotRows,3,avgStep,refPrice);
+    const p8=impulseFor(spotRows,8,avgStep,refPrice);
+    const p15=impulseFor(spotRows,15,avgStep,refPrice);
+    const p30=impulseFor(spotRows,30,avgStep,refPrice);
+    const p60=impulseFor(spotRows,60,avgStep,refPrice);
+    const fastRows=[{v:p3,w:.35},{v:p8,w:.65}].filter(x=>x.v!==null);
+    const broadRows=[{v:p15,w:.30},{v:p30,w:.36},{v:p60,w:.34}].filter(x=>x.v!==null);
+    const fastPriceScore=fastRows.length?fastRows.reduce((a,x)=>a+x.v*x.w,0)/fastRows.reduce((a,x)=>a+x.w,0):null;
+    const broadPriceScore=broadRows.length?broadRows.reduce((a,x)=>a+x.v*x.w,0)/broadRows.reduce((a,x)=>a+x.w,0):null;
+    const priceImpulse=fastPriceScore!==null&&broadPriceScore!==null?fastPriceScore*.58+broadPriceScore*.42:fastPriceScore??broadPriceScore;
+    const priceScore=priceImpulse===null?null:Math.max(-1,Math.min(1,priceImpulse*.82+(pathQuality??0)*Math.sign(netMove||priceImpulse)*.18));
 
-    const spotScale=Math.max(averageAbsoluteStep(spotRows)*1.5,(latestSpot?.value||70000)*.000004,.25);
-    const twapScale=Math.max(averageAbsoluteStep(twapRows)*1.8,(latestTwap?.value||70000)*.000002,.20);
-    const spotImpulse=weightedPriceImpulse(spotRows,[1,3,5,15,30],[.10,.20,.25,.25,.20],spotScale);
-    const twapImpulse=weightedPriceImpulse(twapRows,[5,15,30,60],[.40,.30,.20,.10],twapScale);
-    const flow15=combinedTradeFlow(now,15000),flow60=combinedTradeFlow(now,60000);
-    const flowImpulse=flow15!==null&&flow60!==null?flow15*.7+flow60*.3:flow15!==null?flow15:flow60;
+    const recent8=deltaFromHistory(spotRows,8);
+    const recent16=deltaFromHistory(spotRows,16);
+    const prior8=recent8!==null&&recent16!==null?recent16-recent8:null;
+    const scale8=Math.max(avgStep*Math.sqrt(8)*1.45,refPrice*.0000012,.20);
+    const recent8Impulse=recent8===null?null:Math.tanh(recent8/scale8);
+    const prior8Impulse=prior8===null?null:Math.tanh(prior8/scale8);
+    let phase="BUILDING";
+    if(fastPriceScore!==null&&broadPriceScore!==null&&fastPriceScore*broadPriceScore<-.06){
+      phase="SHORT-TERM COUNTERMOVE";
+    }else if(recent8Impulse!==null&&prior8Impulse!==null&&Math.abs(recent8Impulse)>.16){
+      if(Math.sign(recent8Impulse)===Math.sign(prior8Impulse)&&Math.abs(recent8Impulse)>Math.abs(prior8Impulse)*1.22)phase="ACCELERATING";
+      else if(Math.sign(recent8Impulse)===Math.sign(prior8Impulse)&&Math.abs(recent8Impulse)<Math.abs(prior8Impulse)*.62)phase="LOSING SPEED";
+      else phase="STEADY";
+    }else if(fastPriceScore!==null&&Math.abs(fastPriceScore)>.15)phase="STEADY";
 
-    let total=0,weight=0;
-    if(spotImpulse!==null){total+=spotImpulse*.58;weight+=.58;}
-    if(twapImpulse!==null){total+=twapImpulse*.22;weight+=.22;}
-    if(flowImpulse!==null){total+=flowImpulse*.20;weight+=.20;}
-    const rawScore=weight?Math.max(-1,Math.min(1,total/weight)):0;
-    const fresh=!!latestSpot&&!!latestTwap&&spotAge<3500&&twapAge<6000&&spotRows.length>=5&&samples>=3;
-    if(!fresh){
-      $("liveMomentumLeader").textContent="WAIT · SYNCING FEEDS";
+    const edge=state.volumeEdge&&now-state.volumeEdge.updatedAt<1400?state.volumeEdge:(state.volumeEdge=calculateRealVolumeEdge(now));
+    const latestVenueTradeAt=(venues)=>{
+      const wanted=new Set(venues);let newest=0;
+      for(const t of state.flowTrades)if(wanted.has(t.venue)&&t.ts<=now&&t.ts>newest)newest=t.ts;
+      return newest||null;
+    };
+    const spotTapeAt=latestVenueTradeAt(["BINANCE SPOT","COINBASE"]);
+    const perpTapeAt=latestVenueTradeAt(["BINANCE PERP","HYPERLIQUID"]);
+    const spotFlowAge=spotTapeAt?now-spotTapeAt:Infinity;
+    const perpFlowAge=perpTapeAt?now-perpTapeAt:Infinity;
+    const spotFlowFresh=spotFlowAge<15000&&(edge.fastSpotScore!==null||edge.spotScore!==null);
+    const perpFlowFresh=perpFlowAge<15000&&(edge.fastPerpScore!==null||edge.perpScore!==null);
+    const blendFlow=(fast,slow)=>fast!==null&&slow!==null?fast*.62+slow*.38:fast??slow;
+    const spotFlowScore=spotFlowFresh?blendFlow(edge.fastSpotScore,edge.spotScore):null;
+    const perpFlowScore=perpFlowFresh?blendFlow(edge.fastPerpScore,edge.perpScore):null;
+    const flowParts=[spotFlowScore,perpFlowScore].filter(x=>x!==null&&Number.isFinite(x));
+    const flowScore=flowParts.length===2?(flowParts[0]+flowParts[1])*.5:flowParts.length===1?flowParts[0]:null;
+    const bothFlowFresh=spotFlowScore!==null&&perpFlowScore!==null;
+    const flowAgreement=bothFlowFresh&&Math.sign(spotFlowScore)===Math.sign(perpFlowScore)&&Math.abs(spotFlowScore)>.10&&Math.abs(perpFlowScore)>.10;
+    const fastSideSign=flowAgreement?Math.sign(spotFlowScore):0;
+    const fastPriceAgreement=fastSideSign!==0&&fastPriceScore!==null&&Math.sign(fastPriceScore)===fastSideSign&&Math.abs(fastPriceScore)>.18;
+    const fastConfirm=!!edge.microTurn&&fastPriceAgreement&&edge.fastSpotScore!==null&&edge.fastPerpScore!==null;
+    const twapFresh=!!latestTwap&&twapAge<12000&&twapRows.length>=4;
+    const twapAvgStep=averageAbsoluteStep(twapRows);
+    const twapRef=latestTwap?.value||refPrice;
+    const twapRowsImpulse=[{v:impulseFor(twapRows,5,twapAvgStep,twapRef),w:.30},
+      {v:impulseFor(twapRows,15,twapAvgStep,twapRef),w:.30},
+      {v:impulseFor(twapRows,30,twapAvgStep,twapRef),w:.25},
+      {v:impulseFor(twapRows,60,twapAvgStep,twapRef),w:.15}].filter(x=>x.v!==null);
+    const twapScore=twapFresh&&twapRowsImpulse.length
+      ?twapRowsImpulse.reduce((a,x)=>a+x.v*x.w,0)/twapRowsImpulse.reduce((a,x)=>a+x.w,0):null;
+
+    let total=0,totalWeight=0;
+    if(priceScore!==null){total+=priceScore*.68;totalWeight+=.68;}
+    if(twapScore!==null){total+=twapScore*.10;totalWeight+=.10;}
+    if(flowScore!==null){
+      const flowWeight=bothFlowFresh?.22:.12;
+      total+=flowScore*flowWeight;totalWeight+=flowWeight;
+    }
+    const rawScore=totalWeight?Math.max(-1,Math.min(1,total/totalWeight)):0;
+    const spotFresh=!!latestSpot&&spotAge<4000&&spotRows.length>=5&&samples>=3;
+    if(!spotFresh){
+      $("liveMomentumLeader").textContent="WAIT · CHAINLINK FEED STALE";
       $("liveMomentumLeader").className="momentum-leader-value";
-      $("liveMomentumDetail").textContent="Chainlink spot age "+(Number.isFinite(spotAge)?(spotAge/1000).toFixed(1)+"s":"—")+" · TWAP60 age "+(Number.isFinite(twapAge)?(twapAge/1000).toFixed(1)+"s":"—");
+      $("liveMomentumDetail").textContent="No fresh directional reading · Chainlink age "+(Number.isFinite(spotAge)?(spotAge/1000).toFixed(1)+"s":"—");
+      const why=$("liveMomentumWhy");if(why)why.textContent="The 60-second analyzer pauses when its primary Chainlink price feed is stale. The last valid leader is not treated as a live signal.";
       $("upMomentumScore").textContent="—";$("downMomentumScore").textContent="—";
-      $("upMomentumTicks").textContent=upTicks+" rising seconds";
-      $("downMomentumTicks").textContent=downTicks+" falling seconds";
+      $("upMomentumTicks").textContent=upTicks+" rising samples";
+      $("downMomentumTicks").textContent=downTicks+" falling samples";
       $("pressureUpBar").style.width="50%";$("pressureDownBar").style.width="50%";
-      $("chartStatus").textContent=latestSpot||latestTwap?"FEED DELAYED":"WAITING FOR CHAINLINK";
+      $("chartStatus").textContent="CHAINLINK FEED DELAYED";
       $("chartStatus").className="poly-live bad";
-      $("momentumFeedDetail").textContent="No directional reading while Chainlink data is stale or the one-second sample window is incomplete. Up/down counts include observed second-to-second price changes only.";
+      $("momentumFeedDetail").textContent="Waiting for new Chainlink observations. TWAP60 is optional to this momentum read; the exact target/settlement reference is managed separately.";
       return;
     }
 
-    state.liveMomentumEma=state.liveMomentumEma===null?rawScore:state.liveMomentumEma*.58+rawScore*.42;
+    const dt=state.liveMomentumUpdatedAt?Math.max(100,Math.min(5000,now-state.liveMomentumUpdatedAt)):1000;
+    const flowOpposesPrice=flowScore!==null&&priceScore!==null&&Math.sign(flowScore)!==Math.sign(priceScore)&&Math.abs(flowScore)>.16&&Math.abs(priceScore)>.14;
+    const tau=fastConfirm?2300:flowOpposesPrice?6200:flowScore===null?5000:3900;
+    const alpha=1-Math.exp(-dt/tau);
+    state.liveMomentumEma=state.liveMomentumEma===null?rawScore:state.liveMomentumEma+alpha*(rawScore-state.liveMomentumEma);
+    state.liveMomentumUpdatedAt=now;
     const score=Math.max(-1,Math.min(1,state.liveMomentumEma));
     const upShare=Math.round((score+1)*50),downShare=100-upShare;
-    const leader=score>=.12?"POSITIVE / UP LEADING":score<=-.12?"NEGATIVE / DOWN LEADING":"NO CLEAR MOMENTUM LEADER";
+    const rawSide=score>=.16?"UP":score<=-.16?"DOWN":"WAIT";
+    const fastSide=fastConfirm?(fastSideSign>0?"UP":"DOWN"):"WAIT";
+    if(!Array.isArray(state.liveMomentumHistory))state.liveMomentumHistory=[];
+    state.liveMomentumHistory.push({ts:now,side:rawSide,fastSide,score});
+    state.liveMomentumHistory=state.liveMomentumHistory.filter(x=>now-x.ts<=12000);
+    let chosenSide=state.liveMomentumSide||"WAIT";
+    let candidateSide="WAIT";
+    if(rawSide!=="WAIT")candidateSide=rawSide;
+    else if(fastConfirm)candidateSide=fastSide;
+    if(chosenSide==="WAIT"&&candidateSide!=="WAIT"){
+      if(state.liveMomentumCandidate!==candidateSide){state.liveMomentumCandidate=candidateSide;state.liveMomentumCandidateSince=now;}
+      const recent=state.liveMomentumHistory.filter(x=>now-x.ts<=4500);
+      const votes=recent.filter(x=>x.side===candidateSide||(fastConfirm&&x.fastSide===candidateSide)).length;
+      const quick=fastConfirm&&fastSide===candidateSide;
+      if(now-state.liveMomentumCandidateSince>=(quick?1800:2800)&&votes>=(quick?2:3)){
+        chosenSide=candidateSide;state.liveMomentumSide=chosenSide;state.liveMomentumCandidate="WAIT";state.liveMomentumCandidateSince=0;
+      }
+    }else if(chosenSide!=="WAIT"&&candidateSide!==chosenSide&&candidateSide!=="WAIT"){
+      if(state.liveMomentumCandidate!==candidateSide){state.liveMomentumCandidate=candidateSide;state.liveMomentumCandidateSince=now;}
+      const quick=fastConfirm&&fastSide===candidateSide;
+      const recent=state.liveMomentumHistory.filter(x=>now-x.ts<=(quick?3500:6500));
+      const votes=recent.filter(x=>x.side===candidateSide||(quick&&x.fastSide===candidateSide)).length;
+      const minimumVotes=quick?2:4;
+      const minimumTime=quick?2200:4800;
+      const scoreConfirmed=quick?Math.abs(fastPriceScore||0)>=.18:Math.abs(score)>=.22;
+      if(now-state.liveMomentumCandidateSince>=minimumTime&&votes>=minimumVotes&&scoreConfirmed){
+        chosenSide=candidateSide;state.liveMomentumSide=chosenSide;state.liveMomentumCandidate="WAIT";state.liveMomentumCandidateSince=0;state.liveMomentumWeakSince=0;
+      }
+    }else{
+      state.liveMomentumCandidate="WAIT";state.liveMomentumCandidateSince=0;
+    }
+    if(chosenSide!=="WAIT"&&rawSide==="WAIT"&&Math.abs(score)<.075){
+      if(!state.liveMomentumWeakSince)state.liveMomentumWeakSince=now;
+      if(now-state.liveMomentumWeakSince>9000){chosenSide="WAIT";state.liveMomentumSide="WAIT";state.liveMomentumWeakSince=0;}
+    }else if(chosenSide!=="WAIT"&&rawSide===chosenSide){
+      state.liveMomentumWeakSince=0;
+    }
+
+    const leader=chosenSide==="UP"?"POSITIVE / UP LEADING":chosenSide==="DOWN"?"NEGATIVE / DOWN LEADING":"NO CLEAR MOMENTUM LEADER";
     const leaderEl=$("liveMomentumLeader");
     leaderEl.textContent=leader;
-    leaderEl.className="momentum-leader-value "+(score>=.12?"up":score<=-.12?"down":"");
+    leaderEl.className="momentum-leader-value "+(chosenSide==="UP"?"up":chosenSide==="DOWN"?"down":"");
     $("upMomentumScore").textContent=upShare+"/100";
     $("downMomentumScore").textContent=downShare+"/100";
-    $("upMomentumTicks").textContent=upTicks+" rising seconds · +$"+fmt(upMove);
-    $("downMomentumTicks").textContent=downTicks+" falling seconds · −$"+fmt(downMove);
+    $("upMomentumTicks").textContent=upTicks+" rising samples · +$"+fmt(upMove);
+    $("downMomentumTicks").textContent=downTicks+" falling samples · −$"+fmt(downMove);
     $("pressureUpBar").style.width=upShare+"%";
     $("pressureDownBar").style.width=downShare+"%";
-    const lastMove=spotRows.length>1?spotRows[spotRows.length-1].value-spotRows[spotRows.length-2].value:null;
-    $("liveMomentumDetail").textContent="60s observed: "+upTicks+" up / "+downTicks+" down / "+flatTicks+" flat · last Chainlink tick "+(lastMove===null?"—":(lastMove>=0?"+$":"−$")+fmt(Math.abs(lastMove)));
+
+    const moveText=v=>v===null?"—":(v>=0?"+$":"−$")+fmt(Math.abs(v));
+    const d5=deltaFromHistory(spotRows,5),d15=deltaFromHistory(spotRows,15),d30=deltaFromHistory(spotRows,30),d60=deltaFromHistory(spotRows,60);
+    const netText=netMove===null?"—":(netMove>=0?"+$":"−$")+fmt(Math.abs(netMove));
+    const efficiencyText=Math.round(pathEfficiency*100)+"%";
+    $("liveMomentumDetail").textContent="60s net "+netText+" · "+downTicks+" falling / "+upTicks+" rising samples · path efficiency "+efficiencyText;
+
+    const flowSideLabel=value=>value===null?"UNAVAILABLE":value>.10?"BUYERS "+fmtDeltaRatio(value):value<-.10?"SELLERS "+fmtDeltaRatio(value):"BALANCED "+fmtDeltaRatio(value);
+    const flowNarrative=bothFlowFresh
+      ?(flowAgreement?"SPOT + PERP AGREE · ":"SPOT / PERP DIVERGE · ")+flowSideLabel(spotFlowScore)+" / "+flowSideLabel(perpFlowScore)
+      :spotFlowFresh?"SPOT ONLY · "+flowSideLabel(spotFlowScore)
+      :perpFlowFresh?"PERP ONLY · "+flowSideLabel(perpFlowScore)
+      :"NO FRESH AGGRESSOR FLOW";
+    const volumeParts=[edge.fastSpotSurge?.ratio,edge.fastPerpSurge?.ratio].filter(Number.isFinite);
+    const volumeText=volumeParts.length?"FAST VOLUME "+(volumeParts.reduce((a,b)=>a+b,0)/volumeParts.length).toFixed(2)+"× BASELINE":"FAST VOLUME BASELINE BUILDING";
+    const evidence=(.35*Math.min(1,windowCoverage)+.20*Math.min(1,sampleCoverage)+.25*(pathQuality??0)+.12*(bothFlowFresh?1:(spotFlowFresh||perpFlowFresh?.55:0))+.08*(twapFresh?1:.35));
+    const evidenceScore=Math.round(evidence*100);
+    const evidenceLabel=evidenceScore>=78?"GOOD":evidenceScore>=58?"FAIR":"DEVELOPING";
+    const currentDirection=chosenSide==="UP"?"UP":chosenSide==="DOWN"?"DOWN":"NEUTRAL";
+    let stateRead="NO ESTABLISHED LEADER";
+    if(chosenSide!=="WAIT"){
+      if(fastConfirm&&fastSide!==chosenSide)stateRead="FAST PRESSURE OPPOSING LEADER";
+      else if(candidateSide!=="WAIT"&&candidateSide!==chosenSide)stateRead="REVERSAL WATCH · "+candidateSide+" PRESSURE BUILDING";
+      else if(rawSide!==chosenSide&&rawSide!=="WAIT")stateRead=rawSide+" PRESSURE BUILDING · WAITING FOR CONFIRMATION";
+      else if(rawSide==="WAIT")stateRead="LEADER HOLDING · MOMENTUM NEAR BALANCE";
+      else stateRead=phase+" · "+(Math.abs(score)>=.42?"STRONG ADVANTAGE":Math.abs(score)>=.23?"BUILDING ADVANTAGE":"LIGHT ADVANTAGE");
+    }else if(candidateSide!=="WAIT"){
+      stateRead=candidateSide+" CANDIDATE · CONFIRMING";
+    }
+    const why=$("liveMomentumWhy");
+    if(why)why.textContent=stateRead+" · "+flowNarrative+" · "+volumeText+" · EVIDENCE "+evidenceLabel+" ("+evidenceScore+"/100)";
     $("chartStatus").textContent="CHAINLINK LIVE · "+samples+" SAMPLES / 60S";
     $("chartStatus").className="poly-live ok";
-    $("momentumFeedDetail").textContent="Updated each second · Chainlink spot "+(spotAge/1000).toFixed(1)+"s old · TWAP60 "+(twapAge/1000).toFixed(1)+"s old · score blends spot speed, settlement-TWAP direction and available exchange taker flow. Relative strength only, not a win probability.";
+    $("momentumFeedDetail").textContent="Updated each second · 5s "+moveText(d5)+" · 15s "+moveText(d15)+" · 30s "+moveText(d30)+" · 60s "+moveText(d60)+" · Chainlink "+(spotAge/1000).toFixed(1)+"s old · TWAP60 "+(Number.isFinite(twapAge)?(twapAge/1000).toFixed(1)+"s old":"—")+" · price path "+efficiencyText+" efficient · scores are relative momentum strength, not win probabilities.";
   }
 
   function startLiveMomentum(){

@@ -527,6 +527,57 @@ button{font-family:inherit}
   .swing-stats{grid-template-columns:1fr 1fr}
 }
 
+
+/* Native two-sided five-minute footprint ladder */
+.fp-native-footprint{margin:12px 0 14px;padding:12px;border:1px solid #2b3d50;border-radius:9px;background:#080f18}
+.fp-live-status{display:inline-flex;align-items:center;padding:6px 9px;border:1px solid #3b495a;border-radius:6px;background:#101923;color:#aebdca;font-size:8px;font-weight:900;letter-spacing:.08em}
+.fp-live-status.live{border-color:#286c55;background:#0d211d;color:#54d6a2}
+.fp-summary{display:grid;grid-template-columns:1fr 1.25fr 1.25fr .9fr .9fr;gap:6px;margin-bottom:8px}
+.fp-summary-stat{min-width:0;padding:9px 10px;border:1px solid #263747;border-radius:7px;background:#0d1722}
+.fp-summary-stat small{display:block;color:#8398aa;font-size:8px;font-weight:900;letter-spacing:.1em}
+.fp-summary-stat b{display:block;margin-top:5px;color:#e2ebf4;font:800 clamp(12px,1.2vw,16px)/1.25 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums;white-space:nowrap}
+.fp-summary-stat span{display:block;margin-top:3px;color:#75899c;font:8px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fp-summary-stat b.up{color:#54d6a2}.fp-summary-stat b.down{color:#ef8194}
+.fp-time-stat{border-top:2px solid #8ab9ee}
+.fp-round-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:2px 1px 9px;color:#8194a7;font:8px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em}
+.fp-ladder-wrap{border:1px solid #202e3d;border-radius:8px;overflow:hidden;background:#090f17}
+.fp-ladder-head,.fp-ladder-row{display:grid;grid-template-columns:minmax(0,1fr) 78px minmax(0,1fr);gap:5px;align-items:center}
+.fp-ladder-head{padding:8px 8px;background:#131f2b;border-bottom:1px solid #29394a;font-size:8px;font-weight:950;letter-spacing:.1em}
+.fp-sell-heading{text-align:right;color:#ed8295}.fp-price-heading{text-align:center;color:#95a9bc}.fp-buy-heading{color:#55d6a2}
+.fp-ladder{max-height:590px;overflow-y:auto;scrollbar-color:#354b60 #0a121b}
+.fp-ladder-row{min-height:31px;padding:2px 7px;border-bottom:1px solid #172431;font:10px/1.1 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+.fp-ladder-row:last-child{border-bottom:0}
+.fp-side-cell{position:relative;isolation:isolate;display:flex;align-items:center;min-width:0;height:26px;overflow:hidden;border-radius:3px;background:#0d1720}
+.fp-side-cell.sell-side-cell{justify-content:flex-end}
+.fp-side-cell.buy-side-cell{justify-content:flex-start}
+.fp-side-fill{position:absolute;z-index:-1;top:3px;bottom:3px;opacity:.55;border-radius:2px}
+.fp-side-fill.sell-fill{right:0;background:linear-gradient(90deg,#542331,#b94f69)}
+.fp-side-fill.buy-fill{left:0;background:linear-gradient(90deg,#177b5a,#36bc8b)}
+.fp-side-content{display:flex;align-items:center;gap:5px;min-width:0;padding:0 6px;white-space:nowrap}
+.sell-side-cell .fp-side-content{justify-content:flex-end}
+.buy-side-cell .fp-side-content{justify-content:flex-start}
+.fp-side-content b{position:relative;color:#e4edf5;font-size:10px;font-weight:850}
+.fp-side-content small{position:relative;color:#99aabd;font-size:8px}
+.fp-imb-tag{position:relative;padding:2px 3px;border-radius:3px;background:#39202a;color:#ff9aab;font-size:7px;font-style:normal;font-weight:900}
+.buy-side-cell .fp-imb-tag{background:#12372b;color:#75e5b8}
+.fp-price-cell{display:flex;align-items:center;justify-content:center;gap:4px;height:27px;border-left:1px solid #263747;border-right:1px solid #263747;background:#101a24;color:#c4d2df}
+.fp-price-cell b{font-size:10px;font-weight:850}
+.fp-price-cell small{font-size:7px;color:#eac77a;font-weight:900}
+.fp-ladder-row.at-market .fp-price-cell{background:#25251c;border-color:#8a7548;color:#f1d48c}
+.fp-ladder-row.at-market .fp-side-cell{outline:1px solid #8a754844}
+.fp-ladder-row.empty-level .fp-side-cell{background:#0b141d}
+.fp-ladder-row.empty-level .fp-price-cell{color:#627589}
+.fp-empty{padding:30px 12px;text-align:center;color:#8297aa;font-size:10px;line-height:1.6}
+.basis-reference{border:1px solid #263747;border-radius:8px;background:#0b131c;padding:0 10px}
+.basis-reference summary{padding:10px 2px;color:#8ea5ba;font-size:8px;font-weight:900;letter-spacing:.1em;cursor:pointer;list-style:none}
+.basis-reference summary::-webkit-details-marker{display:none}
+.basis-reference summary:after{content:'+';float:right;color:#9db9d0;font-size:13px}
+.basis-reference[open] summary:after{content:'−'}
+.basis-reference .basis-orderflow-controls{margin:0 0 10px}
+.basis-reference .basis-widget-frame{height:520px!important;margin-top:0}
+.basis-reference .basis-orderflow-foot{padding-bottom:9px}
+@media(max-width:760px){.fp-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.fp-ladder-head,.fp-ladder-row{grid-template-columns:minmax(0,1fr) 66px minmax(0,1fr)}.fp-side-content{gap:4px;padding:0 4px}.fp-side-content small{font-size:7px}}
+@media(max-width:480px){.fp-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.fp-time-stat{grid-column:span 2}.fp-ladder-head,.fp-ladder-row{grid-template-columns:minmax(0,1fr) 60px minmax(0,1fr);gap:3px}.fp-side-content b{font-size:9px}.fp-side-content small{display:none}.fp-round-meta{font-size:7px}}
 </style>
 </head>
 <body>
@@ -665,31 +716,57 @@ button{font-family:inherit}
 <section class="card basis-orderflow-card">
   <div class="basis-orderflow-top">
     <div>
-      <div class="label">BASIS ORDER FLOW · LIVE BINANCE DATA</div>
-      <div class="chart-subtitle">Independent execution and liquidity view. Use it to inspect whether aggressive flow is producing price progress near the current target.</div>
+      <div class="label">LIVE 5-MINUTE FOOTPRINT · BINANCE USD-M</div>
+      <div class="chart-subtitle">A live bid × ask price ladder built from actual Binance perpetual aggressor trades. Each new five-minute UTC round starts a fresh footprint.</div>
     </div>
-    <div class="basis-orderflow-controls" role="group" aria-label="Basis order-flow chart view">
+    <span id="basisFootprintStatus" class="fp-live-status">CONNECTING TO TAPE</span>
+  </div>
+
+  <div class="basis-footprint-live fp-native-footprint">
+    <div class="fp-summary" aria-label="Current five-minute footprint totals">
+      <div class="fp-summary-stat fp-time-stat"><small>BAR START</small><b id="basisFpRoundTime">--:--</b><span id="basisFpElapsed">0:00 / 5:00</span></div>
+      <div class="fp-summary-stat"><small>VOL</small><b id="basisFpVolume">0.000 BTC</b><span id="basisFpVolumeUsd">$0 NOTIONAL</span></div>
+      <div class="fp-summary-stat"><small>DELTA</small><b id="basisFpDelta">0.000 BTC</b><span id="basisFpDeltaUsd">$0 NET</span></div>
+      <div class="fp-summary-stat"><small>Δ%</small><b id="basisFpDeltaPct">—</b><span>DELTA / VOLUME</span></div>
+      <div class="fp-summary-stat"><small>IMB</small><b id="basisFpImbalance">0</b><span id="basisFpImbalanceDetail">0 BUY · 0 SELL LEVELS</span></div>
+    </div>
+
+    <div class="fp-round-meta">
+      <span id="basisFpCurrentPrice">BTC PRICE · —</span>
+      <span id="basisFpTradeCount">0 PRINTS THIS ROUND</span>
+      <span id="basisFpPreviousRound">PREVIOUS ROUND · WAITING</span>
+    </div>
+
+    <div class="fp-ladder-wrap">
+      <div class="fp-ladder-head">
+        <span class="fp-sell-heading">SELL / BID</span>
+        <span class="fp-price-heading">PRICE</span>
+        <span class="fp-buy-heading">BUY / ASK</span>
+      </div>
+      <div id="basisFootprintRows" class="fp-ladder">
+        <div class="basis-footprint-empty">Waiting for live Binance perpetual trades.</div>
+      </div>
+    </div>
+    <div class="basis-footprint-note">RED = aggressive market sells hitting bids · GREEN = aggressive market buys lifting asks. Each row is a $2 price bucket; bar width shows relative BTC volume at that price. Top totals accumulate from the current five-minute boundary. Trades missed while disconnected are not backfilled.</div>
+  </div>
+
+  <details class="basis-reference">
+    <summary>OPEN BASIS CHART REFERENCE · FOOTPRINT / LIQUIDITY HEATMAP</summary>
+    <div class="basis-orderflow-controls" role="group" aria-label="Basis reference chart view">
       <button id="basisFootprintBtn" class="basis-view-btn" type="button" aria-pressed="true">FOOTPRINT · BID × ASK</button>
       <button id="basisHeatmapBtn" class="basis-view-btn" type="button" aria-pressed="false">LIQUIDITY HEATMAP</button>
     </div>
-  </div>
-  <iframe id="basisOrderflowFrame" class="basis-widget-frame"
-    src="https://www.basischarts.com/embed/chart?symbol=BTCUSDT&view=footprint"
-    title="Live BTCUSDT footprint chart by Basis"
-    loading="lazy"
-    sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-    referrerpolicy="strict-origin-when-cross-origin"></iframe>
-  <div class="basis-footprint-live">
-    <div class="basis-footprint-head"><div><b>LIVE BINANCE PERPETUAL FOOTPRINT · ENGINE READOUT</b><span>Same Binance USD-M trade tape family as Basis. The closed 5m bar stays on the left; the current bar updates as trades arrive, with BTC quantity and USD notional at matching $2 price levels.</span></div><b id="basisFootprintStatus">COLLECTING TAPE</b></div>
-    <div class="basis-footprint-metrics"><div><small>5S DELTA</small><b id="basisFpDelta5">—</b></div><div><small>15S DELTA</small><b id="basisFpDelta15">—</b></div><div><small>30S DELTA</small><b id="basisFpDelta30">—</b></div><div><small>FOOTPRINT EDGE</small><b id="basisFpScore">—</b></div><div><small>ABSORPTION</small><b id="basisFpAbsorption">—</b></div></div>
-    <div class="basis-footprint-bars"><div id="basisFpClosedSummary"><b>LAST CLOSED 5M BAR</b><span>Waiting for captured data.</span></div><div id="basisFpLiveSummary"><b>CURRENT 5M BAR · FILLING NOW</b><span>Waiting for live trades.</span></div></div>
-    <div id="basisFootprintRows" class="basis-footprint-rows"><div class="basis-footprint-empty">Waiting for recent Binance perpetual trades.</div></div>
-    <div class="basis-footprint-note">ASK / BUY = aggressive buyers lifting offers · BID / SELL = aggressive sellers hitting bids · main figures are BTC quantity; smaller figures beneath are USD notional. Current-bar numbers update live and are saved across page reloads.</div>
-  </div>
-  <div class="basis-orderflow-foot">
-    <span id="basisViewDescription">Footprint shows executed buy/sell volume and delta at each price. It is not a full order book.</span>
-    <span>Basis data · Binance · <a href="https://www.basischarts.com/" target="_blank" rel="noopener noreferrer">Open Basis terminal</a></span>
-  </div>
+    <iframe id="basisOrderflowFrame" class="basis-widget-frame"
+      src="https://www.basischarts.com/embed/chart?symbol=BTCUSDT&view=footprint"
+      title="Live BTCUSDT footprint chart by Basis"
+      loading="lazy"
+      sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+      referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    <div class="basis-orderflow-foot">
+      <span id="basisViewDescription">Reference view from Basis Charts. The native footprint above is calculated from this dashboard's own live Binance USD-M trades.</span>
+      <span><a href="https://www.basischarts.com/" target="_blank" rel="noopener noreferrer">Open Basis terminal</a></span>
+    </div>
+  </details>
 </section>
 
 <section class="card confluence-card">
@@ -1268,75 +1345,101 @@ button{font-family:inherit}
 
   function renderBasisFootprint(){
     const f=buildBasisFootprint(Date.now());
+    const now=Date.now(),bar=f.liveBar,host=$("basisFootprintRows");
     const put=(id,value,cls)=>{
-      const el=$(id);if(!el)return;el.textContent=value;el.className="";
-      if(cls)el.classList.add(cls);
+      const el=$(id);if(!el)return;
+      el.textContent=value;el.className=cls||"";
     };
-    const pct=x=>x===null||!Number.isFinite(x)?"—":(x>=0?"+":"")+Math.round(x*100)+"%";
-    put("basisFpDelta5",pct(f.delta5),f.delta5>0?"up":f.delta5<0?"down":"");
-    put("basisFpDelta15",pct(f.delta15),f.delta15>0?"up":f.delta15<0?"down":"");
-    put("basisFpDelta30",pct(f.delta30),f.delta30>0?"up":f.delta30<0?"down":"");
-    put("basisFpScore",f.score===null?"BUILDING":(f.score>=0?"UP ":"DOWN ")+Math.round(Math.abs(f.score)*100)+"/100",f.score>0?"up":f.score<0?"down":"");
-    put("basisFpAbsorption",f.absorption,f.absorption.includes("ABSORBED")?"down":"");
-    const host=$("basisFootprintRows");
     if(!host)return;
+    const buyQty=bar?.buyQty||0,sellQty=bar?.sellQty||0;
+    const buyUsd=bar?.buyUsd||0,sellUsd=bar?.sellUsd||0;
+    const totalQty=buyQty+sellQty,totalUsd=buyUsd+sellUsd;
+    const deltaQty=buyQty-sellQty,deltaUsd=buyUsd-sellUsd;
+    const deltaPct=totalQty?deltaQty/totalQty*100:null;
     const elapsed=Math.max(0,Math.min(299,Math.floor(f.liveSpan||0)));
     const clock=Math.floor(elapsed/60)+":"+String(elapsed%60).padStart(2,"0");
-    const liveCount=f.liveBar?.count||0,closedCount=f.closedBar?.count||0;
-    put("basisFootprintStatus",liveCount?"LIVE FILLING · "+clock+" / 5:00 · "+liveCount.toLocaleString("en-US")+" TRADES":"LIVE BAR · WAITING FOR FIRST TRADE");
-    const closedSummary=$("basisFpClosedSummary");
-    if(closedSummary){
-      const closedStart=f.closedBar?.start;
-      const title=f.closedBar?(f.closedIsAdjacent?"LAST CLOSED 5M BAR":"LAST CAPTURED CLOSED BAR"):"LAST CLOSED BAR · NOT CAPTURED YET";
-      const volume=f.closedBar?f.closedBar.buyQty+f.closedBar.sellQty:0;
-      const delta=f.closedBar?f.closedBar.buyQty-f.closedBar.sellQty:0;
-      const time=closedStart?new Date(closedStart).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"";
-      closedSummary.innerHTML="<b>"+title+"</b><span>"+(closedStart?time+" · ":"")+
-        volume.toFixed(4)+" BTC · DELTA "+(delta>=0?"+":"−")+Math.abs(delta).toFixed(4)+" BTC · "+
-        closedCount.toLocaleString("en-US")+" trades</span>";
+    const roundTime=f.marketStart?new Date(f.marketStart).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false}):"--:--";
+    const signed=(n,digits=3)=>(n>0?"+":n<0?"−":"")+Math.abs(n).toFixed(digits);
+    const btcQty=n=>n.toFixed(n>=1?3:4);
+    const pct=n=>n===null?"—":(n>0?"+":"")+n.toFixed(1)+"%";
+    const liveCount=bar?.count||0;
+    const current=f.current||state.futuresPrice||state.binanceFastPrice||state.binance||null;
+    put("basisFootprintStatus",liveCount
+      ?"LIVE FILLING · "+clock+" / 5:00 · "+liveCount.toLocaleString("en-US")+" TRADES"
+      :"WAITING FOR FIRST TRADE · "+clock+" / 5:00","fp-live-status "+(liveCount?"live":""));
+    put("basisFpRoundTime",roundTime);
+    put("basisFpElapsed",clock+" / 5:00");
+    put("basisFpVolume",btcQty(totalQty)+" BTC");
+    put("basisFpVolumeUsd",compactUsd(totalUsd)+" NOTIONAL");
+    put("basisFpDelta",signed(deltaQty)+" BTC",deltaQty>0?"up":deltaQty<0?"down":"");
+    put("basisFpDeltaUsd",(deltaUsd>=0?"+":"−")+compactUsd(Math.abs(deltaUsd))+" NET",deltaUsd>0?"up":deltaUsd<0?"down":"");
+    put("basisFpDeltaPct",pct(deltaPct),deltaPct>0?"up":deltaPct<0?"down":"");
+    put("basisFpTradeCount",liveCount.toLocaleString("en-US")+" PRINTS THIS ROUND");
+    put("basisFpCurrentPrice",current?"BTC PRICE · $"+fmt(current):"BTC PRICE · —");
+
+    const allRows=Object.values(bar?.rows||{}).sort((a,b)=>a.price-b.price);
+    const rowMap=new Map(allRows.map(r=>[Number(r.price),r]));
+    let buyImbalances=0,sellImbalances=0;
+    for(const r of allRows){
+      const lower=rowMap.get(Number(r.price)-2);
+      const upper=rowMap.get(Number(r.price)+2);
+      if(lower&&r.buyUsd>=2000&&lower.sellUsd>=750&&r.buyUsd>=lower.sellUsd*3)buyImbalances++;
+      if(upper&&r.sellUsd>=2000&&upper.buyUsd>=750&&r.sellUsd>=upper.buyUsd*3)sellImbalances++;
     }
-    const liveSummary=$("basisFpLiveSummary");
-    if(liveSummary){
-      const volume=f.liveBar?f.liveBar.buyQty+f.liveBar.sellQty:0;
-      const delta=f.liveBar?f.liveBar.buyQty-f.liveBar.sellQty:0;
-      liveSummary.innerHTML="<b>CURRENT 5M BAR · FILLING NOW</b><span>"+
-        new Date(f.marketStart).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})+" · "+
-        volume.toFixed(4)+" BTC · DELTA "+(delta>=0?"+":"−")+Math.abs(delta).toFixed(4)+" BTC · "+
-        liveCount.toLocaleString("en-US")+" trades · "+clock+" elapsed</span>";
+    const imbalanceCount=buyImbalances+sellImbalances;
+    put("basisFpImbalance",String(imbalanceCount),imbalanceCount?"up":"");
+    put("basisFpImbalanceDetail",buyImbalances+" BUY · "+sellImbalances+" SELL LEVELS");
+
+    const previous=f.closedBar;
+    if(previous){
+      const previousDelta=(previous.buyQty||0)-(previous.sellQty||0);
+      const previousTime=new Date(previous.start).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",hour12:false});
+      put("basisFpPreviousRound","LAST "+previousTime+" · Δ "+signed(previousDelta)+" BTC · "+(previous.count||0).toLocaleString("en-US")+" TRADES",
+        previousDelta>0?"up":previousDelta<0?"down":"");
+    }else{
+      put("basisFpPreviousRound","PREVIOUS ROUND · NOT CAPTURED");
     }
-    if(!f.rows.length){
-      const note=f.closedBar
-        ?"Current bar has not printed in the visible price range yet."
-        :"Waiting for live Binance perpetual trades. The closed-bar column fills after this page captures a complete five-minute interval.";
-      host.innerHTML="<div class='basis-footprint-empty'>"+note+"</div>";
+
+    if(!allRows.length){
+      host.innerHTML="<div class='fp-empty'>No Binance USD-M trades recorded in this five-minute round yet. The ladder will fill as new trades arrive.</div>";
       return;
     }
-    const qty=x=>x>0?x.toFixed(4):"—";
-    const usd=x=>x>0?compactUsd(x):"";
-    const qtyCell=(q,n)=>"<span class='fp-number'>"+qty(q)+"</span>"+(n>0?"<small>"+usd(n)+"</small>":"");
-    const deltaCell=(q,n)=>{
-      const cls=q>0?"up":q<0?"down":"";
-      const usdLine=n!==0?(n>0?"+":"−")+usd(Math.abs(n)):"";
-      return "<span class='fp-number "+cls+"'>"+(q>0?"+":q<0?"−":"")+Math.abs(q).toFixed(4)+"</span>"+
-        (usdLine?"<small class='"+cls+"'>"+usdLine+"</small>":"");
+    const centerBin=current?Math.floor(current/2)*2:null;
+    let low,high;
+    if(centerBin!==null){low=centerBin-18;high=centerBin+18;}
+    else{
+      high=Math.max(...allRows.map(r=>r.price));
+      low=high-36;
+    }
+    const rows=[];
+    for(let price=high;price>=low;price-=2){
+      const stored=rowMap.get(price);
+      rows.push(stored||{price,buyQty:0,sellQty:0,buyUsd:0,sellUsd:0,buyCount:0,sellCount:0,count:0});
+    }
+    const maxSide=Math.max(.000001,...rows.flatMap(r=>[r.buyQty||0,r.sellQty||0]));
+    const qtyText=n=>n>0?btcQty(n):"—";
+    const sideCell=(qty,usd,isBuy,imbalance)=>{
+      const width=qty>0?Math.max(2,Math.min(100,qty/maxSide*100)):0;
+      const fill=width?"<i class='fp-side-fill "+(isBuy?"buy-fill":"sell-fill")+"' style='width:"+width.toFixed(1)+"%'></i>":"";
+      const tag=imbalance?"<em class='fp-imb-tag'>3:1</em>":"";
+      return "<div class='fp-side-cell "+(isBuy?"buy-side-cell":"sell-side-cell")+"'>"+fill+
+        "<div class='fp-side-content'><b>"+qtyText(qty)+"</b><small>"+(usd>0?compactUsd(usd):"—")+"</small>"+tag+"</div></div>";
     };
-    const header="<div class='basis-footprint-row head'>"+
-      "<span>PRICE · $2 ROWS</span><span class='group-head'>LAST CLOSED BAR · BID / ASK / Δ</span>"+
-      "<span class='group-head live-head'>CURRENT BAR · FILLING NOW</span></div>"+
-      "<div class='basis-footprint-row subhead'><span></span><span>BID / SELL</span><span>ASK / BUY</span>"+
-      "<span>DELTA</span><span>BID / SELL</span><span>ASK / BUY</span><span>DELTA</span></div>";
-    const rows=f.rows.map(r=>
-      "<div class='basis-footprint-row data-row'><span class='price'>"+Math.round(r.price).toLocaleString("en-US")+"</span>"+
-      "<span class='bid'>"+qtyCell(r.prevBid,r.prevBidUsd)+"</span>"+
-      "<span class='ask'>"+qtyCell(r.prevAsk,r.prevAskUsd)+"</span>"+
-      "<span class='delta'>"+deltaCell(r.prevDelta,r.prevDeltaUsd)+"</span>"+
-      "<span class='bid live-cell'>"+qtyCell(r.liveBid,r.liveBidUsd)+"</span>"+
-      "<span class='ask live-cell'>"+qtyCell(r.liveAsk,r.liveAskUsd)+"</span>"+
-      "<span class='delta live-cell'>"+deltaCell(r.liveDelta,r.liveDeltaUsd)+"</span></div>"
-    ).join("");
-    host.innerHTML=header+rows;
+    const html=rows.map(r=>{
+      const price=Number(r.price),displayPrice=price+1;
+      const lower=rowMap.get(price-2),upper=rowMap.get(price+2);
+      const buyImbalance=!!(lower&&r.buyUsd>=2000&&lower.sellUsd>=750&&r.buyUsd>=lower.sellUsd*3);
+      const sellImbalance=!!(upper&&r.sellUsd>=2000&&upper.buyUsd>=750&&r.sellUsd>=upper.buyUsd*3);
+      const atMarket=current!==null&&Math.abs(displayPrice-current)<=1.2;
+      const anyVolume=(r.buyQty||0)+(r.sellQty||0)>0;
+      return "<div class='fp-ladder-row "+(atMarket?"at-market ":"")+(anyVolume?"has-volume":"empty-level")+"'>"+
+        sideCell(r.sellQty||0,r.sellUsd||0,false,sellImbalance)+
+        "<div class='fp-price-cell'><b>"+Math.round(displayPrice).toLocaleString("en-US")+"</b>"+(atMarket?"<small>LAST</small>":"")+"</div>"+
+        sideCell(r.buyQty||0,r.buyUsd||0,true,buyImbalance)+
+        "</div>";
+    }).join("");
+    host.innerHTML=html;
   }
-
   function fastTapeMove(venues,windowMs,now=Date.now()){
     const wanted=new Set(venues),byVenue=new Map();
     for(const name of venues)byVenue.set(name,{firstTs:Infinity,firstPrice:null,lastTs:0,lastPrice:null,count:0,total:0});

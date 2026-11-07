@@ -583,7 +583,7 @@ button{font-family:inherit}
   <div id="confluenceMemory" class="confluence-memory">CONTINUOUS BTC TREND · COLLECTING</div>
   <div class="flow-edge-panel">
     <div class="feature-head"><div><div class="label">REAL VOLUME EDGE · SPOT CVD vs PERP CVD</div><div class="small">Separate aggressor flow · cumulative delta pressure · price absorption · open-interest context</div></div><div class="flow-status-tools"><span id="flowEdgeStatus" class="feature-status">COLLECTING</span><button id="flowRestartBtn" class="flow-restart-btn" type="button" title="Reconnect live momentum feeds and rebuild flow calculations">RESTART FEEDS</button></div></div>
-    <div class="flow-cvd-legend"><span><i class="spot-line"></i> SPOT CVD</span><span><i class="perp-line"></i> PERP CVD</span><span>1-SECOND UPDATES · 5-MINUTE ROLLING NORMALIZED DELTA</span></div>
+    <div class="flow-cvd-legend"><span><i class="spot-line"></i> SPOT CVD</span><span><i class="perp-line"></i> PERP CVD</span><span>1-SECOND UPDATES · 15-MINUTE CONTINUOUS NORMALIZED DELTA</span></div>
     <div id="flowCvdChart"></div>
     <div class="flow-edge-grid">
       <div class="flow-edge-cell"><span>SPOT CUMULATIVE DELTA</span><b id="flowSpotRead">—</b></div>
@@ -1135,7 +1135,7 @@ button{font-family:inherit}
     };
   }
   function buildCvdPoints(venues,now=Date.now()){
-    const set=new Set(venues),start=now-300000,step=1000,bins=new Map();
+    const set=new Set(venues),start=now-900000,step=1000,bins=new Map();
     for(const t of state.flowTrades){
       if(!set.has(t.venue)||t.ts<start||t.ts>now)continue;
       const bucket=Math.floor(t.ts/step)*step;
@@ -1971,9 +1971,9 @@ button{font-family:inherit}
     if(idx>=0){state.chainlinkHistory[idx]={ts:second,value};}
     else state.chainlinkHistory.push({ts:second,value});
     state.chainlinkHistory.sort((a,b)=>a.ts-b.ts);
-    const cutoff=Date.now()-600000;
+    const cutoff=Date.now()-1800000;
     state.chainlinkHistory=state.chainlinkHistory.filter(x=>x.ts>=cutoff);
-    if(state.chainlinkHistory.length>700)state.chainlinkHistory=state.chainlinkHistory.slice(-650);
+    if(state.chainlinkHistory.length>2100)state.chainlinkHistory=state.chainlinkHistory.slice(-2000);
     updateLiveChartSeries(state.spotSeries,state.chainlinkHistory,second,value);
   }
 
@@ -1998,10 +1998,11 @@ button{font-family:inherit}
     }
   }
 
-  function setChartWindow(startMs){
+  function setChartWindow(){
     if(!state.liveChart)return;
-    const start=Math.floor(startMs/1000);
-    try{state.liveChart.timeScale().setVisibleRange({from:start,to:start+300});}catch(_){}
+    // Keep a continuous 30-minute price view across five-minute market rollovers.
+    const now=Math.floor(Date.now()/1000);
+    try{state.liveChart.timeScale().setVisibleRange({from:now-1800,to:now+15});}catch(_){}
   }
 
   function setChartTargetLine(){
@@ -2043,11 +2044,11 @@ button{font-family:inherit}
         color:"#8ab9ee",lineWidth:1,title:"Chainlink BTC/USD",
         priceLineVisible:false,lastValueVisible:true,crosshairMarkerVisible:true
       });
-      const start=boundaryAtOrBefore(Date.now()),from=start-15000;
+      const from=Date.now()-1800000;
       state.twapSeries.setData(chartSeriesData(state.twapHistory,from));
       state.spotSeries.setData(chartSeriesData(state.chainlinkHistory,from));
       if(state.target!==null)setChartTargetLine();
-      setChartWindow(start);
+      setChartWindow();
       $("chartStatus").textContent="CHAINLINK STREAM · LIVE";
       $("chartStatus").className="poly-live ok";
     }catch(err){
@@ -2185,7 +2186,7 @@ button{font-family:inherit}
   const LAB_KEY="btc5m-market-lab-v2",TWAP_KEY="btc5m-twap-history-v2",ROUND_MEMORY_KEY=LAB_KEY+":continuous-trend-v1";
   function loadMarketLab(){
     try{state.journal=JSON.parse(localStorage.getItem(LAB_KEY)||"[]");if(!Array.isArray(state.journal))state.journal=[]}catch(_){state.journal=[]}
-    try{state.twapHistory=JSON.parse(localStorage.getItem(TWAP_KEY)||"[]").filter(x=>Number.isFinite(x.ts)&&Number.isFinite(x.value)&&Date.now()-x.ts<900000)}catch(_){state.twapHistory=[]}
+    try{state.twapHistory=JSON.parse(localStorage.getItem(TWAP_KEY)||"[]").filter(x=>Number.isFinite(x.ts)&&Number.isFinite(x.value)&&Date.now()-x.ts<1800000)}catch(_){state.twapHistory=[]}
     const start=boundaryAtOrBefore(Date.now()),ref=state.twapHistory.find(x=>x.ts===start);
     if(ref){state.target=ref.value;state.targetTs=start;$("targetLarge").textContent="$"+fmt(ref.value);$("targetTime").textContent="Recovered exact Chainlink TWAP60 start observation"}
     try{const active=JSON.parse(localStorage.getItem(LAB_KEY+":active")||"null");if(active&&active.start===start)state.activeRecord=active}catch(_){}
@@ -2207,7 +2208,7 @@ button{font-family:inherit}
   }
   function persistTwapHistory(){
     if(!state.twapHistory.length)return;
-    try{localStorage.setItem(TWAP_KEY,JSON.stringify(state.twapHistory.slice(-1200)))}catch(_){}
+    try{localStorage.setItem(TWAP_KEY,JSON.stringify(state.twapHistory.slice(-2400)))}catch(_){}
   }
   function addTwapObservation(ts,value){
     if(!Number.isFinite(ts)||!Number.isFinite(value)||value<=0)return;
@@ -2215,7 +2216,7 @@ button{font-family:inherit}
     if(existing)existing.value=value;else state.twapHistory.push({ts,value});
     state.twapHistory.sort((a,b)=>a.ts-b.ts);
     updateLiveChartSeries(state.twapSeries,state.twapHistory,ts,value);
-    const cutoff=Date.now()-900000;state.twapHistory=state.twapHistory.filter(x=>x.ts>=cutoff);
+    const cutoff=Date.now()-1800000;state.twapHistory=state.twapHistory.filter(x=>x.ts>=cutoff);
     const start=boundaryAtOrBefore(ts);
     // At a five-minute boundary, first close the previous market using its
     // exact start observation, then initialize the new market record.
@@ -2230,7 +2231,8 @@ button{font-family:inherit}
       $("targetTime").textContent="Exact Chainlink TWAP60 start observation · "+new Date(ts).toLocaleTimeString();
       state.activeRecord={start,target:value,checkpoints:{},trendCheckpoints:{}};
       saveMarketLab();
-      setChartTargetLine();setChartWindow(start);
+      // New round: replace only the active target line. Keep the chart time scale and history continuous.
+      setChartTargetLine();
       updateDirection();
     }
     if(ts%5000<1000)persistTwapHistory();

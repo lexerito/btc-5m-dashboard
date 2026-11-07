@@ -818,7 +818,7 @@ button{font-family:inherit}
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,liveMomentumUpdatedAt:0,liveMomentumSide:"WAIT",liveMomentumCandidate:"WAIT",liveMomentumCandidateSince:0,liveMomentumWeakSince:0,liveMomentumHistory:[],flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,flipTimer:null,binanceFastHistory:[],fastSpotSeries:null,lastFastChartUpdate:0,binanceBbo:null,bboWs:null,bboReconnect:null,bboConnectAt:0,bboLastAt:0,basisFootprint:null,nextRoundForecast:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,liveMomentumUpdatedAt:0,liveMomentumSide:"WAIT",liveMomentumCandidate:"WAIT",liveMomentumCandidateSince:0,liveMomentumWeakSince:0,liveMomentumHistory:[],flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,flipTimer:null,binanceFastHistory:[],fastSpotSeries:null,lastFastChartUpdate:0,binanceBbo:null,bboWs:null,bboReconnect:null,bboConnectAt:0,bboLastAt:0,basisFootprint:null,basisBarMemory:null,basisBarLastPersistAt:0,basisFootprintRenderTimer:null,nextRoundForecast:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -1046,6 +1046,7 @@ button{font-family:inherit}
     const cutoff=Date.now()-900000;
     state.flowTrades=state.flowTrades.filter(x=>x.ts>=cutoff&&x.ts<=Date.now());
     state.flowTrades.push(trade);
+    if(venue==="BINANCE PERP")recordBasisBarTrade(trade);
     if(state.flowTrades.length>60000)state.flowTrades=state.flowTrades.slice(-50000);
     if(trade.notional>=LARGE_PRINT_USD){
       state.largePrints.unshift(trade);
@@ -1102,6 +1103,60 @@ button{font-family:inherit}
     }
     return {buy,sell,total,count,imbalance:weights?weighted/weights:null,sources:active.map(x=>x.name),maxTradeShare:maxTrade/total};
   }
+  const BASIS_BAR_STORAGE_KEY="btc5m_basis_5m_footprint_v1";
+  function newBasisBar(start){
+    return {start,rows:{},count:0,buyQty:0,sellQty:0,buyUsd:0,sellUsd:0,firstTradeAt:0,lastTradeAt:0};
+  }
+  function loadBasisBarMemory(){
+    if(state.basisBarMemory)return state.basisBarMemory;
+    try{
+      const saved=JSON.parse(localStorage.getItem(BASIS_BAR_STORAGE_KEY)||"null");
+      if(saved&&saved.current&&Number.isFinite(saved.current.start)){
+        state.basisBarMemory=saved;
+        if(!saved.current.rows)saved.current.rows={};
+        if(saved.previous&&!saved.previous.rows)saved.previous.rows={};
+        return saved;
+      }
+    }catch(_){}
+    state.basisBarMemory={current:null,previous:null,coverageStartedAt:Date.now()};
+    return state.basisBarMemory;
+  }
+  function persistBasisBarMemory(now=Date.now(),force=false){
+    const memory=state.basisBarMemory;
+    if(!memory||!memory.current)return;
+    if(!force&&now-(state.basisBarLastPersistAt||0)<1000)return;
+    try{
+      localStorage.setItem(BASIS_BAR_STORAGE_KEY,JSON.stringify(memory));
+      state.basisBarLastPersistAt=now;
+    }catch(_){}
+  }
+  function recordBasisBarTrade(trade){
+    if(!trade||trade.venue!=="BINANCE PERP")return;
+    const start=boundaryAtOrBefore(trade.ts),memory=loadBasisBarMemory();
+    if(!memory.current)memory.current=newBasisBar(start);
+    if(start>memory.current.start){
+      memory.previous=memory.current;
+      memory.current=newBasisBar(start);
+    }else if(start<memory.current.start){
+      if(!memory.previous||start!==memory.previous.start)return;
+    }
+    const bar=start===memory.current.start?memory.current:memory.previous;
+    if(!bar)return;
+    const price=Math.floor(trade.price/2)*2,key=String(price);
+    const row=bar.rows[key]||(bar.rows[key]={price,buyQty:0,sellQty:0,buyUsd:0,sellUsd:0,buyCount:0,sellCount:0});
+    if(trade.buy){
+      row.buyQty+=trade.size;row.buyUsd+=trade.notional;row.buyCount++;
+      bar.buyQty+=trade.size;bar.buyUsd+=trade.notional;
+    }else{
+      row.sellQty+=trade.size;row.sellUsd+=trade.notional;row.sellCount++;
+      bar.sellQty+=trade.size;bar.sellUsd+=trade.notional;
+    }
+    row.count=(row.buyCount||0)+(row.sellCount||0);
+    bar.count++;bar.lastTradeAt=trade.ts;
+    if(!bar.firstTradeAt||trade.ts<bar.firstTradeAt)bar.firstTradeAt=trade.ts;
+    persistBasisBarMemory(Date.now());
+  }
+
   function buildBasisFootprint(now=Date.now()){
     if(state.basisFootprint&&now-state.basisFootprint.updatedAt<450)return state.basisFootprint;
     const tape=state.flowTrades.filter(t=>t.venue==="BINANCE PERP"&&t.ts<=now&&now-t.ts<=60000&&t.notional>0&&t.price>0);

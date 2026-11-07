@@ -1215,11 +1215,41 @@ button{font-family:inherit}
     let score=deltaBlend===null?null:Math.max(-1,Math.min(1,deltaBlend*.62+stackScore*.14+priceConfirm*.14+targetScore*.10+absorption));
     const coverage=w30.count>=6&&w30.total>=40000;
     if(!coverage)score=null;
-    const visibleRows=[...rows].sort((a,b)=>Math.abs(a.price+1-current)-Math.abs(b.price+1-current)).slice(0,13).sort((a,b)=>b.price-a.price);
+    const marketStart=boundaryAtOrBefore(now),barMemory=loadBasisBarMemory();
+    if(!barMemory.current||barMemory.current.start<marketStart){
+      if(barMemory.current)barMemory.previous=barMemory.current;
+      barMemory.current=newBasisBar(marketStart);
+      persistBasisBarMemory(now,true);
+    }
+    const liveBar=barMemory.current&&barMemory.current.start===marketStart?barMemory.current:null;
+    const closedBar=barMemory.previous||null;
+    const priceSet=new Set([
+      ...Object.keys(liveBar?.rows||{}).map(Number),
+      ...Object.keys(closedBar?.rows||{}).map(Number)
+    ]);
+    const ladderRows=Array.from(priceSet).map(price=>{
+      const prev=closedBar?.rows?.[String(price)]||{};
+      const live=liveBar?.rows?.[String(price)]||{};
+      return {
+        price,
+        prevBid:prev.sellQty||0,prevAsk:prev.buyQty||0,
+        prevBidUsd:prev.sellUsd||0,prevAskUsd:prev.buyUsd||0,
+        liveBid:live.sellQty||0,liveAsk:live.buyQty||0,
+        liveBidUsd:live.sellUsd||0,liveAskUsd:live.buyUsd||0,
+        prevDelta:(prev.buyQty||0)-(prev.sellQty||0),
+        liveDelta:(live.buyQty||0)-(live.sellQty||0),
+        prevDeltaUsd:(prev.buyUsd||0)-(prev.sellUsd||0),
+        liveDeltaUsd:(live.buyUsd||0)-(live.sellUsd||0)
+      };
+    });
+    const livePx=current||state.futuresPrice||null;
+    const visibleRows=ladderRows.filter(x=>!livePx||Math.abs(x.price+1-livePx)<=24).sort((a,b)=>b.price-a.price);
+    const liveSpan=Math.max(0,Math.floor((now-marketStart)/1000));
+    const closedIsAdjacent=!!closedBar&&closedBar.start===marketStart-300000;
     state.basisFootprint={updatedAt:now,score,delta5:w5.imbalance,delta15:w15.imbalance,delta30:w30.imbalance,delta60:w60.imbalance,
       buy30:w30.buy,sell30:w30.sell,total30:w30.total,count30:w30.count,absorption:absorptionText,
       absorptionRaw:absorption,stackBuy:maxBuyRun,stackSell:maxSellRun,priceMove15:move15,targetScore,
-      rows:visibleRows,current,coverage};
+      rows:visibleRows,current,coverage,closedBar,liveBar,closedIsAdjacent,liveSpan,marketStart};
     return state.basisFootprint;
   }
 

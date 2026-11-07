@@ -580,11 +580,13 @@ button{font-family:inherit}
   <div id="confluenceMemory" class="confluence-memory">CONTINUOUS BTC TREND · COLLECTING</div>
   <div class="flow-edge-panel">
     <div class="feature-head"><div><div class="label">REAL VOLUME EDGE · SPOT CVD vs PERP CVD</div><div class="small">Separate aggressor flow · cumulative delta pressure · price absorption · open-interest context</div></div><span id="flowEdgeStatus" class="feature-status">COLLECTING</span></div>
-    <div class="flow-cvd-legend"><span><i class="spot-line"></i> SPOT CVD</span><span><i class="perp-line"></i> PERP CVD</span><span>5-MINUTE ROLLING · NORMALIZED DELTA</span></div>
+    <div class="flow-cvd-legend"><span><i class="spot-line"></i> SPOT CVD</span><span><i class="perp-line"></i> PERP CVD</span><span>1-SECOND UPDATES · 5-MINUTE ROLLING NORMALIZED DELTA</span></div>
     <div id="flowCvdChart"></div>
     <div class="flow-edge-grid">
       <div class="flow-edge-cell"><span>SPOT CUMULATIVE DELTA</span><b id="flowSpotRead">—</b></div>
       <div class="flow-edge-cell"><span>PERP CUMULATIVE DELTA</span><b id="flowPerpRead">—</b></div>
+      <div class="flow-edge-cell"><span>FAST SPOT PRESSURE · 5S / 10S</span><b id="flowFastSpotRead">—</b></div>
+      <div class="flow-edge-cell"><span>FAST PERP PRESSURE · 5S / 10S</span><b id="flowFastPerpRead">—</b></div>
       <div class="flow-edge-cell"><span>REAL VOLUME REGIME</span><b id="flowVolumeRead">—</b></div>
       <div class="flow-edge-cell"><span>OPEN INTEREST</span><b id="flowOiRead">—</b></div>
       <div class="flow-edge-cell"><span>LIQUIDATION CONTEXT · 60S</span><b id="flowLiqRead">—</b></div>
@@ -937,6 +939,43 @@ button{font-family:inherit}
     const total=buy+sell;
     return {buy,sell,total,count,delta:buy-sell,imbalance:total?(buy-sell)/total:null};
   }
+  function fastFlowWindow(venues,windowMs,now=Date.now()){
+    const set=new Set(venues),cutoff=now-windowMs,byVenue=new Map();
+    for(const name of venues)byVenue.set(name,{buy:0,sell:0,count:0,maxTrade:0});
+    for(const t of state.flowTrades){
+      if(!set.has(t.venue)||t.ts<cutoff||t.ts>now)continue;
+      const row=byVenue.get(t.venue);if(!row)continue;
+      row.count++;if(t.buy)row.buy+=t.notional;else row.sell+=t.notional;
+      row.maxTrade=Math.max(row.maxTrade,t.notional);
+    }
+    const active=Array.from(byVenue.entries()).map(([name,x])=>({name,...x,total:x.buy+x.sell}))
+      .filter(x=>x.count>=2&&x.total>=8000);
+    if(!active.length)return null;
+    const count=active.reduce((a,x)=>a+x.count,0),buy=active.reduce((a,x)=>a+x.buy,0),sell=active.reduce((a,x)=>a+x.sell,0);
+    const total=buy+sell,maxTrade=Math.max(...active.map(x=>x.maxTrade));
+    // A rapid signal needs repeated prints and meaningful notional. A single oversized
+    // print cannot masquerade as broad participation.
+    if(count<4||total<25000||!total||maxTrade/total>.72)return null;
+    let weighted=0,weights=0;
+    for(const x of active){
+      const w=Math.sqrt(Math.min(x.total,5000000));
+      weighted+=((x.buy-x.sell)/x.total)*w;weights+=w;
+    }
+    return {buy,sell,total,count,imbalance:weights?weighted/weights:null,sources:active.map(x=>x.name),maxTradeShare:maxTrade/total};
+  }
+  function fastVolumeSurgeFor(venues,now=Date.now()){
+    const set=new Set(venues),currentBin=Math.floor(now/5000),bins=new Map();
+    for(const t of state.flowTrades){
+      if(!set.has(t.venue)||t.ts<now-65000||t.ts>now)continue;
+      const key=Math.floor(t.ts/5000);
+      bins.set(key,(bins.get(key)||0)+t.notional);
+    }
+    const current=bins.get(currentBin)||0,prior=[];
+    for(let i=1;i<=11;i++){const v=bins.get(currentBin-i)||0;if(v>0)prior.push(v);}
+    prior.sort((a,b)=>a-b);
+    const baseline=prior.length?(prior.length%2?prior[(prior.length-1)/2]:(prior[prior.length/2-1]+prior[prior.length/2])/2):null;
+    return {current,baseline,activeBins:prior.length,ratio:prior.length>=5&&baseline>0?current/baseline:null};
+  }
   function combineVenueFlow(venues,windowMs,now=Date.now()){
     const minimum=windowMs<=30000?25000:windowMs<=120000?80000:180000;
     const perVenue=venues.map(name=>({name,...venueFlowStats([name],windowMs,now)}))
@@ -1000,6 +1039,12 @@ button{font-family:inherit}
     const perp30=combineVenueFlow(perpVenues,30000,now),perp120=combineVenueFlow(perpVenues,120000,now),perp300=combineVenueFlow(perpVenues,300000,now);
     const spotScore=weightedWindows([spot30,spot120,spot300],[.38,.40,.22]);
     const perpScore=weightedWindows([perp30,perp120,perp300],[.38,.40,.22]);
+    // Fast tape layer: raw aggressor prints are re-aggregated into rolling 5s/10s windows.
+    const fastSpot5=fastFlowWindow(spotVenues,5000,now),fastSpot10=fastFlowWindow(spotVenues,10000,now);
+    const fastPerp5=fastFlowWindow(perpVenues,5000,now),fastPerp10=fastFlowWindow(perpVenues,10000,now);
+    const fastSpotScore=weightedWindows([fastSpot5,fastSpot10],[.62,.38]);
+    const fastPerpScore=weightedWindows([fastPerp5,fastPerp10],[.62,.38]);
+    const fastSpotSurge=fastVolumeSurgeFor(spotVenues,now),fastPerpSurge=fastVolumeSurgeFor(perpVenues,now);
     const spotSurge=volumeSurgeFor(spotVenues,now),perpSurge=volumeSurgeFor(perpVenues,now);
     const surges=[spotSurge.ratio,perpSurge.ratio].filter(Number.isFinite);
     const volumeSurge=surges.length?Math.max(...surges):null;
@@ -1010,6 +1055,8 @@ button{font-family:inherit}
 
     const latest=state.chainlinkHistory.length?state.chainlinkHistory[state.chainlinkHistory.length-1]:null;
     const priceRows=state.chainlinkHistory.filter(x=>latest&&x.ts>=now-90000);
+    const price5=deltaFromHistory(priceRows,5);
+    const price10=deltaFromHistory(priceRows,10);
     const price30=deltaFromHistory(priceRows,30);
     const price60=deltaFromHistory(priceRows,60);
     const avgStep=averageAbsoluteStep(priceRows);
@@ -1045,19 +1092,38 @@ button{font-family:inherit}
       largePrintPrice10!==null&&Math.sign(largePrintPrice10)===largePrintDirection&&Math.abs(largePrintPrice10)>noiseGate*.20&&
       ((spot30&&Math.sign(spot30.imbalance)===largePrintDirection&&Math.abs(spot30.imbalance)>.16)||
        (perp30&&Math.sign(perp30.imbalance)===largePrintDirection&&Math.abs(perp30.imbalance)>.16));
-    const fastTurnSide=largePrintTurn?(largePrintDirection>0?"UP":"DOWN"):
+    const fastSpotSurgeOK=!!fastSpot5&&fastSpot5.total>=25000&&
+      (fastSpotSurge.ratio!==null?fastSpotSurge.ratio>=1.25:fastSpot5.total>=80000);
+    const fastPerpSurgeOK=!!fastPerp5&&fastPerp5.total>=25000&&
+      (fastPerpSurge.ratio!==null?fastPerpSurge.ratio>=1.25:fastPerp5.total>=80000);
+    const fastSign=fastSpot5&&fastPerp5&&fastSpot5.imbalance*fastPerp5.imbalance>0?Math.sign(fastSpot5.imbalance):0;
+    const fastPriceMin=Math.max(.75,noiseGate*.18);
+    const fast10Supports=!!fastSpot10&&!!fastPerp10&&
+      Math.sign(fastSpot10.imbalance)===fastSign&&Math.sign(fastPerp10.imbalance)===fastSign&&
+      Math.abs(fastSpot10.imbalance)>.12&&Math.abs(fastPerp10.imbalance)>.12;
+    const exceptionalBurst=!!fastSpot5&&!!fastPerp5&&fastSpot5.total>=80000&&fastPerp5.total>=80000&&
+      Math.abs(fastSpot5.imbalance)>=.48&&Math.abs(fastPerp5.imbalance)>=.48;
+    // Genuine micro-turn: spot and perp must agree, have multiple prints,
+    // show meaningful/accelerating volume, and move Chainlink in the same direction.
+    const microTurn=fastSign!==0&&fastSpotSurgeOK&&fastPerpSurgeOK&&
+      Math.abs(fastSpot5.imbalance)>=.28&&Math.abs(fastPerp5.imbalance)>=.28&&
+      price5!==null&&Math.sign(price5)===fastSign&&Math.abs(price5)>=fastPriceMin&&
+      (fast10Supports||exceptionalBurst);
+    const fastTurnSide=microTurn?(fastSign>0?"UP":"DOWN"):
+      largePrintTurn?(largePrintDirection>0?"UP":"DOWN"):
       alignedFlow&&priceConfirms&&independentCounts&&participationConfirmed
       ?(flow30>0?"UP":"DOWN"):null;
     return {
       updatedAt:now,spot30,spot120,spot300,perp30,perp120,perp300,
-      spotScore,perpScore,spotSurge,perpSurge,volumeSurge,largePrint10,largePrint30,largePrint60,largePrintScore,largePrintPulse,largePrintTurn,price30,price60,
+      spotScore,perpScore,fastSpot5,fastSpot10,fastPerp5,fastPerp10,fastSpotScore,fastPerpScore,
+      fastSpotSurge,fastPerpSurge,microTurn,price5,price10,spotSurge,perpSurge,volumeSurge,largePrint10,largePrint30,largePrint60,largePrintScore,largePrintPulse,largePrintTurn,price30,price60,
       oi1m,oi5m,oiRaw,oiAge:state.hlOiHistory.length?now-state.hlOiHistory[state.hlOiHistory.length-1].ts:Infinity,
       longShortLiq,absorptionRaw,absorptionLabel,flow30,fastTurnSide,
       sourceCount:(spot30?.sources.length||0)+(perp30?.sources.length||0)
     };
   }
   function buildCvdPoints(venues,now=Date.now()){
-    const set=new Set(venues),start=now-300000,step=5000,bins=new Map();
+    const set=new Set(venues),start=now-300000,step=1000,bins=new Map();
     for(const t of state.flowTrades){
       if(!set.has(t.venue)||t.ts<start||t.ts>now)continue;
       const bucket=Math.floor(t.ts/step)*step;
@@ -1100,8 +1166,11 @@ button{font-family:inherit}
     const e=state.volumeEdge,now=Date.now();
     const spotText="30s "+fmtDeltaRatio(e.spot30?.imbalance??null)+" · 2m "+fmtDeltaRatio(e.spot120?.imbalance??null)+" · 5m "+fmtDeltaRatio(e.spot300?.imbalance??null);
     const perpText="30s "+fmtDeltaRatio(e.perp30?.imbalance??null)+" · 2m "+fmtDeltaRatio(e.perp120?.imbalance??null)+" · 5m "+fmtDeltaRatio(e.perp300?.imbalance??null);
+    const fastText=(fast5,fast10,surge)=>"5s "+fmtDeltaRatio(fast5?.imbalance??null)+" · 10s "+fmtDeltaRatio(fast10?.imbalance??null)+" · "+(surge.ratio===null?"baseline building":surge.ratio.toFixed(2)+"× vol");
     const set=(id,value)=>{const el=$(id);if(el)el.textContent=value;};
     set("flowSpotRead",spotText);set("flowPerpRead",perpText);
+    set("flowFastSpotRead",fastText(e.fastSpot5,e.fastSpot10,e.fastSpotSurge));
+    set("flowFastPerpRead",fastText(e.fastPerp5,e.fastPerp10,e.fastPerpSurge));
     const surge=e.volumeSurge===null?"VOLUME BASELINE BUILDING":(e.volumeSurge>=1.35?"HIGH PARTICIPATION · ":"NORMAL PARTICIPATION · ")+e.volumeSurge.toFixed(2)+"× 30s baseline";
     set("flowVolumeRead",surge);
     const oi=e.oi1m===null?"OI CONTEXT COLLECTING":"OI "+(e.oi1m>=0?"+":"")+e.oi1m.toFixed(3)+"% / 1m · "+(e.oi5m===null?"5m —":(e.oi5m>=0?"+":"")+e.oi5m.toFixed(3)+"% / 5m");
@@ -1117,8 +1186,12 @@ button{font-family:inherit}
         state.flowPerpSeries.setData(buildCvdPoints(["BINANCE PERP","HYPERLIQUID"],now));
       }catch(_){}
     }
-    if(e.fastTurnSide)set("flowTurnRead","HIGH-VOLUME TURN CONFIRMED · "+e.fastTurnSide);
-    else set("flowTurnRead","NO HIGH-VOLUME PRICE + DELTA TURN CONFIRMED");
+    const turnRead=e.microTurn
+      ?"5S REVERSAL CONFIRMED · "+e.fastTurnSide+" · SPOT "+fmtDeltaRatio(e.fastSpot5?.imbalance??null)+" · PERP "+fmtDeltaRatio(e.fastPerp5?.imbalance??null)
+      :e.fastTurnSide?"INDEPENDENT FLOW TURN · "+e.fastTurnSide+" · WAITING FOR PERSISTENCE"
+      :"NO QUALIFIED FAST TURN · NEED SPOT + PERP + PRICE + REAL VOLUME";
+    set("flowTurnRead",turnRead);
+    const turnEl=$("flowTurnRead");if(turnEl)turnEl.className="flow-turn-read "+(e.fastTurnSide==="UP"?"up":e.fastTurnSide==="DOWN"?"down":"");
   }
   function largePrintWindow(ms,now=Date.now()){
     let buy=0,sell=0,rawBuy=0,rawSell=0,buyCount=0,sellCount=0;
@@ -1509,8 +1582,12 @@ button{font-family:inherit}
 
     const filtered={
       clob:smoothRoundInput(memory,"clob",clobRaw,6500,now),
-      spotFlow:smoothRoundInput(memory,"spotFlow",edge.spotScore,9000,now),
-      perpFlow:smoothRoundInput(memory,"perpFlow",edge.perpScore,8500,now),
+      spotFlow:smoothRoundInput(memory,"spotFlow",
+        edge.fastSpotScore!==null&&edge.spotScore!==null?edge.spotScore*.62+edge.fastSpotScore*.38:(edge.fastSpotScore??edge.spotScore),
+        edge.microTurn?2600:edge.fastSpotScore!==null?4800:9000,now),
+      perpFlow:smoothRoundInput(memory,"perpFlow",
+        edge.fastPerpScore!==null&&edge.perpScore!==null?edge.perpScore*.62+edge.fastPerpScore*.38:(edge.fastPerpScore??edge.perpScore),
+        edge.microTurn?2600:edge.fastPerpScore!==null?4800:8500,now),
       largePrint:smoothRoundInput(memory,"largePrint",edge.largePrintScore,2500,now),
       speed:smoothRoundInput(memory,"speed",spotRaw,6500,now),
       target:smoothRoundInput(memory,"target",targetRaw,14000,now),
@@ -1580,11 +1657,15 @@ button{font-family:inherit}
 
     const votes=inputs.filter(x=>x.side!==0);
     const up=votes.filter(x=>x.side>0).length,down=votes.filter(x=>x.side<0).length;
+    const holdSign=memory.turnHoldSide==="UP"?1:-1;
+    const fastHoldConfirm=memory.turnHoldSide&&edge.fastSpotScore!==null&&edge.fastPerpScore!==null&&
+      Math.sign(edge.fastSpotScore)===holdSign&&Math.sign(edge.fastPerpScore)===holdSign&&
+      edge.price5!==null&&Math.sign(edge.price5)===holdSign;
+    const slowHoldConfirm=memory.turnHoldSide&&edge.spotScore!==null&&edge.perpScore!==null&&
+      Math.sign(edge.spotScore)===holdSign&&Math.sign(edge.perpScore)===holdSign&&
+      edge.price30!==null&&Math.sign(edge.price30)===holdSign;
     const turnHoldActive=!!memory.turnHoldUntil&&now<memory.turnHoldUntil&&
-      memory.turnHoldSide&&edge.spotScore!==null&&edge.perpScore!==null&&
-      Math.sign(edge.spotScore)===(memory.turnHoldSide==="UP"?1:-1)&&
-      Math.sign(edge.perpScore)===(memory.turnHoldSide==="UP"?1:-1)&&
-      edge.price30!==null&&Math.sign(edge.price30)===(memory.turnHoldSide==="UP"?1:-1);
+      !!memory.turnHoldSide&&(fastHoldConfirm||slowHoldConfirm);
     const scoreSide=fastTurn?edge.fastTurnSide:turnHoldActive?memory.turnHoldSide:score>=.27?"UP":score<=-.27?"DOWN":"WAIT";
     const enough=bookFresh&&targetFresh&&spotFresh&&valid>=4;
 
@@ -1613,19 +1694,22 @@ button{font-family:inherit}
           Math.sign(edge.spot30.imbalance)===turnSign&&Math.sign(edge.perp30.imbalance)===turnSign&&
           Math.abs(edge.spot30.imbalance)>.22&&Math.abs(edge.perp30.imbalance)>.22&&
           edge.price30!==null&&Math.sign(edge.price30)===turnSign;
-        const fastTurnEligible=fastTurn&&alignedCvd&&alignedVotes>=2&&opposingVotes<=3&&
+        const alignedFastCvd=edge.microTurn&&edge.fastSpotScore!==null&&edge.fastPerpScore!==null&&
+          Math.sign(edge.fastSpotScore)===turnSign&&Math.sign(edge.fastPerpScore)===turnSign&&
+          edge.price5!==null&&Math.sign(edge.price5)===turnSign;
+        const fastTurnEligible=fastTurn&&(alignedCvd||alignedFastCvd)&&alignedVotes>=2&&opposingVotes<=3&&
           (filtered.clob===null||filtered.clob*turnSign>-.62);
-        const persistence=fastTurnEligible
-          ?roundTurnPersistence(memory,scoreSide,14000)
-          :roundPersistence(memory,scoreSide,20000);
         const targetConflict=filtered.target!==null&&Math.abs(filtered.target)>.45&&Math.sign(filtered.target)!==turnSign;
         const contextConflict=contextFresh&&Math.abs(contextScore)>.38&&Math.sign(contextScore)!==turnSign;
         const targetAcceptance=roundTargetAcceptance(memory,scoreSide,15000,start);
         const targetAccepted=targetAcceptance.count>=5&&targetAcceptance.ratio>=.62;
+        const persistence=fastTurnEligible
+          ?roundTurnPersistence(memory,scoreSide,edge.microTurn?12000:14000)
+          :roundPersistence(memory,scoreSide,20000);
         // Balanced switching: accelerate only when independent spot/perp flow and price agree.
         // The longer trend is context, not a veto against a verified local reversal.
-        const requiredSeconds=fastTurnEligible?7:(targetConflict?(targetAccepted?13:17):(contextConflict?(targetAccepted?14:18):(targetAccepted?10:12)));
-        const requiredPersistence=fastTurnEligible?.55:(targetConflict?.68:contextConflict?.70:.62);
+        const requiredSeconds=fastTurnEligible?(edge.microTurn?(targetAccepted?6:8):7):(targetConflict?(targetAccepted?13:17):(contextConflict?(targetAccepted?14:18):(targetAccepted?10:12)));
+        const requiredPersistence=fastTurnEligible?(edge.microTurn?.62:.55):(targetConflict?.68:contextConflict?.70:.62);
         const minSamples=fastTurnEligible?5:6;
         const voteOK=fastTurnEligible
           ?alignedVotes>=2&&opposingVotes<=3
@@ -1715,7 +1799,7 @@ button{font-family:inherit}
     const fmtVote=x=>x===null||!Number.isFinite(x)?"—":(x>0?"+":"")+Math.round(x*100);
     $("confluenceDetail").textContent=
       "CLOB "+fmtVote(filtered.clob)+" · spot CVD "+fmtVote(filtered.spotFlow)+
-      " · perp CVD "+fmtVote(filtered.perpFlow)+" · Chainlink speed "+fmtVote(filtered.speed)+
+      " · perp CVD "+fmtVote(filtered.perpFlow)+" · fast 5s "+fmtVote(edge.fastSpot5?.imbalance??null)+"/"+fmtVote(edge.fastPerp5?.imbalance??null)+" · Chainlink speed "+fmtVote(filtered.speed)+
       " · swing "+fmtVote(filtered.swing)+" · OI "+fmtVote(filtered.oi)+
       " · TWAP gap "+(targetGap===null?"—":(targetGap>=0?"+$":"−$")+fmt(Math.abs(targetGap)))+
       " · "+up+" UP votes / "+down+" DOWN votes · target acceptance "+(targetAcceptance.count?Math.round(targetAcceptance.ratio*100)+"% "+(memory.leader==="WAIT"?"leader":memory.leader)+" ("+targetAcceptance.count+" samples)":"collecting")+" · spot/perp volume kept independent.";

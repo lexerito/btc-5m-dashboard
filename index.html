@@ -2247,7 +2247,8 @@ button{font-family:inherit}
     state.liveMomentumHistory=state.liveMomentumHistory.filter(x=>now-x.ts<=12000);
     let chosenSide=state.liveMomentumSide||"WAIT";
     let candidateSide="WAIT";
-    if(rawSide!=="WAIT")candidateSide=rawSide;
+    if(chosenSide!=="WAIT"&&fastPriceAgreement&&fastSide!=="WAIT"&&fastSide!==chosenSide)candidateSide=fastSide;
+    else if(rawSide!=="WAIT")candidateSide=rawSide;
     else if(fastConfirm)candidateSide=fastSide;
     if(chosenSide==="WAIT"&&candidateSide!=="WAIT"){
       if(state.liveMomentumCandidate!==candidateSide){state.liveMomentumCandidate=candidateSide;state.liveMomentumCandidateSince=now;}

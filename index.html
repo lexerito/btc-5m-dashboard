@@ -716,58 +716,26 @@ button{font-family:inherit}
 <section class="card basis-orderflow-card">
   <div class="basis-orderflow-top">
     <div>
-      <div class="label">LIVE 5-MINUTE FOOTPRINT · BINANCE USD-M</div>
-      <div class="chart-subtitle">A live bid × ask price ladder built from actual Binance perpetual aggressor trades. Each new five-minute UTC round starts a fresh footprint.</div>
+      <div class="label">BASIS CHART · LIVE BTCUSDT ORDER FLOW</div>
+      <div class="chart-subtitle">Live Basis footprint and liquidity heatmap. Switch views using the controls below.</div>
     </div>
-    <span id="basisFootprintStatus" class="fp-live-status">CONNECTING TO TAPE</span>
+    <span class="fp-live-status live">BASIS CHART</span>
   </div>
-
-  <div class="basis-footprint-live fp-native-footprint">
-    <div class="fp-summary" aria-label="Current five-minute footprint totals">
-      <div class="fp-summary-stat fp-time-stat"><small>BAR START</small><b id="basisFpRoundTime">--:--</b><span id="basisFpElapsed">0:00 / 5:00</span></div>
-      <div class="fp-summary-stat"><small>VOL</small><b id="basisFpVolume">0.000 BTC</b><span id="basisFpVolumeUsd">$0 NOTIONAL</span></div>
-      <div class="fp-summary-stat"><small>DELTA</small><b id="basisFpDelta">0.000 BTC</b><span id="basisFpDeltaUsd">$0 NET</span></div>
-      <div class="fp-summary-stat"><small>Δ%</small><b id="basisFpDeltaPct">—</b><span>DELTA / VOLUME</span></div>
-      <div class="fp-summary-stat"><small>IMB</small><b id="basisFpImbalance">0</b><span id="basisFpImbalanceDetail">0 BUY · 0 SELL LEVELS</span></div>
-    </div>
-
-    <div class="fp-round-meta">
-      <span id="basisFpCurrentPrice">BTC PRICE · —</span>
-      <span id="basisFpTradeCount">0 PRINTS THIS ROUND</span>
-      <span id="basisFpPreviousRound">PREVIOUS ROUND · WAITING</span>
-    </div>
-
-    <div class="fp-ladder-wrap">
-      <div class="fp-ladder-head">
-        <span class="fp-sell-heading">SELL / BID</span>
-        <span class="fp-price-heading">PRICE</span>
-        <span class="fp-buy-heading">BUY / ASK</span>
-      </div>
-      <div id="basisFootprintRows" class="fp-ladder">
-        <div class="basis-footprint-empty">Waiting for live Binance perpetual trades.</div>
-      </div>
-    </div>
-    <div class="basis-footprint-note">RED = aggressive market sells hitting bids · GREEN = aggressive market buys lifting asks. Each row is a $2 price bucket; bar width shows relative BTC volume at that price. Top totals accumulate from the current five-minute boundary. Trades missed while disconnected are not backfilled.</div>
+  <div class="basis-orderflow-controls" role="group" aria-label="Basis chart view">
+    <button id="basisFootprintBtn" class="basis-view-btn" type="button" aria-pressed="true">FOOTPRINT · BID × ASK</button>
+    <button id="basisHeatmapBtn" class="basis-view-btn" type="button" aria-pressed="false">LIQUIDITY HEATMAP</button>
   </div>
-
-  <details class="basis-reference">
-    <summary>OPEN BASIS CHART REFERENCE · FOOTPRINT / LIQUIDITY HEATMAP</summary>
-    <div class="basis-orderflow-controls" role="group" aria-label="Basis reference chart view">
-      <button id="basisFootprintBtn" class="basis-view-btn" type="button" aria-pressed="true">FOOTPRINT · BID × ASK</button>
-      <button id="basisHeatmapBtn" class="basis-view-btn" type="button" aria-pressed="false">LIQUIDITY HEATMAP</button>
-    </div>
-    <iframe id="basisOrderflowFrame" class="basis-widget-frame"
-      src="https://www.basischarts.com/embed/chart?symbol=BTCUSDT&view=footprint"
-      title="Live BTCUSDT footprint chart by Basis"
-      loading="lazy"
-      sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-      referrerpolicy="strict-origin-when-cross-origin"></iframe>
-    <div class="basis-orderflow-foot">
-      <span id="basisViewDescription">Reference view from Basis Charts. The native footprint above is calculated from this dashboard's own live Binance USD-M trades.</span>
-      <span><a href="https://www.basischarts.com/" target="_blank" rel="noopener noreferrer">Open Basis terminal</a></span>
-    </div>
-  </details>
-</section>
+  <iframe id="basisOrderflowFrame" class="basis-widget-frame"
+    src="https://www.basischarts.com/embed/chart?symbol=BTCUSDT&view=footprint"
+    title="Live BTCUSDT footprint chart by Basis"
+    loading="eager"
+    sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+    referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  <div class="basis-orderflow-foot">
+    <span id="basisViewDescription">Basis live footprint: executed bid × ask volume and delta by price.</span>
+    <span><a href="https://www.basischarts.com/" target="_blank" rel="noopener noreferrer">Open Basis terminal</a></span>
+  </div>
+</section>>
 
 <section class="card confluence-card">
   <div class="feature-head">

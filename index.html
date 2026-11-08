@@ -463,6 +463,30 @@ body>.basis-orderflow-card{grid-column:1/-1}
 .basis-clob-bubble.up .basis-clob-track span{background:#58e0ad}
 .basis-clob-bubble.down .basis-clob-track span{background:#ff8298}
 @media(max-width:440px){.basis-clob-bubble{grid-template-columns:1fr auto;gap:7px;padding:9px 11px}.basis-clob-track{grid-column:1/-1;grid-row:2}.basis-clob-bubble b{font-size:15px}}
+.basis-hold-guard{position:relative;isolation:isolate;overflow:hidden;margin-top:9px;padding:13px 15px;border:1px solid #654da0;border-radius:12px;background:linear-gradient(110deg,#17132b 0%,#171b32 52%,#211636 100%);color:#e6dcff;box-shadow:inset 0 0 26px #885bff12,0 0 18px #7543bd10}
+.basis-hold-guard:before{content:"";position:absolute;z-index:-1;inset:-70% -30%;background:linear-gradient(105deg,transparent 42%,#ad8aff10 49%,#d8c5ff20 50%,#8c5dff10 52%,transparent 59%);transform:translateX(-52%);animation:holdElectricSweep 7s linear infinite;pointer-events:none}
+.basis-hold-guard:after{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid #b79aff18;pointer-events:none}
+.hold-guard-top,.hold-guard-main{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.hold-guard-kicker{font-size:9px;font-weight:950;letter-spacing:.14em;color:#c1aaff}
+.hold-guard-state{font-size:8px;font-weight:900;letter-spacing:.1em;color:#c9b8ef;border:1px solid #654da0;border-radius:99px;padding:5px 8px;background:#241b3a}
+.hold-guard-main{margin-top:9px}
+.hold-guard-call{font-size:clamp(18px,2.6vw,25px);font-weight:950;letter-spacing:-.035em;color:#e5d9ff;text-shadow:0 0 18px #a77bff38}
+.hold-guard-score{font:900 clamp(14px,2vw,18px)/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:#c8b2ff;white-space:nowrap}
+.hold-guard-track{height:10px;position:relative;margin-top:11px;overflow:visible;border-radius:99px;background:linear-gradient(90deg,#292039,#211d32 65%,#292039);box-shadow:inset 0 0 0 1px #604c843c}
+.hold-guard-track:before{content:"";position:absolute;z-index:2;left:65%;top:-3px;bottom:-3px;width:1px;background:#bba1fa88;box-shadow:0 0 5px #bd9cff}
+.hold-guard-track:after{content:"";position:absolute;z-index:2;left:80%;top:-3px;bottom:-3px;width:1px;background:#e0d1ff9c;box-shadow:0 0 7px #d0b4ff}
+.hold-guard-fill{position:absolute;inset:0 auto 0 0;width:0%;border-radius:99px;background:linear-gradient(90deg,#6843b4,#9c72ed 58%,#d1baff);box-shadow:0 0 8px #9f70ff80;transition:width .22s ease}
+.basis-hold-guard.charged .hold-guard-fill{animation:holdElectricPulse 1.6s ease-in-out infinite;box-shadow:0 0 10px #a77bff,0 0 22px #8652ff99}
+.basis-hold-guard.overdrive .hold-guard-fill{animation:holdElectricPulse .82s ease-in-out infinite;box-shadow:0 0 12px #cfb2ff,0 0 25px #9d65ff,0 0 38px #7542da88}
+.hold-guard-detail{margin-top:9px;color:#b9a9dc;font-size:9px;line-height:1.5;letter-spacing:.025em}
+.hold-guard-scale{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:#8878aa;font:8px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em}
+.basis-hold-guard.caution{border-color:#8a70b7}
+.basis-hold-guard.watch{border-color:#aa7bce;box-shadow:inset 0 0 28px #9c5dd91c,0 0 18px #9c5dd922}
+.basis-hold-guard.wait{border-color:#514568}
+@keyframes holdElectricSweep{0%{transform:translateX(-52%)}100%{transform:translateX(52%)}}
+@keyframes holdElectricPulse{0%,100%{filter:brightness(1);opacity:.88}50%{filter:brightness(1.55);opacity:1}}
+@media(prefers-reduced-motion:reduce){.basis-hold-guard:before,.basis-hold-guard.charged .hold-guard-fill,.basis-hold-guard.overdrive .hold-guard-fill{animation:none}.hold-guard-fill{transition:none}}
+@media(max-width:440px){.basis-hold-guard{padding:11px 12px}.hold-guard-call{font-size:18px}.hold-guard-detail{font-size:8px}}
 
 .confluence-card{
   margin:0;padding:18px;
@@ -751,6 +775,21 @@ button{font-family:inherit}
     <small>POLYMARKET CLOB</small>
     <div class="basis-clob-track" aria-hidden="true"><span id="basisClobFill" style="left:50%;width:0%"></span></div>
     <b id="basisClobValue">CLOB · WAIT</b>
+  </div>
+  <div id="basisHoldGuard" class="basis-hold-guard wait" role="status" aria-live="polite">
+    <div class="hold-guard-top">
+      <span class="hold-guard-kicker">HOLD GUARD · CHOP FILTER</span>
+      <span id="basisHoldState" class="hold-guard-state">ASSESSING</span>
+    </div>
+    <div class="hold-guard-main">
+      <b id="basisHoldCall" class="hold-guard-call">WAIT · NO SIDE TO HOLD</b>
+      <b id="basisHoldScore" class="hold-guard-score">—/100</b>
+    </div>
+    <div class="hold-guard-track" aria-label="Hold support meter">
+      <span id="basisHoldFill" class="hold-guard-fill"></span>
+    </div>
+    <div class="hold-guard-scale"><span>WEAK</span><span>65 · STRONG</span><span>80 · HIGH</span></div>
+    <div id="basisHoldDetail" class="hold-guard-detail">Waiting for a persistent leader, fresh flow, and price acceptance.</div>
   </div>
 </section>
 
@@ -2422,6 +2461,64 @@ button{font-family:inherit}
     }
     const holdEl=$("flowHoldRead");
     if(holdEl){holdEl.textContent=holdText;holdEl.className="flow-hold-read "+holdClass;}
+
+    // Dedicated chop-aware hold read. The existing confluence cycle refreshes this every 350ms.
+    const guardEl=$("basisHoldGuard"),guardCall=$("basisHoldCall"),guardState=$("basisHoldState");
+    const guardScoreEl=$("basisHoldScore"),guardFill=$("basisHoldFill"),guardDetail=$("basisHoldDetail");
+    if(guardEl&&guardCall&&guardState&&guardScoreEl&&guardFill&&guardDetail){
+      const guardReady=enough&&memory.leader!=="WAIT"&&leaderPersistence.count>=5;
+      const flowBoth=edge.spotScore!==null&&edge.perpScore!==null&&Number.isFinite(edge.spotScore)&&Number.isFinite(edge.perpScore);
+      const flowAligned=flowBoth&&Math.sign(edge.spotScore)===leaderSign&&Math.sign(edge.perpScore)===leaderSign;
+      const flowOpposingBoth=flowBoth&&Math.sign(edge.spotScore)===-leaderSign&&Math.sign(edge.perpScore)===-leaderSign&&Math.abs(edge.spotScore)>.18&&Math.abs(edge.perpScore)>.18;
+      const persistencePart=Math.max(0,Math.min(1,leaderPersistence.ratio));
+      const scorePart=Math.max(0,Math.min(1,(score*leaderSign+.05)/.55));
+      const flowPart=flowBoth?(flowAligned?1:flowOpposingBoth?0:.38):.35;
+      const targetPart=targetMatchesLeader?(targetAcceptance.count>=5?targetAcceptance.ratio:.62):
+        targetSideNow===-leaderSign?(oppositeTargetAcceptance.count>=5?1-oppositeTargetAcceptance.ratio:.28):.42;
+      const clobPart=filtered.clob===null ? .5 : Math.max(0,Math.min(1,(filtered.clob*leaderSign+1)/2));
+      const rawHoldStrength=100*(.28*persistencePart+.25*scorePart+.25*flowPart+.14*targetPart+.08*clobPart);
+      let holdStrength=Math.round(Math.max(0,Math.min(100,rawHoldStrength)));
+      const oppositeMajor=majorQualified&&flipCandidateSide!==memory.leader;
+      const oppositeMinor=(minorBreak||pressureOnly)&&flipCandidateSide!==memory.leader;
+      if(flowOpposingBoth)holdStrength=Math.min(holdStrength,64);
+      if(fastTurn&&flowOpposes)holdStrength=Math.min(holdStrength,52);
+      if(oppositeMajor)holdStrength=Math.min(holdStrength,44);
+      let guardTone="wait",guardLabel="ASSESSING",guardHeadline="WAIT · NO SIDE TO HOLD";
+      let guardWhy="Waiting for a persistent leader, fresh flow, and price acceptance.";
+      if(guardReady){
+        const sideWord=memory.leader;
+        guardTone="stable";
+        if(oppositeMajor){
+          guardTone="watch";guardLabel="REVERSAL WATCH";
+          guardHeadline="HOLD "+sideWord+" · WATCH "+flipCandidateSide;
+          guardWhy="A major opposing setup is forming, but the leader has not completed its full change. "+fastRadarScore.toFixed(1)+"/10 reversal evidence · "+flipAligned+"/"+Math.max(1,flipRecent.length)+" recent aligned checks.";
+        }else if(flowOpposingBoth||fastTurn||oppositeMinor||(oppositeTargetAcceptance.count>=5&&oppositeTargetAcceptance.ratio>=.62)){
+          guardTone="caution";guardLabel="UNDER PRESSURE";
+          guardHeadline="HOLD "+sideWord+" · CAUTION";
+          guardWhy=(flowOpposingBoth?"Spot and perp CVD oppose the leader. ":fastTurn?"Fast spot/perp turn is opposing the leader. ":oppositeTargetAcceptance.count>=5&&oppositeTargetAcceptance.ratio>=.62?"Price is spending more time on the opposite side of the target. ":"Short-term counter-pressure is building. ")+"Do not treat this as a confirmed flip yet.";
+        }else if(holdStrength>=80&&targetMatchesLeader&&scoreMatchesLeader&&flowAligned&&leaderPersistence.ratio>=.62){
+          guardTone="stable";guardLabel="HIGH SUPPORT";
+          guardHeadline="HOLD "+sideWord+" · STRONG THROUGH NOISE";
+          guardWhy="Leader persistence, spot + perp flow, price momentum and target acceptance are aligned.";
+        }else if(holdStrength>=65&&scoreMatchesLeader){
+          guardTone="stable";guardLabel="LEADER INTACT";
+          guardHeadline="HOLD "+sideWord+" · LEADER INTACT";
+          guardWhy="Small counter-moves are not enough to overturn the leader. Watch for sustained opposing spot/perp flow and opposite target acceptance.";
+        }else{
+          guardTone="caution";guardLabel="WEAKENING";
+          guardHeadline="HOLD "+sideWord+" · EDGE WEAKENING";
+          guardWhy="The leader remains established, but its supporting evidence has softened. Avoid treating this as a strong hold.";
+        }
+      }
+      guardEl.className="basis-hold-guard "+guardTone+(guardReady&&holdStrength>=65?" charged":"")+(guardReady&&holdStrength>=80?" overdrive":"");
+      guardCall.textContent=guardHeadline;
+      guardState.textContent=guardLabel;
+      guardScoreEl.textContent=guardReady?holdStrength+"/100":"—/100";
+      guardFill.style.width=(guardReady?holdStrength:0)+"%";
+      const flowText=!flowBoth?"SPOT/PERP FLOW INCOMPLETE":flowAligned?"SPOT + PERP SUPPORT":flowOpposingBoth?"SPOT + PERP OPPOSE":"SPOT/PERP MIXED";
+      const targetText=targetMatchesLeader?"TARGET "+Math.round(targetAcceptance.ratio*100)+"% "+memory.leader:"TARGET NOT YET SUPPORTING "+memory.leader;
+      guardDetail.textContent=guardWhy+" "+flowText+" · LEADER PERSISTENCE "+Math.round(leaderPersistence.ratio*100)+"% · "+targetText+" · updates on the live confluence cycle (~350ms).";
+    }
 
     const radar=$("flipRadar"),radarStatus=$("flipRadarStatus"),radarDetail=$("flipRadarDetail");
     if(radar&&radarStatus&&radarDetail){

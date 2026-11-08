@@ -743,7 +743,7 @@ button{font-family:inherit}
       <div class="microflow-readout"><small>PRICE RESPONSE</small><b id="microflowAbsorption">COLLECTING</b></div>
       <div class="microflow-readout"><small>DEPTH UPDATE AGE</small><b id="microflowDepthAge">—</b></div>
     </div>
-    <div id="microflowReason" class="microflow-reason">A directional call requires synchronized book updates and confirmation from fast BTC trades.</div>
+    <div id="microflowReason" class="microflow-reason">A directional call requires a synchronized Futures book plus fast BTC trade confirmation.</div>
   </div>
   <div id="basisHoldGuard" class="basis-hold-guard wait" role="status" aria-live="polite">
     <div class="hold-guard-top">
@@ -1003,7 +1003,7 @@ button{font-family:inherit}
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,liveMomentumUpdatedAt:0,liveMomentumSide:"WAIT",liveMomentumCandidate:"WAIT",liveMomentumCandidateSince:0,liveMomentumWeakSince:0,liveMomentumHistory:[],flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,flipTimer:null,binanceFastHistory:[],fastSpotSeries:null,lastFastChartUpdate:0,binanceBbo:null,bboWs:null,bboReconnect:null,bboConnectAt:0,bboLastAt:0,basisFootprint:null,basisBarMemory:null,basisBarLastPersistAt:0,basisFootprintRenderTimer:null,depthWs:null,depthReconnect:null,depthConnectAt:0,depthLastAt:0,depthBuffer:[],depthSyncing:false,depthSyncAttempts:0,depthBook:null,microDepthHistory:[],microflowLastAt:0,microflowScoreUpdatedAt:0,microflowEma:null,microflowSide:"WAIT",microflowCandidate:"WAIT",microflowCandidateSince:0,microflowVotes:[],nextRoundForecast:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,liveMomentumUpdatedAt:0,liveMomentumSide:"WAIT",liveMomentumCandidate:"WAIT",liveMomentumCandidateSince:0,liveMomentumWeakSince:0,liveMomentumHistory:[],flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,flipTimer:null,binanceFastHistory:[],fastSpotSeries:null,lastFastChartUpdate:0,binanceBbo:null,bboWs:null,bboReconnect:null,bboConnectAt:0,bboLastAt:0,basisFootprint:null,basisBarMemory:null,basisBarLastPersistAt:0,basisFootprintRenderTimer:null,depthWs:null,depthReconnect:null,depthSyncTimer:null,depthConnectAt:0,depthLastAt:0,depthBuffer:[],depthSyncing:false,depthSyncAttempts:0,depthSyncInFlight:false,depthBook:null,microDepthHistory:[],microflowLastAt:0,microflowScoreUpdatedAt:0,microflowEma:null,microflowSide:"WAIT",microflowCandidate:"WAIT",microflowCandidateSince:0,microflowVotes:[],nextRoundForecast:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -1942,18 +1942,6 @@ button{font-family:inherit}
       $("flowAlertToggle").className="flow-toggle";
     }
   }
-  function microDepthTopFromSnapshot(message){
-    const rawBids=Array.isArray(message.bids)?message.bids:(Array.isArray(message.b)?message.b:[]);
-    const rawAsks=Array.isArray(message.asks)?message.asks:(Array.isArray(message.a)?message.a:[]);
-    const bids=rawBids.map(x=>({price:Number(x[0]),qty:Number(x[1])}))
-      .filter(x=>x.price>0&&x.qty>0).sort((a,b)=>b.price-a.price);
-    const asks=rawAsks.map(x=>({price:Number(x[0]),qty:Number(x[1])}))
-      .filter(x=>x.price>0&&x.qty>0).sort((a,b)=>a.price-b.price);
-    const bid=bids[0],ask=asks[0];
-    if(!bid||!ask||ask.price<=bid.price)return null;
-    const updateId=Number(message.lastUpdateId??message.u??message.E??message.T);
-    return {bid:bid.price,bidQty:bid.qty,ask:ask.price,askQty:ask.qty,bids,asks,updateId};
-  }
   function microDepthOfi(previous,current){
     if(!previous||!current)return {value:0,activity:0};
     const bidTerm=current.bid>previous.bid?current.bidQty:
@@ -1962,65 +1950,162 @@ button{font-family:inherit}
       current.ask===previous.ask?previous.askQty-current.askQty:previous.askQty;
     return {value:bidTerm+askTerm,activity:Math.abs(bidTerm)+Math.abs(askTerm)};
   }
-  function handleMicroDepthSnapshot(message){
-    if(!message||!Array.isArray(message.bids)||!Array.isArray(message.asks))return false;
-    const top=microDepthTopFromSnapshot(message);
-    if(!top)return false;
-    const previous=state.depthBook?.top||null;
-    if(previous&&Number.isFinite(top.updateId)&&Number.isFinite(previous.updateId)&&top.updateId<=previous.updateId)return true;
-    const ofi=microDepthOfi(previous,top);
+  function microDepthApplyLevels(bookMap,levels){
+    for(const row of levels||[]){
+      if(!Array.isArray(row)||row.length<2)continue;
+      const price=Number(row[0]),qty=Number(row[1]);
+      if(!Number.isFinite(price)||price<=0||!Number.isFinite(qty)||qty<0)continue;
+      if(qty===0)bookMap.delete(price);else bookMap.set(price,qty);
+    }
+  }
+  function microDepthBuildTop(book,updateId){
+    const bids=Array.from(book.bids,([price,qty])=>({price,qty})).sort((a,b)=>b.price-a.price).slice(0,20);
+    const asks=Array.from(book.asks,([price,qty])=>({price,qty})).sort((a,b)=>a.price-b.price).slice(0,20);
+    const bid=bids[0],ask=asks[0];
+    if(!bid||!ask||ask.price<=bid.price)return null;
+    return {bid:bid.price,bidQty:bid.qty,ask:ask.price,askQty:ask.qty,bids,asks,updateId};
+  }
+  function microDepthRecordBook(book,top,now=Date.now()){
+    const previous=book.top||null,ofi=microDepthOfi(previous,top);
     const mid=(top.bid+top.ask)/2,spread=top.ask-top.bid,queueTotal=top.bidQty+top.askQty;
     const microprice=queueTotal?(top.ask*top.bidQty+top.bid*top.askQty)/queueTotal:mid;
     const microEdge=spread>0?Math.max(-1,Math.min(1,(microprice-mid)/(spread/2))):0;
     let bidDepth=0,askDepth=0;
     for(let i=0;i<Math.min(5,top.bids.length);i++)bidDepth+=top.bids[i].qty*top.bids[i].price*(1-i*.12);
     for(let i=0;i<Math.min(5,top.asks.length);i++)askDepth+=top.asks[i].qty*top.asks[i].price*(1-i*.12);
-    const depthTotal=bidDepth+askDepth,depthImbalance=depthTotal?(bidDepth-askDepth)/depthTotal:0,now=Date.now();
+    const depthTotal=bidDepth+askDepth,depthImbalance=depthTotal?(bidDepth-askDepth)/depthTotal:0;
+    book.top=top;book.ts=now;book.microEdge=microEdge;book.depthImbalance=depthImbalance;
     state.microDepthHistory.push({ts:now,ofi:ofi.value,activity:ofi.activity,microEdge,depthImbalance,mid,spread});
     state.microDepthHistory=state.microDepthHistory.filter(x=>now-x.ts<=6000);
     if(state.microDepthHistory.length>300)state.microDepthHistory=state.microDepthHistory.slice(-260);
-    state.depthBook={top,ts:now,microEdge,depthImbalance};
-    state.depthLastAt=now;state.microflowLastAt=now;
+    state.depthBook=book;state.depthLastAt=now;state.microflowLastAt=now;
     renderMicroflowEdge(now);
+  }
+  function microDepthParseDelta(message){
+    const bids=Array.isArray(message?.b)?message.b:(Array.isArray(message?.bids)?message.bids:null);
+    const asks=Array.isArray(message?.a)?message.a:(Array.isArray(message?.asks)?message.asks:null);
+    if(!bids||!asks)return null;
+    const first=Number(message.U),last=Number(message.u??message.lastUpdateId);
+    if(!Number.isFinite(last))return null;
+    return {bids,asks,first,last,previous:Number(message.pu),event:message};
+  }
+  function microDepthApplyEvent(book,delta,initial=false){
+    if(!delta)return false;
+    if(delta.last<=book.updateId)return true;
+    if(!initial){
+      const hasPrevious=Number.isFinite(delta.previous);
+      if(hasPrevious&&delta.previous!==book.updateId)return false;
+      if(!hasPrevious&&Number.isFinite(delta.first)&&delta.first>book.updateId+1)return false;
+    }
+    microDepthApplyLevels(book.bids,delta.bids);
+    microDepthApplyLevels(book.asks,delta.asks);
+    const top=microDepthBuildTop(book,delta.last);
+    if(!top)return false;
+    book.updateId=delta.last;
+    microDepthRecordBook(book,top);
+    return true;
+  }
+  function microDepthSetStatus(message,bad=false){
+    const el=$("microflowStatus");
+    if(el){el.textContent=message;el.className="microflow-status"+(bad?" bad":"");}
+  }
+  function scheduleMicroDepthSync(ws,delay=250){
+    if(state.depthSyncTimer)clearTimeout(state.depthSyncTimer);
+    state.depthSyncTimer=setTimeout(()=>{
+      state.depthSyncTimer=null;
+      if(state.depthWs===ws&&ws.readyState===WebSocket.OPEN)syncMicroDepthBook(ws);
+    },delay);
+  }
+  async function syncMicroDepthBook(ws){
+    if(state.depthSyncInFlight||state.depthWs!==ws||ws.readyState!==WebSocket.OPEN)return;
+    state.depthSyncInFlight=true;state.depthSyncing=true;state.depthSyncAttempts++;
+    microDepthSetStatus("FETCHING FUTURES BOOK SNAPSHOT");
+    try{
+      const response=await fetch("https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000",{cache:"no-store"});
+      if(!response.ok)throw new Error("Snapshot HTTP "+response.status);
+      const snapshot=await response.json();
+      const lastUpdateId=Number(snapshot.lastUpdateId);
+      if(!Number.isFinite(lastUpdateId)||!Array.isArray(snapshot.bids)||!Array.isArray(snapshot.asks))throw new Error("Snapshot format invalid");
+      const buffered=state.depthBuffer.slice();
+      const firstIndex=buffered.findIndex(item=>{
+        const d=microDepthParseDelta(item);
+        return d&&d.first<=lastUpdateId&&d.last>=lastUpdateId;
+      });
+      if(firstIndex<0){
+        state.depthSyncInFlight=false;
+        microDepthSetStatus("ALIGNING SNAPSHOT · RETRY "+state.depthSyncAttempts);
+        scheduleMicroDepthSync(ws,250);
+        return;
+      }
+      const book={bids:new Map(),asks:new Map(),updateId:lastUpdateId,top:null,ts:0,microEdge:0,depthImbalance:0};
+      microDepthApplyLevels(book.bids,snapshot.bids);
+      microDepthApplyLevels(book.asks,snapshot.asks);
+      const initial=microDepthParseDelta(buffered[firstIndex]);
+      if(!initial||!microDepthApplyEvent(book,initial,true))throw new Error("Initial depth update could not be applied");
+      for(let i=firstIndex+1;i<buffered.length;i++){
+        const delta=microDepthParseDelta(buffered[i]);
+        if(!delta||delta.last<=book.updateId)continue;
+        if(!microDepthApplyEvent(book,delta,false))throw new Error("Depth update sequence gap");
+      }
+      if(state.depthWs!==ws)return;
+      state.depthBuffer=[];state.depthBook=book;state.depthSyncing=false;state.depthSyncInFlight=false;
+      state.depthSyncAttempts=0;state.depthLastAt=Date.now();
+      microDepthSetStatus("100MS FUTURES DEPTH · LIVE");
+      renderMicroflowEdge();
+    }catch(error){
+      state.depthSyncInFlight=false;state.depthSyncing=true;
+      microDepthSetStatus("SNAPSHOT SYNC FAILED · RETRYING",true);
+      scheduleMicroDepthSync(ws,900);
+    }
+  }
+  function handleMicroDepthDelta(message,ws){
+    const delta=microDepthParseDelta(message);
+    if(!delta){microDepthSetStatus("DEPTH PAYLOAD INVALID · RESYNCING",true);state.depthSyncing=true;scheduleMicroDepthSync(ws,200);return false;}
+    const book=state.depthBook;
+    if(!book||state.depthSyncing){state.depthBuffer.push(message);if(state.depthBuffer.length>2500)state.depthBuffer=state.depthBuffer.slice(-1800);return true;}
+    if(!microDepthApplyEvent(book,delta,false)){
+      state.depthSyncing=true;state.depthBuffer=[message];
+      microDepthSetStatus("BOOK SEQUENCE GAP · RESYNCING",true);
+      scheduleMicroDepthSync(ws,200);
+      return false;
+    }
     return true;
   }
   function connectMicroDepth(){
     if(state.depthReconnect){clearTimeout(state.depthReconnect);state.depthReconnect=null;}
+    if(state.depthSyncTimer){clearTimeout(state.depthSyncTimer);state.depthSyncTimer=null;}
     if(state.depthWs){try{state.depthWs.close()}catch(_){}}
     state.depthConnectAt=Date.now();state.depthLastAt=0;state.depthBook=null;
+    state.depthBuffer=[];state.depthSyncing=true;state.depthSyncInFlight=false;state.depthSyncAttempts=0;
     state.microDepthHistory=[];state.microflowScoreUpdatedAt=0;state.microflowEma=null;
     state.microflowSide="WAIT";state.microflowCandidate="WAIT";state.microflowCandidateSince=0;state.microflowVotes=[];
-    const stat=$("microflowStatus");
-    if(stat){stat.textContent="TOP-20 DEPTH · CONNECTING";stat.className="microflow-status";}
-    const ws=new WebSocket("wss://fstream.binance.com/public/ws/btcusdt@depth20@100ms");
+    microDepthSetStatus("FUTURES DIFF DEPTH · CONNECTING");
+    const ws=new WebSocket("wss://fstream.binance.com/public/ws/btcusdt@depth@100ms");
     state.depthWs=ws;
     ws.onopen=()=>{
       if(state.depthWs!==ws)return;
       state.depthConnectAt=Date.now();
-      const statusEl=$("microflowStatus");
-      if(statusEl){statusEl.textContent="DEPTH STREAM OPEN · WAITING FOR SNAPSHOT";statusEl.className="microflow-status";}
+      microDepthSetStatus("DEPTH STREAM OPEN · FETCHING SNAPSHOT");
+      syncMicroDepthBook(ws);
     };
     ws.onmessage=e=>{
       if(state.depthWs!==ws)return;
       let message;try{message=JSON.parse(e.data)}catch(_){return}
       if(message&&message.data)message=message.data;
-      if(!message||!(Array.isArray(message.bids)||Array.isArray(message.b))||!(Array.isArray(message.asks)||Array.isArray(message.a)))return;
-      if(!handleMicroDepthSnapshot(message)){
-        const statusEl=$("microflowStatus");
-        if(statusEl){statusEl.textContent="DEPTH DATA INVALID · CHECKING";statusEl.className="microflow-status bad";}
-      }
+      if(!message||!(Array.isArray(message.b)||Array.isArray(message.bids))||!(Array.isArray(message.a)||Array.isArray(message.asks)))return;
+      state.depthLastAt=Date.now();
+      handleMicroDepthDelta(message,ws);
     };
     ws.onerror=()=>{
       if(state.depthWs!==ws)return;
-      const statusEl=$("microflowStatus");
-      if(statusEl){statusEl.textContent="DEPTH SOCKET ERROR · RECONNECTING";statusEl.className="microflow-status bad";}
+      microDepthSetStatus("DEPTH SOCKET ERROR · RECONNECTING",true);
       try{ws.close()}catch(_){}
     };
     ws.onclose=()=>{
       if(state.depthWs!==ws)return;
-      state.depthBook=null;
-      const statusEl=$("microflowStatus");
-      if(statusEl){statusEl.textContent="DEPTH DISCONNECTED · RECONNECTING";statusEl.className="microflow-status bad";}
+      state.depthBook=null;state.depthSyncing=true;state.depthSyncInFlight=false;
+      if(state.depthSyncTimer){clearTimeout(state.depthSyncTimer);state.depthSyncTimer=null;}
+      microDepthSetStatus("DEPTH DISCONNECTED · RECONNECTING",true);
       state.depthReconnect=setTimeout(()=>{state.depthReconnect=null;if(state.depthWs===ws)connectMicroDepth()},1700);
     };
   }
@@ -2054,7 +2139,7 @@ button{font-family:inherit}
       panel.className="microflow-panel waiting";
       if(status){status.textContent=state.depthWs&&state.depthWs.readyState===WebSocket.CONNECTING?"CONNECTING DEPTH": "DEPTH FEED · STALE";status.className="microflow-status bad";}
       if(signal)signal.textContent="WAIT · "+(state.depthSyncing?"SYNCING BOOK":"DEPTH DATA STALE");
-      if(detail)detail.textContent="Waiting for fresh Binance top-20 futures bid/ask snapshots.";
+      if(detail)detail.textContent="Waiting for a synchronized Binance Futures order book and fresh depth updates.";
       if(scoreEl)scoreEl.textContent="—";if(fill){fill.style.left="50%";fill.style.width="0%";fill.className="";}
       if(reason)reason.textContent="The engine pauses rather than using an out-of-date order-book snapshot.";
       return;

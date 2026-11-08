@@ -2040,6 +2040,9 @@ button{font-family:inherit}
       const book={bids:new Map(),asks:new Map(),updateId:lastUpdateId,top:null,ts:0,microEdge:0,depthImbalance:0};
       microDepthApplyLevels(book.bids,snapshot.bids);
       microDepthApplyLevels(book.asks,snapshot.asks);
+      const snapshotTop=microDepthBuildTop(book,lastUpdateId);
+      if(!snapshotTop)throw new Error("REST snapshot has no valid two-sided book");
+      microDepthRecordBook(book,snapshotTop);
       const initial=microDepthParseDelta(buffered[firstIndex]);
       if(!initial||!microDepthApplyEvent(book,initial,true))throw new Error("Initial depth update could not be applied");
       for(let i=firstIndex+1;i<buffered.length;i++){

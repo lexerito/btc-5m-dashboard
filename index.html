@@ -2022,8 +2022,10 @@ button{font-family:inherit}
     microDepthSetStatus("FETCHING FUTURES BOOK SNAPSHOT");
     try{
       const response=await fetch("https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000",{cache:"no-store"});
-      if(!response.ok)throw new Error("Snapshot HTTP "+response.status);
-      const snapshot=await response.json();
+      const responseText=await response.text();
+      if(!response.ok)throw new Error("HTTP "+response.status+" · "+responseText.slice(0,90).replace(/\\s+/g," "));
+      let snapshot;
+      try{snapshot=JSON.parse(responseText)}catch(_){throw new Error("REST response was not JSON · "+responseText.slice(0,70).replace(/\\s+/g," "));}
       const lastUpdateId=Number(snapshot.lastUpdateId);
       if(!Number.isFinite(lastUpdateId)||!Array.isArray(snapshot.bids)||!Array.isArray(snapshot.asks))throw new Error("Snapshot format invalid");
       const buffered=state.depthBuffer.slice();
@@ -2033,8 +2035,11 @@ button{font-family:inherit}
       });
       if(firstIndex<0){
         state.depthSyncInFlight=false;
-        microDepthSetStatus("ALIGNING SNAPSHOT · RETRY "+state.depthSyncAttempts);
-        scheduleMicroDepthSync(ws,250);
+        const newest=buffered.length?microDepthParseDelta(buffered[buffered.length-1]):null;
+        const oldest=buffered.length?microDepthParseDelta(buffered[0]):null;
+        const reason=!buffered.length?"NO DEPTH EVENTS BUFFERED":newest&&newest.last<lastUpdateId?"SNAPSHOT AHEAD OF STREAM · WAITING":oldest&&oldest.first>lastUpdateId?"SNAPSHOT TOO OLD · REFRESHING":"NO UPDATE-ID OVERLAP · WAITING";
+        microDepthSetStatus(reason+" · RETRY "+state.depthSyncAttempts,true);
+        scheduleMicroDepthSync(ws,1200);
         return;
       }
       const book={bids:new Map(),asks:new Map(),updateId:lastUpdateId,top:null,ts:0,microEdge:0,depthImbalance:0};
@@ -2057,8 +2062,10 @@ button{font-family:inherit}
       renderMicroflowEdge();
     }catch(error){
       state.depthSyncInFlight=false;state.depthSyncing=true;
-      microDepthSetStatus("SNAPSHOT SYNC FAILED · RETRYING",true);
-      scheduleMicroDepthSync(ws,900);
+      const message=String(error?.message||error||"Unknown error").replace(/\\s+/g," ").slice(0,92);
+      state.depthSyncError=message;
+      microDepthSetStatus("SYNC FAILED · "+message,true);
+      scheduleMicroDepthSync(ws,1800);
     }
   }
   function handleMicroDepthDelta(message,ws){
@@ -2088,8 +2095,8 @@ button{font-family:inherit}
     ws.onopen=()=>{
       if(state.depthWs!==ws)return;
       state.depthConnectAt=Date.now();
-      microDepthSetStatus("DEPTH STREAM OPEN · FETCHING SNAPSHOT");
-      syncMicroDepthBook(ws);
+      microDepthSetStatus("DEPTH STREAM OPEN · BUFFERING 2S");
+      scheduleMicroDepthSync(ws,2000);
     };
     ws.onmessage=e=>{
       if(state.depthWs!==ws)return;

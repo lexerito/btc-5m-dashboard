@@ -2024,8 +2024,10 @@ button{font-family:inherit}
     };
   }
   function microflowOfiWindow(ms,now){
-    const rows=state.microDepthHistory.filter(x=>now-x.ts<=ms&&x.activity>0),net=rows.reduce((a,x)=>a+x.ofi,0),activity=rows.reduce((a,x)=>a+x.activity,0);
-    return {score:activity?Math.max(-1,Math.min(1,net/activity)):null,count:rows.length,activity};
+    const samples=state.microDepthHistory.filter(x=>now-x.ts<=ms);
+    const active=samples.filter(x=>x.activity>0);
+    const net=active.reduce((a,x)=>a+x.ofi,0),activity=active.reduce((a,x)=>a+x.activity,0);
+    return {score:activity?Math.max(-1,Math.min(1,net/activity)):null,count:samples.length,activeCount:active.length,activity};
   }
   function microflowTradeWindow(ms,now){
     const cutoff=now-ms;let spotBuy=0,spotSell=0,perpBuy=0,perpSell=0,spotCount=0,perpCount=0;

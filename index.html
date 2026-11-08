@@ -1943,14 +1943,16 @@ button{font-family:inherit}
     }
   }
   function microDepthTopFromSnapshot(message){
-    const bids=(message.bids||[]).map(x=>({price:Number(x[0]),qty:Number(x[1])}))
+    const rawBids=Array.isArray(message.bids)?message.bids:(Array.isArray(message.b)?message.b:[]);
+    const rawAsks=Array.isArray(message.asks)?message.asks:(Array.isArray(message.a)?message.a:[]);
+    const bids=rawBids.map(x=>({price:Number(x[0]),qty:Number(x[1])}))
       .filter(x=>x.price>0&&x.qty>0).sort((a,b)=>b.price-a.price);
-    const asks=(message.asks||[]).map(x=>({price:Number(x[0]),qty:Number(x[1])}))
+    const asks=rawAsks.map(x=>({price:Number(x[0]),qty:Number(x[1])}))
       .filter(x=>x.price>0&&x.qty>0).sort((a,b)=>a.price-b.price);
     const bid=bids[0],ask=asks[0];
     if(!bid||!ask||ask.price<=bid.price)return null;
-    return {bid:bid.price,bidQty:bid.qty,ask:ask.price,askQty:ask.qty,bids,asks,
-      updateId:Number(message.lastUpdateId)};
+    const updateId=Number(message.lastUpdateId??message.u??message.E??message.T);
+    return {bid:bid.price,bidQty:bid.qty,ask:ask.price,askQty:ask.qty,bids,asks,updateId};
   }
   function microDepthOfi(previous,current){
     if(!previous||!current)return {value:0,activity:0};
@@ -2002,8 +2004,7 @@ button{font-family:inherit}
       if(state.depthWs!==ws)return;
       let message;try{message=JSON.parse(e.data)}catch(_){return}
       if(message&&message.data)message=message.data;
-      if(!message||!Array.isArray(message.bids)||!Array.isArray(message.asks))return;
-      state.depthLastAt=Date.now();
+      if(!message||!(Array.isArray(message.bids)||Array.isArray(message.b))||!(Array.isArray(message.asks)||Array.isArray(message.a)))return;
       if(!handleMicroDepthSnapshot(message)){
         const statusEl=$("microflowStatus");
         if(statusEl){statusEl.textContent="DEPTH DATA INVALID · CHECKING";statusEl.className="microflow-status bad";}

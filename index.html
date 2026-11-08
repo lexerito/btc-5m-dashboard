@@ -1942,111 +1942,84 @@ button{font-family:inherit}
       $("flowAlertToggle").className="flow-toggle";
     }
   }
-  async function fetchMicroDepthSnapshot(){
-    return fetchJson("https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000",6500);
-  }
-  function microDepthMapsFromSnapshot(snapshot){
-    const bids=new Map(),asks=new Map();
-    (snapshot.bids||[]).forEach(x=>{const p=Number(x[0]),q=Number(x[1]);if(p>0&&q>0)bids.set(p,q)});
-    (snapshot.asks||[]).forEach(x=>{const p=Number(x[0]),q=Number(x[1]);if(p>0&&q>0)asks.set(p,q)});
-    return {bids,asks};
-  }
-  function microDepthSorted(map,descending){
-    return Array.from(map.entries()).map(([price,qty])=>({price,qty})).sort((a,b)=>descending?b.price-a.price:a.price-b.price);
-  }
-  function microDepthTop(book){
-    if(!book)return null;
-    const bids=microDepthSorted(book.bids,true),asks=microDepthSorted(book.asks,false),bid=bids[0],ask=asks[0];
-    if(!bid||!ask||ask.price<=bid.price||bid.qty<=0||ask.qty<=0)return null;
-    return {bid:bid.price,bidQty:bid.qty,ask:ask.price,askQty:ask.qty,bids,asks};
+  function microDepthTopFromSnapshot(message){
+    const bids=(message.bids||[]).map(x=>({price:Number(x[0]),qty:Number(x[1])}))
+      .filter(x=>x.price>0&&x.qty>0).sort((a,b)=>b.price-a.price);
+    const asks=(message.asks||[]).map(x=>({price:Number(x[0]),qty:Number(x[1])}))
+      .filter(x=>x.price>0&&x.qty>0).sort((a,b)=>a.price-b.price);
+    const bid=bids[0],ask=asks[0];
+    if(!bid||!ask||ask.price<=bid.price)return null;
+    return {bid:bid.price,bidQty:bid.qty,ask:ask.price,askQty:ask.qty,bids,asks,
+      updateId:Number(message.lastUpdateId)};
   }
   function microDepthOfi(previous,current){
     if(!previous||!current)return {value:0,activity:0};
-    const bidTerm=current.bid>previous.bid?current.bidQty:current.bid===previous.bid?current.bidQty-previous.bidQty:-previous.bidQty;
-    const askTerm=current.ask<previous.ask?-current.askQty:current.ask===previous.ask?previous.askQty-current.askQty:previous.askQty;
+    const bidTerm=current.bid>previous.bid?current.bidQty:
+      current.bid===previous.bid?current.bidQty-previous.bidQty:-previous.bidQty;
+    const askTerm=current.ask<previous.ask?-current.askQty:
+      current.ask===previous.ask?previous.askQty-current.askQty:previous.askQty;
     return {value:bidTerm+askTerm,activity:Math.abs(bidTerm)+Math.abs(askTerm)};
   }
-  function applyMicroDepthEvent(event,allowFirst=false){
-    const book=state.depthBook;
-    if(!book||!event||!Number.isFinite(Number(event.u)))return false;
-    const finalId=Number(event.u),firstId=Number(event.U),previousId=book.lastUpdateId;
-    if(finalId<=previousId)return true;
-    if(!allowFirst&&Number.isFinite(Number(event.pu))&&Number(event.pu)!==previousId)return false;
-    if(Number.isFinite(firstId)&&firstId>previousId+1)return false;
-    const before=microDepthTop(book);
-    for(const row of event.b||[]){const price=Number(row[0]),qty=Number(row[1]);if(!(price>0)||!Number.isFinite(qty))continue;if(qty<=0)book.bids.delete(price);else book.bids.set(price,qty);}
-    for(const row of event.a||[]){const price=Number(row[0]),qty=Number(row[1]);if(!(price>0)||!Number.isFinite(qty))continue;if(qty<=0)book.asks.delete(price);else book.asks.set(price,qty);}
-    book.lastUpdateId=finalId;
-    const after=microDepthTop(book);if(!after)return false;
-    const ofi=microDepthOfi(before,after),mid=(after.bid+after.ask)/2,spread=after.ask-after.bid,queueTotal=after.bidQty+after.askQty;
-    const microprice=queueTotal?(after.ask*after.bidQty+after.bid*after.askQty)/queueTotal:mid;
+  function handleMicroDepthSnapshot(message){
+    if(!message||!Array.isArray(message.bids)||!Array.isArray(message.asks))return false;
+    const top=microDepthTopFromSnapshot(message);
+    if(!top)return false;
+    const previous=state.depthBook?.top||null;
+    if(previous&&Number.isFinite(top.updateId)&&Number.isFinite(previous.updateId)&&top.updateId<=previous.updateId)return true;
+    const ofi=microDepthOfi(previous,top);
+    const mid=(top.bid+top.ask)/2,spread=top.ask-top.bid,queueTotal=top.bidQty+top.askQty;
+    const microprice=queueTotal?(top.ask*top.bidQty+top.bid*top.askQty)/queueTotal:mid;
     const microEdge=spread>0?Math.max(-1,Math.min(1,(microprice-mid)/(spread/2))):0;
     let bidDepth=0,askDepth=0;
-    for(let i=0;i<Math.min(5,after.bids.length);i++)bidDepth+=after.bids[i].qty*after.bids[i].price*(1-i*.12);
-    for(let i=0;i<Math.min(5,after.asks.length);i++)askDepth+=after.asks[i].qty*after.asks[i].price*(1-i*.12);
+    for(let i=0;i<Math.min(5,top.bids.length);i++)bidDepth+=top.bids[i].qty*top.bids[i].price*(1-i*.12);
+    for(let i=0;i<Math.min(5,top.asks.length);i++)askDepth+=top.asks[i].qty*top.asks[i].price*(1-i*.12);
     const depthTotal=bidDepth+askDepth,depthImbalance=depthTotal?(bidDepth-askDepth)/depthTotal:0,now=Date.now();
     state.microDepthHistory.push({ts:now,ofi:ofi.value,activity:ofi.activity,microEdge,depthImbalance,mid,spread});
     state.microDepthHistory=state.microDepthHistory.filter(x=>now-x.ts<=6000);
     if(state.microDepthHistory.length>300)state.microDepthHistory=state.microDepthHistory.slice(-260);
-    book.ts=now;book.top=after;book.microEdge=microEdge;book.depthImbalance=depthImbalance;
-    state.depthLastAt=now;state.microflowLastAt=now;renderMicroflowEdge(now);
+    state.depthBook={top,ts:now,microEdge,depthImbalance};
+    state.depthLastAt=now;state.microflowLastAt=now;
+    renderMicroflowEdge(now);
     return true;
-  }
-  async function synchronizeMicroDepth(ws){
-    if(state.depthWs!==ws||state.depthSyncing)return;
-    state.depthSyncing=true;
-    for(let attempt=0;attempt<3;attempt++){
-      try{
-        const snapshot=await fetchMicroDepthSnapshot();
-        if(state.depthWs!==ws)return;
-        const lastId=Number(snapshot.lastUpdateId);
-        if(!Number.isFinite(lastId)||!Array.isArray(snapshot.bids)||!Array.isArray(snapshot.asks))throw new Error("Invalid depth snapshot");
-        const buffered=state.depthBuffer.slice(),usable=buffered.filter(e=>Number(e.u)>lastId);
-        const firstIndex=usable.findIndex(e=>Number(e.U)<=lastId+1&&Number(e.u)>=lastId+1);
-        if(firstIndex<0){state.depthSyncAttempts=attempt+1;if(usable.length&&Number(usable[0].U)>lastId+1)continue;if(attempt<2){await new Promise(resolve=>setTimeout(resolve,180));continue;}throw new Error("Waiting for snapshot overlap");}
-        const maps=microDepthMapsFromSnapshot(snapshot);
-        state.depthBook={bids:maps.bids,asks:maps.asks,lastUpdateId:lastId,ts:0,top:null,microEdge:0,depthImbalance:0};
-        const events=usable.slice(firstIndex);let previousId=lastId,sequenceGood=true,first=true;
-        for(const event of events){
-          if(Number(event.u)<=previousId)continue;
-          if(!first&&Number(event.pu)!==previousId){sequenceGood=false;break;}
-          if(first&&!(Number(event.U)<=previousId+1&&Number(event.u)>=previousId+1)){sequenceGood=false;break;}
-          if(!applyMicroDepthEvent(event,true)){sequenceGood=false;break;}
-          previousId=Number(event.u);first=false;
-        }
-        if(!sequenceGood){state.depthBook=null;continue;}
-        state.depthSyncing=false;state.depthSyncAttempts=0;state.depthBuffer=[];
-        renderMicroflowEdge(Date.now());
-        const stat=$("microflowStatus");if(stat){stat.textContent="100MS DEPTH · LIVE";stat.className="microflow-status live";}
-        return;
-      }catch(err){
-        if(state.depthWs!==ws)return;
-        if(attempt===2){state.depthSyncing=false;state.depthBook=null;const stat=$("microflowStatus");if(stat){stat.textContent="DEPTH SYNC RETRY";stat.className="microflow-status bad";}}
-      }
-    }
-    state.depthSyncing=false;
   }
   function connectMicroDepth(){
     if(state.depthReconnect){clearTimeout(state.depthReconnect);state.depthReconnect=null;}
     if(state.depthWs){try{state.depthWs.close()}catch(_){}}
-    state.depthConnectAt=Date.now();state.depthLastAt=0;state.depthBuffer=[];state.depthBook=null;state.depthSyncing=false;
-    state.microDepthHistory=[];state.microflowScoreUpdatedAt=0;state.microflowEma=null;state.microflowSide="WAIT";state.microflowCandidate="WAIT";state.microflowCandidateSince=0;state.microflowVotes=[];
-    const stat=$("microflowStatus");if(stat){stat.textContent="100MS DEPTH · CONNECTING";stat.className="microflow-status";}
-    const ws=new WebSocket("wss://fstream.binance.com/public/ws/btcusdt@depth@100ms");state.depthWs=ws;
-    ws.onopen=()=>{if(state.depthWs!==ws)return;state.depthConnectAt=Date.now();state.depthSyncing=false;state.depthBuffer=[];synchronizeMicroDepth(ws);};
+    state.depthConnectAt=Date.now();state.depthLastAt=0;state.depthBook=null;
+    state.microDepthHistory=[];state.microflowScoreUpdatedAt=0;state.microflowEma=null;
+    state.microflowSide="WAIT";state.microflowCandidate="WAIT";state.microflowCandidateSince=0;state.microflowVotes=[];
+    const stat=$("microflowStatus");
+    if(stat){stat.textContent="TOP-20 DEPTH · CONNECTING";stat.className="microflow-status";}
+    const ws=new WebSocket("wss://fstream.binance.com/public/ws/btcusdt@depth20@100ms");
+    state.depthWs=ws;
+    ws.onopen=()=>{
+      if(state.depthWs!==ws)return;
+      state.depthConnectAt=Date.now();
+      const statusEl=$("microflowStatus");
+      if(statusEl){statusEl.textContent="DEPTH STREAM OPEN · WAITING FOR SNAPSHOT";statusEl.className="microflow-status";}
+    };
     ws.onmessage=e=>{
       if(state.depthWs!==ws)return;
-      let event;try{event=JSON.parse(e.data)}catch(_){return}
-      if(event&&event.data)event=event.data;if(!event||event.e!=="depthUpdate")return;
+      let message;try{message=JSON.parse(e.data)}catch(_){return}
+      if(message&&message.data)message=message.data;
+      if(!message||!Array.isArray(message.bids)||!Array.isArray(message.asks))return;
       state.depthLastAt=Date.now();
-      if(state.depthSyncing||!state.depthBook){state.depthBuffer.push(event);if(state.depthBuffer.length>4000)state.depthBuffer=state.depthBuffer.slice(-2500);return;}
-      if(!applyMicroDepthEvent(event,false)){state.depthBook=null;state.depthSyncing=false;state.depthBuffer=[event];synchronizeMicroDepth(ws);}
+      if(!handleMicroDepthSnapshot(message)){
+        const statusEl=$("microflowStatus");
+        if(statusEl){statusEl.textContent="DEPTH DATA INVALID · CHECKING";statusEl.className="microflow-status bad";}
+      }
     };
-    ws.onerror=()=>{if(state.depthWs===ws)try{ws.close()}catch(_){}};
+    ws.onerror=()=>{
+      if(state.depthWs!==ws)return;
+      const statusEl=$("microflowStatus");
+      if(statusEl){statusEl.textContent="DEPTH SOCKET ERROR · RECONNECTING";statusEl.className="microflow-status bad";}
+      try{ws.close()}catch(_){}
+    };
     ws.onclose=()=>{
       if(state.depthWs!==ws)return;
-      state.depthBook=null;state.depthSyncing=false;
-      const stat=$("microflowStatus");if(stat){stat.textContent="DEPTH DISCONNECTED · RECONNECTING";stat.className="microflow-status bad";}
+      state.depthBook=null;
+      const statusEl=$("microflowStatus");
+      if(statusEl){statusEl.textContent="DEPTH DISCONNECTED · RECONNECTING";statusEl.className="microflow-status bad";}
       state.depthReconnect=setTimeout(()=>{state.depthReconnect=null;if(state.depthWs===ws)connectMicroDepth()},1700);
     };
   }
@@ -2076,11 +2049,11 @@ button{font-family:inherit}
     if(ageEl)ageEl.textContent=Number.isFinite(depthAge)?Math.round(depthAge)+"ms":"—";
     if(!fresh){
       panel.className="microflow-panel waiting";
-      if(status){status.textContent=state.depthSyncing?"SYNCING ORDER BOOK":"DEPTH FEED · STALE";status.className="microflow-status bad";}
+      if(status){status.textContent=state.depthWs&&state.depthWs.readyState===WebSocket.CONNECTING?"CONNECTING DEPTH": "DEPTH FEED · STALE";status.className="microflow-status bad";}
       if(signal)signal.textContent="WAIT · "+(state.depthSyncing?"SYNCING BOOK":"DEPTH DATA STALE");
-      if(detail)detail.textContent="No directional reading until the futures order book is synchronized and fresh.";
+      if(detail)detail.textContent="Waiting for fresh Binance top-20 futures bid/ask snapshots.";
       if(scoreEl)scoreEl.textContent="—";if(fill){fill.style.left="50%";fill.style.width="0%";fill.className="";}
-      if(reason)reason.textContent="The engine pauses rather than using an out-of-date order book.";
+      if(reason)reason.textContent="The engine pauses rather than using an out-of-date order-book snapshot.";
       return;
     }
     const ofi1=microflowOfiWindow(1100,now),ofi3=microflowOfiWindow(3200,now),trades=microflowTradeWindow(1500,now);

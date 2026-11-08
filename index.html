@@ -2853,7 +2853,8 @@ button{font-family:inherit}
       if(feedSocketStale(state.bboWs,state.bboLastAt,state.bboConnectAt,12000,now)){connectBinanceBookTicker();return;}
       if(feedSocketStale(state.futuresWs,state.futuresTradeLastAt,state.futuresConnectAt,12000,now)){connectFuturesTakerTape();return;}
       if(feedSocketStale(state.cbWs,state.coinbaseLastAt,state.coinbaseConnectAt,25000,now)){connectCoinbase();return;}
-      if(feedSocketStale(state.hlWs,state.hlLastAt,state.hlConnectAt,25000,now)){connectHyperliquid();return;}
+      const l2Stale=(!state.hlBook.ts&&now-(state.hlConnectAt||now)>12000)||(state.hlBook.ts&&now-state.hlBook.ts>8000);
+      if(l2Stale||feedSocketStale(state.hlWs,state.hlLastAt,state.hlConnectAt,25000,now)){connectHyperliquid();return;}
     },5000);
   }
 
@@ -3498,6 +3499,7 @@ button{font-family:inherit}
     const ws=new WebSocket("wss://api.hyperliquid.xyz/ws");state.hlWs=ws;
     ws.onopen=()=>{if(state.hlWs!==ws)return;state.hlConnectAt=Date.now();
       state.depthBook=null;state.depthLastAt=0;state.depthSyncing=true;state.microDepthHistory=[];
+      state.hlBook={bids:[],asks:[],ts:0};
       state.microflowSide="WAIT";state.microflowCandidate="WAIT";state.microflowVotes=[];state.microflowLastVoteDepthAt=0;
       state.microflowEma=null;state.microflowScoreUpdatedAt=0;
       microDepthSetStatus("HYPERLIQUID L2 · SUBSCRIBING");
@@ -3534,6 +3536,7 @@ button{font-family:inherit}
     ws.onerror=()=>crossStatus("HYPERLIQUID FEED ERROR","bad");
     ws.onclose=()=>{if(state.hlWs!==ws)return;
       state.depthBook=null;state.depthLastAt=0;state.depthSyncing=true;
+      state.hlBook={bids:[],asks:[],ts:0};
       microDepthSetStatus("HYPERLIQUID L2 DISCONNECTED · RECONNECTING",true);
       renderMicroflowEdge();
       state.hlReconnect=setTimeout(()=>{state.hlReconnect=null;if(state.hlWs===ws)connectHyperliquid()},3000)};

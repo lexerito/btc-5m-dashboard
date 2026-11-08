@@ -714,19 +714,19 @@ button{font-family:inherit}
     <div class="microflow-scanline" aria-hidden="true"></div>
     <div class="microflow-top">
       <div>
-        <div class="microflow-kicker">BTC MICROFLOW EDGE · ORDER FLOW IMBALANCE</div>
-        <div class="microflow-subtitle">500ms Hyperliquid BTC perpetual L2 snapshots · queue imbalance · microprice · multi-venue trade confirmation</div>
+        <div class="microflow-kicker">BTC MOMENTUM EDGE · PRICE LEAD VS CLOB</div>
+        <div class="microflow-subtitle">Fast Binance BTC trade tape · price velocity + acceleration · exact Chainlink target · live Polymarket CLOB comparison</div>
       </div>
-      <span id="microflowStatus" class="microflow-status">HYPERLIQUID L2 · CONNECTING</span>
+      <span id="microflowStatus" class="microflow-status">WAITING FOR BTC TAPE + CLOB</span>
     </div>
     <div class="microflow-command">
       <div class="microflow-signal-wrap">
-        <span class="microflow-overline">LIVE BTC PRESSURE</span>
-        <b id="microflowSignal" class="microflow-signal">WAIT · CONNECTING L2 BOOK</b>
-        <span id="microflowSignalDetail" class="microflow-signal-detail">Waiting for a complete BTC perpetual L2 snapshot and fresh trade flow.</span>
+        <span class="microflow-overline">LIVE PRICE MOMENTUM</span>
+        <b id="microflowSignal" class="microflow-signal">WAIT · MEASURING PRICE SPEED</b>
+        <span id="microflowSignalDetail" class="microflow-signal-detail">Waiting for fresh trade tape, an exact target and both CLOB contracts.</span>
       </div>
       <div class="microflow-score-wrap">
-        <span class="microflow-overline">MICROFLOW EDGE</span>
+        <span class="microflow-overline">PRICE / CLOB EDGE</span>
         <b id="microflowScore">—</b>
         <small>−100 / +100</small>
       </div>
@@ -736,14 +736,14 @@ button{font-family:inherit}
       <div class="microflow-meter-labels"><span>SELL PRESSURE</span><span>NEUTRAL</span><span>BUY PRESSURE</span></div>
     </div>
     <div class="microflow-readouts">
-      <div class="microflow-readout"><small>OFI · 1.8 SECONDS</small><b id="microflowOfi1">—</b></div>
-      <div class="microflow-readout"><small>OFI · 4.5 SECONDS</small><b id="microflowOfi3">—</b></div>
-      <div class="microflow-readout"><small>MICROPRICE</small><b id="microflowMicroprice">—</b></div>
-      <div class="microflow-readout"><small>TRADE SPEED · 1.5S</small><b id="microflowTradePressure">—</b></div>
-      <div class="microflow-readout"><small>PRICE RESPONSE</small><b id="microflowAbsorption">COLLECTING</b></div>
-      <div class="microflow-readout"><small>DEPTH UPDATE AGE</small><b id="microflowDepthAge">—</b></div>
+      <div class="microflow-readout"><small>BTC MOVE · 1 SECOND</small><b id="microflowOfi1">—</b></div>
+      <div class="microflow-readout"><small>BTC MOVE · 3 SECONDS</small><b id="microflowOfi3">—</b></div>
+      <div class="microflow-readout"><small>DISTANCE TO BEAT · CHAINLINK</small><b id="microflowMicroprice">—</b></div>
+      <div class="microflow-readout"><small>AGGRESSOR FLOW · FAST TAPE</small><b id="microflowTradePressure">—</b></div>
+      <div class="microflow-readout"><small>CLOB LEAD</small><b id="microflowAbsorption">COLLECTING</b></div>
+      <div class="microflow-readout"><small>BTC TAPE AGE</small><b id="microflowDepthAge">—</b></div>
     </div>
-    <div id="microflowReason" class="microflow-reason">A directional call requires fresh Hyperliquid L2 snapshots plus independent spot/perpetual trade confirmation.</div>
+    <div id="microflowReason" class="microflow-reason">Comparing millisecond BTC price pressure and aggressor flow against the live Polymarket contract lead.</div>
   </div>
   <div id="basisHoldGuard" class="basis-hold-guard wait" role="status" aria-live="polite">
     <div class="hold-guard-top">
@@ -1003,7 +1003,7 @@ button{font-family:inherit}
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,liveMomentumUpdatedAt:0,liveMomentumSide:"WAIT",liveMomentumCandidate:"WAIT",liveMomentumCandidateSince:0,liveMomentumWeakSince:0,liveMomentumHistory:[],flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,flipTimer:null,binanceFastHistory:[],fastSpotSeries:null,lastFastChartUpdate:0,binanceBbo:null,bboWs:null,bboReconnect:null,bboConnectAt:0,bboLastAt:0,basisFootprint:null,basisBarMemory:null,basisBarLastPersistAt:0,basisFootprintRenderTimer:null,depthLastAt:0,depthSyncing:true,depthBook:null,microDepthHistory:[],microflowLastAt:0,microflowScoreUpdatedAt:0,microflowEma:null,microflowSide:"WAIT",microflowCandidate:"WAIT",microflowCandidateSince:0,microflowVotes:[],microflowLastVoteDepthAt:0,nextRoundForecast:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,liveMomentumUpdatedAt:0,liveMomentumSide:"WAIT",liveMomentumCandidate:"WAIT",liveMomentumCandidateSince:0,liveMomentumWeakSince:0,liveMomentumHistory:[],flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,flipTimer:null,binanceFastHistory:[],fastSpotSeries:null,lastFastChartUpdate:0,binanceBbo:null,bboWs:null,bboReconnect:null,bboConnectAt:0,bboLastAt:0,basisFootprint:null,basisBarMemory:null,basisBarLastPersistAt:0,basisFootprintRenderTimer:null,depthLastAt:0,depthSyncing:true,depthBook:null,microDepthHistory:[],microflowLastAt:0,microflowScoreUpdatedAt:0,microflowEma:null,microflowSide:"WAIT",microflowCandidate:"WAIT",microflowCandidateSince:0,microflowVotes:[],microflowLastVoteDepthAt:0,microflowLastVoteKey:"",microflowMarketStart:0,microflowSideSince:0,clobLeadScore:null,clobLeadAt:0,clobOddsRaw:null,clobHistory:[],nextRoundForecast:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -1134,7 +1134,7 @@ button{font-family:inherit}
       if(!Number.isFinite(q)||!Number.isFinite(price)||q<=0||price<=0)return;
       state.spotTradeLastAt=Date.now();
       addFastExchangeObservation(ts,price);
-      addPriceSample(ts,price);state.trades.push({ts,q,buy:!t.m,price});pushFlowTrade("BINANCE SPOT",t.a,ts,price,q,!t.m);pruneHistory(ts);updateMomentum();
+      addPriceSample(ts,price);state.trades.push({ts,q,buy:!t.m,price});pushFlowTrade("BINANCE SPOT",t.a,ts,price,q,!t.m);pruneHistory(ts);updateMomentum();renderMicroflowEdge(Date.now());
     };
     ws.onclose=()=>{if(state.tradeWs!==ws)return;state.tradeReconnect=setTimeout(()=>{state.tradeReconnect=null;if(state.tradeWs===ws)connectTrades()},2500)};
     ws.onerror=()=>{if(state.tradeWs===ws)try{ws.close()}catch(_){}};
@@ -1981,76 +1981,198 @@ button{font-family:inherit}
     renderMicroflowEdge(now);
     return true;
   }
-  function microflowOfiWindow(ms,now){
-    const samples=state.microDepthHistory.filter(x=>now-x.ts<=ms);
-    const active=samples.filter(x=>x.activity>0);
-    const net=active.reduce((a,x)=>a+x.ofi,0),activity=active.reduce((a,x)=>a+x.activity,0);
-    return {score:activity?Math.max(-1,Math.min(1,net/activity)):null,count:samples.length,activeCount:active.length,activity};
+  function microflowPriceAtOrBefore(ts){
+    const rows=state.binanceFastHistory||[];
+    for(let i=rows.length-1;i>=0;i--)if(rows[i].ts<=ts)return rows[i];
+    return null;
   }
-  function microflowTradeWindow(ms,now){
-    const cutoff=now-ms;let spotBuy=0,spotSell=0,perpBuy=0,perpSell=0,spotCount=0,perpCount=0;
-    for(const trade of state.flowTrades){
-      if(trade.ts<cutoff||trade.ts>now)continue;
-      const spot=trade.venue==="BINANCE SPOT"||trade.venue==="COINBASE";
-      const perp=trade.venue==="BINANCE PERP"||trade.venue==="HYPERLIQUID";
-      if(spot){if(trade.buy)spotBuy+=trade.notional;else spotSell+=trade.notional;spotCount++;}
-      else if(perp){if(trade.buy)perpBuy+=trade.notional;else perpSell+=trade.notional;perpCount++;}
+  function microflowPriceDelta(ms,endTs){
+    const end=microflowPriceAtOrBefore(endTs),base=microflowPriceAtOrBefore(endTs-ms);
+    if(!end||!base||end.ts-base.ts<ms*.48)return null;
+    return end.value-base.value;
+  }
+  function microflowMedianNoise(endTs){
+    const values=[];
+    for(let t=endTs-1000;t>=endTs-10000;t-=1000){
+      const d=microflowPriceDelta(1000,t);
+      if(d!==null&&Number.isFinite(d))values.push(Math.abs(d));
     }
-    const spotTotal=spotBuy+spotSell,perpTotal=perpBuy+perpSell,active=[];
-    if(spotCount>=3&&spotTotal>=12000)active.push((spotBuy-spotSell)/spotTotal);
-    if(perpCount>=3&&perpTotal>=12000)active.push((perpBuy-perpSell)/perpTotal);
-    return {score:active.length?active.reduce((a,b)=>a+b,0)/active.length:null,spotCount,perpCount,count:spotCount+perpCount,spotTotal,perpTotal};
+    if(!values.length)return 1.0;
+    values.sort((a,b)=>a-b);
+    return values[Math.floor(values.length/2)];
+  }
+  function microflowClobDelta(ms,now){
+    const rows=state.clobHistory||[];
+    const last=rows.length?rows[rows.length-1]:null;
+    if(!last)return null;
+    let base=null;
+    for(let i=rows.length-1;i>=0;i--)if(rows[i].ts<=now-ms){base=rows[i];break}
+    return base?last.score-base.score:null;
+  }
+  function microflowTradePressure(ms,now){
+    const venues=["BINANCE SPOT","BINANCE PERP","HYPERLIQUID"];
+    return venueFlowStats(venues,ms,now);
   }
   function renderMicroflowEdge(now=Date.now()){
     const panel=$("microflowPanel");if(!panel)return;
     const status=$("microflowStatus"),signal=$("microflowSignal"),detail=$("microflowSignalDetail");
     const scoreEl=$("microflowScore"),fill=$("microflowMeterFill"),reason=$("microflowReason");
-    const ofi1El=$("microflowOfi1"),ofi3El=$("microflowOfi3"),microEl=$("microflowMicroprice");
-    const tradeEl=$("microflowTradePressure"),absorptionEl=$("microflowAbsorption"),ageEl=$("microflowDepthAge");
-    const book=state.depthBook,depthAge=state.depthLastAt?now-state.depthLastAt:Infinity,fresh=!!book&&!!book.top&&depthAge<2200&&!state.depthSyncing;
-    if(ageEl)ageEl.textContent=Number.isFinite(depthAge)?Math.round(depthAge)+"ms":"—";
-    if(!fresh){
-      panel.className="microflow-panel waiting";
-      if(status){status.textContent=state.hlWs&&state.hlWs.readyState===WebSocket.CONNECTING?"CONNECTING HYPERLIQUID L2": "HYPERLIQUID L2 · STALE";status.className="microflow-status bad";}
-      if(signal)signal.textContent="WAIT · "+(state.depthSyncing?"SYNCING BOOK":"DEPTH DATA STALE");
-      if(detail)detail.textContent="Waiting for fresh Hyperliquid BTC perpetual order-book snapshots.";
-      if(scoreEl)scoreEl.textContent="—";if(fill){fill.style.left="50%";fill.style.width="0%";fill.className="";}
-      if(reason)reason.textContent="The engine pauses rather than using an out-of-date order-book snapshot.";
-      return;
+    const oneEl=$("microflowOfi1"),threeEl=$("microflowOfi3"),targetEl=$("microflowMicroprice");
+    const tradeEl=$("microflowTradePressure"),clobEl=$("microflowAbsorption"),ageEl=$("microflowDepthAge");
+
+    const rows=state.binanceFastHistory||[],last=rows.length?rows[rows.length-1]:null;
+    const tapeAge=last?Math.max(0,now-last.ts):Infinity;
+    const priceFresh=!!last&&tapeAge<1500;
+    const endTs=last?last.ts:now;
+    const move650=priceFresh?microflowPriceDelta(650,endTs):null;
+    const move1=priceFresh?microflowPriceDelta(1000,endTs):null;
+    const move3=priceFresh?microflowPriceDelta(3000,endTs):null;
+    const move5=priceFresh?microflowPriceDelta(5000,endTs):null;
+    const noise=Math.max(.55,microflowMedianNoise(endTs));
+    const speed1=move1===null?null:move1;
+    const speed3=move3===null?null:move3/3;
+    const acceleration=move650===null||speed3===null?null:move650/.65-speed3;
+    const priceScale1=Math.max(.9,noise*1.20);
+    const priceScaleShort=Math.max(.65,priceScale1*.72);
+    const priceScale3=Math.max(2.1,priceScale1*2.15);
+    const accelScale=Math.max(1.0,priceScale1*1.25);
+    const priceReady=priceFresh&&move650!==null&&move1!==null;
+    const priceScore=priceReady?Math.max(-1,Math.min(1,
+      .45*Math.tanh(move650/priceScaleShort)+
+      .28*Math.tanh(move1/priceScale1)+
+      .17*(move3===null?0:Math.tanh(move3/priceScale3))+
+      .10*(acceleration===null?0:Math.tanh(acceleration/accelScale))
+    )):null;
+    const priceSide=priceScore===null||Math.abs(priceScore)<.12?0:Math.sign(priceScore);
+
+    const flow1=microflowTradePressure(1100,now),flow3=microflowTradePressure(3200,now);
+    const flowParts=[];
+    if(flow1.count>=3&&flow1.total>=8000&&flow1.imbalance!==null)flowParts.push({v:flow1.imbalance,w:.68});
+    if(flow3.count>=5&&flow3.total>=24000&&flow3.imbalance!==null)flowParts.push({v:flow3.imbalance,w:.32});
+    const flowWeight=flowParts.reduce((a,x)=>a+x.w,0);
+    const flowScore=flowWeight?flowParts.reduce((a,x)=>a+x.v*x.w,0)/flowWeight:null;
+    const flowTotal=flow1.total+flow3.total*.35;
+    const flowAligned=priceSide!==0&&flowScore!==null&&Math.sign(flowScore)===priceSide&&Math.abs(flowScore)>=.12;
+    const fastPriceBurst=priceReady&&Math.abs(priceScore)>=.72&&priceSide*move650>0&&priceSide*move1>0;
+    const priceLead=priceReady&&Math.abs(priceScore)>=.48&&(flowAligned||fastPriceBurst);
+
+    const upBook=poly.books[poly.upId],downBook=poly.books[poly.downId];
+    const upAge=upBook?now-(upBook.updatedAt||0):Infinity,downAge=downBook?now-(downBook.updatedAt||0):Infinity;
+    const clobFresh=!!upBook&&!!downBook&&upAge<15000&&downAge<15000&&state.clobLeadScore!==null&&Number.isFinite(state.clobLeadScore);
+    const clobScore=clobFresh?state.clobLeadScore:null;
+    const clobSide=clobScore===null||Math.abs(clobScore)<.10?0:Math.sign(clobScore);
+    const clobMove=clobFresh?microflowClobDelta(1000,now):null;
+    const clobGap=clobFresh&&Number.isFinite(state.clobOddsRaw)?state.clobOddsRaw*100:null;
+    const l2Fresh=!!state.depthBook&&!!state.depthLastAt&&now-state.depthLastAt<2500;
+    const l2Score=l2Fresh?state.depthBook.depthImbalance:null;
+
+    const scoreParts=[];
+    if(priceScore!==null)scoreParts.push({v:priceScore,w:.52});
+    if(flowScore!==null)scoreParts.push({v:flowScore,w:.23});
+    if(clobScore!==null)scoreParts.push({v:clobScore,w:.25});
+    if(l2Score!==null)scoreParts.push({v:l2Score,w:.06});
+    const weights=scoreParts.reduce((a,x)=>a+x.w,0);
+    let score=weights?scoreParts.reduce((a,x)=>a+x.v*x.w,0)/weights:0;
+    // Strong, sustained BTC tape pressure can lead the slower contract book.
+    // CLOB remains visible and weighted, but cannot suppress a confirmed price takeover.
+    if(priceLead){
+      const signedLead=priceSide*(.58*Math.abs(priceScore)+.24*(flowScore===null?0:Math.max(0,flowScore*priceSide))+.18*(clobScore===null?0:Math.max(0,clobScore*priceSide)));
+      score=priceSide*Math.max(Math.abs(score),Math.min(.95,Math.abs(signedLead)));
     }
-    const ofi1=microflowOfiWindow(1800,now),ofi3=microflowOfiWindow(4500,now),trades=microflowTradeWindow(1500,now);
-    const microEdge=book.microEdge,depthImbalance=book.depthImbalance,priceRows=state.prices.filter(x=>x.ts>=now-2600&&x.ts<=now);
-    const priceMove=priceRows.length>=2?priceRows[priceRows.length-1].price-priceRows[0].price:null;
-    const tradeParticipation=trades.count>=6&&(trades.spotTotal+trades.perpTotal)>=50000,flowScore=tradeParticipation?trades.score:null;
-    const parts=[{v:ofi1.count>=2?ofi1.score:null,w:.38},{v:ofi3.count>=4?ofi3.score:null,w:.22},{v:microEdge,w:.18},{v:depthImbalance,w:.10},{v:flowScore,w:.12}].filter(x=>x.v!==null&&Number.isFinite(x.v));
-    const weight=parts.reduce((a,x)=>a+x.w,0),raw=weight?Math.max(-1,Math.min(1,parts.reduce((a,x)=>a+x.v*x.w,0)/weight)):0;
-    const dt=state.microflowScoreUpdatedAt?Math.max(35,Math.min(1000,now-state.microflowScoreUpdatedAt)):100,alpha=1-Math.exp(-dt/420);
-    state.microflowEma=state.microflowEma===null?raw:state.microflowEma+alpha*(raw-state.microflowEma);state.microflowScoreUpdatedAt=now;
-    const score=Math.max(-1,Math.min(1,state.microflowEma)),enough=parts.length>=3&&ofi1.count>=2&&ofi3.count>=4;
-    const absorption=flowScore!==null&&Math.abs(flowScore)>.35&&priceMove!==null&&Math.abs(priceMove)<1.25&&trades.spotTotal+trades.perpTotal>=90000;
-    const absorptionText=absorption?(flowScore>0?"BUY FLOW STALLING":"SELL FLOW STALLING"):"NO CLEAR ABSORPTION";
-    const rawSide=!enough||Math.abs(score)<.27?"WAIT":score>0?"UP":"DOWN";
-    if(state.microflowLastVoteDepthAt!==book.ts){state.microflowVotes.push({ts:now,side:rawSide,score});state.microflowLastVoteDepthAt=book.ts;}state.microflowVotes=state.microflowVotes.filter(x=>now-x.ts<=2200);
+
+    const marketStart=boundaryAtOrBefore(now);
+    if(state.microflowMarketStart!==marketStart){
+      state.microflowMarketStart=marketStart;
+      state.microflowSide="WAIT";state.microflowCandidate="WAIT";state.microflowCandidateSince=0;
+      state.microflowSideSince=0;state.microflowVotes=[];state.microflowLastVoteKey="";
+      state.microflowEma=null;state.microflowScoreUpdatedAt=0;
+    }
+    const scoreDt=state.microflowScoreUpdatedAt?Math.max(25,Math.min(1000,now-state.microflowScoreUpdatedAt)):100;
+    const tau=priceLead?360:850,alpha=1-Math.exp(-scoreDt/tau);
+    state.microflowEma=state.microflowEma===null?score:state.microflowEma+alpha*(score-state.microflowEma);
+    state.microflowScoreUpdatedAt=now;
+    score=Math.max(-1,Math.min(1,state.microflowEma));
+
+    let proposed=priceLead?priceSide:(Math.abs(score)>=.16?Math.sign(score):0);
+    if(!proposed&&clobSide)proposed=clobSide;
+    const voteKey=[state.spotTradeLastAt||0,state.futuresTradeLastAt||0,state.depthLastAt||0,state.clobLeadAt||0].join(":");
+    if(voteKey!==state.microflowLastVoteKey){
+      state.microflowVotes.push({ts:now,side:proposed,score,priceLead});
+      state.microflowLastVoteKey=voteKey;
+    }
+    state.microflowVotes=state.microflowVotes.filter(x=>now-x.ts<=2600);
     let side=state.microflowSide||"WAIT";
-    if(rawSide!=="WAIT"&&rawSide!==side){
-      if(state.microflowCandidate!==rawSide){state.microflowCandidate=rawSide;state.microflowCandidateSince=now;}
-      const votes=state.microflowVotes.filter(x=>x.side===rawSide).length,required=side==="WAIT"?2:3,duration=side==="WAIT"?450:900,fastStrength=Math.abs(score)>=(side==="WAIT"?.31:.39);
-      if(votes>=required&&now-state.microflowCandidateSince>=duration&&fastStrength){side=rawSide;state.microflowSide=side;state.microflowCandidate="WAIT";state.microflowCandidateSince=0;}
-    }else{state.microflowCandidate="WAIT";state.microflowCandidateSince=0;}
-    if(side!=="WAIT"&&Math.abs(score)<.14){side="WAIT";state.microflowSide="WAIT";}
+    if(proposed&&proposed!==side){
+      if(state.microflowCandidate!== (proposed>0?"UP":"DOWN")){
+        state.microflowCandidate=proposed>0?"UP":"DOWN";
+        state.microflowCandidateSince=now;
+      }
+      const name=proposed>0?"UP":"DOWN";
+      const matching=state.microflowVotes.filter(x=>x.side===proposed);
+      const overrideVotes=matching.filter(x=>x.priceLead).length;
+      const required=side==="WAIT"?2:(priceLead?3:4);
+      const holdMs=side==="WAIT"?400:(priceLead?700:1150);
+      const enoughVotes=matching.length>=required&&(side==="WAIT"||!priceLead||overrideVotes>=2);
+      if(enoughVotes&&now-state.microflowCandidateSince>=holdMs){
+        side=name;state.microflowSide=side;state.microflowSideSince=now;
+        state.microflowCandidate="WAIT";state.microflowCandidateSince=0;
+      }
+    }else{
+      state.microflowCandidate="WAIT";state.microflowCandidateSince=0;
+    }
+    const candidateSide=state.microflowCandidate==="UP"?1:state.microflowCandidate==="DOWN"?-1:0;
+    const pressureBuilding=candidateSide!==0&&candidateSide!== (side==="UP"?1:side==="DOWN"?-1:0);
+    const targetFresh=state.target!==null&&state.targetTs===marketStart;
+    const oracleFresh=state.chainlink!==null&&state.chainlinkLastAt&&now-state.chainlinkLastAt<4500;
+    const targetGap=targetFresh&&oracleFresh?state.chainlink-state.target:null;
+    const cSide=clobSide>0?"UP":clobSide<0?"DOWN":"MIXED";
+    const pSide=priceSide>0?"UP":priceSide<0?"DOWN":"FLAT";
+    const sideSign=side==="UP"?1:side==="DOWN"?-1:0;
     const tone=side==="UP"?"up":side==="DOWN"?"down":"neutral";
+    const gapText=targetGap===null?"REFERENCE —":(Math.abs(targetGap)<.01?"AT TARGET":Math.abs(targetGap).toFixed(2)+" "+(targetGap>0?"ABOVE":"BELOW"));
+    const tapeLabel=priceFresh?"BINANCE TAPE LIVE · "+Math.round(tapeAge)+"ms":"PRICE TAPE STALE";
+    const clobLabel=clobFresh?"CLOB LIVE":"CLOB STALE";
     panel.className="microflow-panel "+(tone==="neutral"?"neutral":tone)+(Math.abs(score)>=.65&&side!=="WAIT"?" charged":"");
-    if(status){status.textContent="HYPERLIQUID L2 · LIVE · "+Math.round(depthAge)+"ms";status.className="microflow-status live";}
-    if(signal)signal.textContent=side==="UP"?"BUYERS TAKING CONTROL":side==="DOWN"?"SELLERS TAKING CONTROL":"MIXED · NO CLEAR EDGE";
-    if(detail)detail.textContent=side==="UP"?"Bid-side queue pressure and fast trade flow are leaning upward.":side==="DOWN"?"Ask-side queue pressure and fast trade flow are leaning downward.":"Waiting for repeated L2 pressure and trade-flow agreement before calling a side.";
-    if(scoreEl)scoreEl.textContent=(score>=0?"+":"")+Math.round(score*100);
+    if(status){status.textContent=tapeLabel+" · "+clobLabel;status.className="microflow-status "+(priceFresh?"live":"bad");}
+    if(signal){
+      if(pressureBuilding&&clobSide===-candidateSide)signal.textContent=(candidateSide>0?"UP":"DOWN")+" PUSH BUILDING · CLOB STILL "+cSide;
+      else if(priceLead&&clobSide===-priceSide)signal.textContent=(priceSide>0?"UP":"DOWN")+" PRICE LEAD · CLOB STILL "+cSide;
+      else if(side==="UP")signal.textContent=clobSide===1?"UP MOMENTUM · CLOB ALIGNED":"UP PRICE MOMENTUM LEAD";
+      else if(side==="DOWN")signal.textContent=clobSide===-1?"DOWN MOMENTUM · CLOB ALIGNED":"DOWN PRICE MOMENTUM LEAD";
+      else if(clobSide!==0)signal.textContent="CLOB "+cSide+" LEAD · BTC PUSH NOT CONFIRMED";
+      else signal.textContent="WAIT · NO SUSTAINED PRICE PUSH";
+    }
+    const holdAge=state.microflowSideSince?(now-state.microflowSideSince)/1000:0;
+    if(detail){
+      const bits=[];
+      if(pressureBuilding)bits.push((candidateSide>0?"UP":"DOWN")+" pressure building · "+((now-state.microflowCandidateSince)/1000).toFixed(1)+"s hold");
+      else if(side!=="WAIT")bits.push(side+" leader held "+holdAge.toFixed(1)+"s");
+      if(priceReady)bits.push("BTC "+(move1>=0?"+":"−")+"$"+Math.abs(move1).toFixed(2)+"/1s");
+      if(acceleration!==null)bits.push("acceleration "+(acceleration>=0?"+":"−")+"$"+Math.abs(acceleration).toFixed(2)+"/s");
+      if(clobFresh)bits.push("CLOB "+cSide+(clobGap===null?"":" "+(clobGap>=0?"+":"")+clobGap.toFixed(1)+"¢"));
+      detail.textContent=bits.join(" · ")||"Waiting for fresh BTC trade tape and Polymarket books.";
+    }
+    if(scoreEl)scoreEl.textContent=weights?(score>=0?"+":"")+Math.round(score*100):"—";
     if(fill){const width=Math.abs(score)*50;fill.className=tone;fill.style.width=width+"%";fill.style.left=score>=0?"50%":(50-width)+"%";}
-    if(ofi1El){ofi1El.textContent=ofi1.score===null?"—":(ofi1.score>0?"+":"")+Math.round(ofi1.score*100);ofi1El.className=ofi1.score>0?"up":ofi1.score<0?"down":"";}
-    if(ofi3El){ofi3El.textContent=ofi3.score===null?"—":(ofi3.score>0?"+":"")+Math.round(ofi3.score*100);ofi3El.className=ofi3.score>0?"up":ofi3.score<0?"down":"";}
-    if(microEl){microEl.textContent=(microEdge>0?"UP ":"DOWN ")+Math.round(Math.abs(microEdge)*100);microEl.className=microEdge>0?"up":microEdge<0?"down":"";}
-    if(tradeEl){tradeEl.textContent=flowScore===null?"BUILDING":(flowScore>0?"BUY ":"SELL ")+Math.round(Math.abs(flowScore)*100)+"% · "+(trades.count/1.5).toFixed(0)+"/s";tradeEl.className=flowScore>0?"up":flowScore<0?"down":"";}
-    if(absorptionEl){absorptionEl.textContent=absorptionText;absorptionEl.className=absorption?"down":"";}
-    if(reason){reason.textContent=["TOP-5 DEPTH SKEW "+(depthImbalance>=0?"+":"")+Math.round(depthImbalance*100)+"%",flowScore===null?"FAST SPOT/PERP FLOW BUILDING":"AGGRESSOR FLOW "+(flowScore>=0?"BUY ":"SELL ")+Math.round(Math.abs(flowScore)*100)+"%",absorptionText,parts.length+" INPUTS · PRESSURE SCORE, NOT PROBABILITY"].join(" · ");}
+    if(oneEl){oneEl.textContent=move1===null?"—":(move1>=0?"+":"−")+"$"+Math.abs(move1).toFixed(2);oneEl.className=move1>0?"up":move1<0?"down":"";}
+    if(threeEl){threeEl.textContent=move3===null?"—":(move3>=0?"+":"−")+"$"+Math.abs(move3).toFixed(2);threeEl.className=move3>0?"up":move3<0?"down":"";}
+    if(targetEl){targetEl.textContent=targetGap===null?"—":gapText;targetEl.className=targetGap>0?"up":targetGap<0?"down":"";}
+    if(tradeEl){
+      tradeEl.textContent=flowScore===null?"COLLECTING":(flowScore>0?"BUY ":"SELL ")+Math.round(Math.abs(flowScore)*100)+"% · "+compactUsd(flowTotal);
+      tradeEl.className=flowScore>0?"up":flowScore<0?"down":"";
+    }
+    if(clobEl){
+      clobEl.textContent=!clobFresh?"STALE":cSide+(clobGap===null?"":" "+Math.abs(clobGap).toFixed(1)+"¢");
+      clobEl.className=clobSide>0?"up":clobSide<0?"down":"";
+    }
+    if(ageEl)ageEl.textContent=Number.isFinite(tapeAge)?Math.round(tapeAge)+"ms":"—";
+    if(reason){
+      const divergence=priceSide&&clobSide&&priceSide!==clobSide?"DIVERGENCE · BTC "+pSide+" WHILE CLOB FAVORS "+cSide:priceSide&&clobSide&&priceSide===clobSide?"BTC + CLOB ALIGNED":"WAITING FOR PRICE/CLOB COMPARISON";
+      reason.textContent=[divergence,"1s speed "+(speed1===null?"—":(speed1>=0?"+":"")+"$"+speed1.toFixed(2)+"/s"),
+        "3s speed "+(speed3===null?"—":(speed3>=0?"+":"")+"$"+speed3.toFixed(2)+"/s"),
+        "TARGET "+gapText,"CLOB Δ1s "+(clobMove===null?"—":(clobMove>=0?"+":"")+Math.round(clobMove*100))+" pts",
+        l2Fresh?"L2 optional confirmation "+Math.round(l2Score*100):"L2 not required","PRESSURE SCORE · NOT PROBABILITY"].join(" · ");
+    }
   }
 
   function connectBinanceBookTicker(){
@@ -2094,7 +2216,7 @@ button{font-family:inherit}
       const ts=Number(t.T||t.E||Date.now()),price=Number(t.p),size=Number(t.q);
       if(!(price>0&&size>0))return;
       state.futuresLastAt=Date.now();state.futuresTradeLastAt=state.futuresLastAt;state.futuresPrice=price;
-      pushFlowTrade("BINANCE PERP",t.a,ts,price,size,!t.m);
+      pushFlowTrade("BINANCE PERP",t.a,ts,price,size,!t.m);renderMicroflowEdge(Date.now());
     };
     ws.onerror=()=>{try{ws.close();}catch(_){}};
     ws.onclose=()=>{
@@ -2912,6 +3034,17 @@ button{font-family:inherit}
     const depth=Math.max(-1,Math.min(1,(poly.imbalance||0)/.30));
     // Contract prices carry most of the weight; displayed bid/ask depth is confirmation.
     const score=Math.max(-1,Math.min(1,odds*.78+depth*.22));
+    state.clobLeadScore=polyFresh?score:null;
+    state.clobLeadAt=polyFresh?Math.min(upBook.updatedAt||now,downBook.updatedAt||now):0;
+    state.clobOddsRaw=polyFresh?oddsRaw:null;
+    if(polyFresh){
+      const last=state.clobHistory.length?state.clobHistory[state.clobHistory.length-1]:null;
+      if(!last||now-last.ts>=75)state.clobHistory.push({ts:now,score,oddsRaw});
+      else state.clobHistory[state.clobHistory.length-1]={ts:now,score,oddsRaw};
+      state.clobHistory=state.clobHistory.filter(x=>now-x.ts<=20000);
+      if(state.clobHistory.length>500)state.clobHistory=state.clobHistory.slice(-400);
+    }
+    renderMicroflowEdge(now);
     renderBasisClobMeter(score,polyFresh);
     const label=forecastLabel(score,.18);
     const side=!polyFresh?"WAIT":label.side;
@@ -3802,7 +3935,7 @@ button{font-family:inherit}
   $("reconnect").addEventListener("click",connect);
   const flowRestartBtn=$("flowRestartBtn");if(flowRestartBtn)flowRestartBtn.addEventListener("click",restartMomentumFeeds);
   $("exportLab").addEventListener("click",exportMarketLab);
-  loadMarketLab();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();state.timer=setInterval(tick,500);
+  loadMarketLab();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();state.timer=setInterval(tick,500);setInterval(()=>renderMicroflowEdge(Date.now()),250);
 })();
 
 </script>

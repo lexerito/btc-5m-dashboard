@@ -452,13 +452,17 @@ body>.basis-orderflow-card{grid-column:1/-1}
 }
 .basis-orderflow-foot{display:flex;justify-content:space-between;gap:9px;flex-wrap:wrap;margin-top:8px;color:#788b9e;font-size:9px;line-height:1.5}
 .basis-orderflow-foot a{color:#a6c7e8;text-decoration:none}
-.basis-volume-bubbles{display:flex;gap:10px;margin-top:9px;align-items:stretch}
-.basis-volume-bubble{flex:1;min-width:0;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 14px;border-radius:999px;border:1px solid;font:800 10px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
-.basis-volume-bubble b{font-size:clamp(15px,2vw,20px);white-space:nowrap}
-.basis-volume-bubble small{font-size:9px;letter-spacing:.09em;font-weight:900}
-.basis-volume-bubble.sell{color:#ff8298;background:linear-gradient(90deg,#421b29,#24151e);border-color:#784050}
-.basis-volume-bubble.buy{color:#58e0ad;background:linear-gradient(90deg,#123b30,#10251f);border-color:#286b53}
-@media(max-width:440px){.basis-volume-bubbles{gap:6px}.basis-volume-bubble{padding:9px 10px;flex-direction:column;align-items:flex-start;gap:5px}.basis-volume-bubble b{font-size:15px}}
+.basis-clob-bubble{display:grid;grid-template-columns:auto minmax(70px,1fr) auto;align-items:center;gap:13px;margin-top:9px;padding:11px 15px;border:1px solid #3b4958;border-radius:999px;background:linear-gradient(90deg,#15202b,#101923);color:#aebdca;font:800 10px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+.basis-clob-bubble small{font-size:9px;letter-spacing:.09em;font-weight:900;white-space:nowrap}
+.basis-clob-bubble b{font-size:clamp(15px,2vw,20px);white-space:nowrap;text-align:right}
+.basis-clob-bubble.up{color:#58e0ad;background:linear-gradient(90deg,#123b30,#10251f);border-color:#286b53}
+.basis-clob-bubble.down{color:#ff8298;background:linear-gradient(90deg,#421b29,#24151e);border-color:#784050}
+.basis-clob-track{height:7px;position:relative;overflow:hidden;border-radius:99px;background:#293441}
+.basis-clob-track:after{content:"";position:absolute;left:50%;top:0;bottom:0;width:1px;background:#a9b8c8;opacity:.7}
+.basis-clob-track span{position:absolute;top:0;bottom:0;border-radius:99px;background:#9aa9b8}
+.basis-clob-bubble.up .basis-clob-track span{background:#58e0ad}
+.basis-clob-bubble.down .basis-clob-track span{background:#ff8298}
+@media(max-width:440px){.basis-clob-bubble{grid-template-columns:1fr auto;gap:7px;padding:9px 11px}.basis-clob-track{grid-column:1/-1;grid-row:2}.basis-clob-bubble b{font-size:15px}}
 
 .confluence-card{
   margin:0;padding:18px;
@@ -743,11 +747,12 @@ button{font-family:inherit}
     <span id="basisViewDescription">Basis live footprint: executed bid × ask volume and delta by price.</span>
     <span><a href="https://www.basischarts.com/" target="_blank" rel="noopener noreferrer">Open Basis terminal</a></span>
   </div>
-  <div class="basis-volume-bubbles" aria-label="Aggregated five-minute aggressive trade volume">
-    <div class="basis-volume-bubble sell"><small>SELL · BID</small><b id="basisSellBubble">0.000 BTC</b></div>
-    <div class="basis-volume-bubble buy"><small>BUY · ASK</small><b id="basisBuyBubble">0.000 BTC</b></div>
+  <div id="basisClobBubble" class="basis-clob-bubble neutral" aria-label="Polymarket CLOB directional edge from minus 100 to plus 100">
+    <small>POLYMARKET CLOB</small>
+    <div class="basis-clob-track" aria-hidden="true"><span id="basisClobFill" style="left:50%;width:0%"></span></div>
+    <b id="basisClobValue">CLOB · WAIT</b>
   </div>
-</section>>
+</section>
 
 <section class="card confluence-card">
   <div class="feature-head">
@@ -1332,8 +1337,6 @@ button{font-family:inherit}
     };
     const buyQty=bar?.buyQty||0,sellQty=bar?.sellQty||0;
     const btcQty=n=>n.toFixed(n>=1?3:4);
-    put("basisSellBubble",btcQty(sellQty)+" BTC");
-    put("basisBuyBubble",btcQty(buyQty)+" BTC");
     if(!host)return;
     const buyUsd=bar?.buyUsd||0,sellUsd=bar?.sellUsd||0;
     const totalQty=buyQty+sellQty,totalUsd=buyUsd+sellUsd;
@@ -2602,6 +2605,23 @@ button{font-family:inherit}
     if(Math.abs(score)<minimum)return {label:"WAIT · NO CLEAR EDGE",side:"WAIT",cls:"",strength:Math.round(Math.abs(score)*100)};
     return {label:score>0?"UP":"DOWN",side:score>0?"UP":"DOWN",cls:score>0?"up":"down",strength:Math.min(99,Math.round(Math.abs(score)*100))};
   }
+  function renderBasisClobMeter(score,fresh){
+    const bubble=$("basisClobBubble"),value=$("basisClobValue"),fill=$("basisClobFill");
+    if(!bubble||!value||!fill)return;
+    if(!fresh||!Number.isFinite(score)){
+      bubble.className="basis-clob-bubble neutral";
+      value.textContent="CLOB · WAIT";
+      fill.style.left="50%";fill.style.width="0%";
+      return;
+    }
+    const signed=Math.max(-100,Math.min(100,Math.round(score*100)));
+    const tone=signed>0?"up":signed<0?"down":"neutral";
+    bubble.className="basis-clob-bubble "+tone;
+    value.textContent="CLOB "+(signed>0?"+":"")+signed;
+    const width=Math.abs(signed)/2;
+    fill.style.width=width+"%";
+    fill.style.left=signed>=0?"50%":(50-width)+"%";
+  }
   function updateForecasts(){
     // Primary signal is the live Polymarket CLOB only. Secondary BTC feeds must
     // never block or veto an UP/DOWN order-book callout.
@@ -2614,6 +2634,7 @@ button{font-family:inherit}
     const depth=Math.max(-1,Math.min(1,(poly.imbalance||0)/.30));
     // Contract prices carry most of the weight; displayed bid/ask depth is confirmation.
     const score=Math.max(-1,Math.min(1,odds*.78+depth*.22));
+    renderBasisClobMeter(score,polyFresh);
     const label=forecastLabel(score,.18);
     const side=!polyFresh?"WAIT":label.side;
     const el=$("polyVerdict");

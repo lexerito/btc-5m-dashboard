@@ -463,6 +463,56 @@ body>.basis-orderflow-card{grid-column:1/-1}
 .basis-clob-bubble.up .basis-clob-track span{background:#58e0ad}
 .basis-clob-bubble.down .basis-clob-track span{background:#ff8298}
 @media(max-width:440px){.basis-clob-bubble{grid-template-columns:1fr auto;gap:7px;padding:9px 11px}.basis-clob-track{grid-column:1/-1;grid-row:2}.basis-clob-bubble b{font-size:15px}}
+.microflow-home-card{grid-column:1/-1!important;width:100%;min-width:0}
+.microflow-panel{position:relative;isolation:isolate;overflow:hidden;margin-top:11px;padding:17px;border:1px solid #435275;border-radius:14px;background:linear-gradient(135deg,#080f1c 0%,#10192a 48%,#171127 100%);color:#dce8fb;box-shadow:inset 0 1px #ffffff15,inset 0 -18px 32px #0008,0 13px 0 #050912,0 17px 24px #0009,0 0 26px #7254c922;transform:perspective(1100px) rotateX(.35deg);transform-style:preserve-3d}
+.microflow-panel:before{content:"";position:absolute;z-index:-1;inset:0;background:repeating-linear-gradient(0deg,#8fb5ff08 0,#8fb5ff08 1px,transparent 1px,transparent 4px);opacity:.28;pointer-events:none}
+.microflow-panel:after{content:"";position:absolute;z-index:-1;inset:-55% -35%;background:linear-gradient(108deg,transparent 39%,#b6d5ff0a 47%,#a88bff22 50%,#6ba6ff0a 53%,transparent 61%);transform:translateX(-60%);animation:microflowSweep 6.5s linear infinite;pointer-events:none}
+.microflow-scanline{position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,transparent,#77bfff,#ba8aff,transparent);box-shadow:0 0 10px #9d8aff88;opacity:.6}
+.microflow-top,.microflow-command{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.microflow-kicker{color:#b5c9f4;font-size:10px;font-weight:950;letter-spacing:.15em;text-shadow:0 0 12px #789aff55}
+.microflow-subtitle{max-width:720px;margin-top:6px;color:#8fa5c7;font-size:9px;line-height:1.5}
+.microflow-status{padding:6px 9px;border:1px solid #39516b;border-radius:6px;background:#101c2c;color:#9cb4d7;font-size:8px;font-weight:950;letter-spacing:.1em;white-space:nowrap}
+.microflow-status.live{border-color:#296c59;color:#71e9b9;background:#0c231e}
+.microflow-status.bad{border-color:#784050;color:#ff91a8;background:#27151d}
+.microflow-command{margin-top:15px;padding:14px 15px;border:1px solid #344866;border-radius:10px;background:linear-gradient(110deg,#111d30,#101526 64%,#17132a);box-shadow:inset 0 0 20px #80a9ff0a,0 6px 0 #080d17}
+.microflow-signal-wrap{min-width:0;flex:1}
+.microflow-overline{display:block;color:#8298b9;font-size:8px;font-weight:900;letter-spacing:.13em}
+.microflow-signal{display:block;margin-top:7px;color:#c0cde0;font-size:clamp(20px,3vw,29px);font-weight:1000;letter-spacing:-.035em;text-shadow:0 0 16px #94aaff44}
+.microflow-signal-detail{display:block;margin-top:6px;color:#9baecc;font-size:9px;line-height:1.45}
+.microflow-score-wrap{min-width:100px;text-align:right}
+.microflow-score-wrap b{display:block;margin-top:6px;color:#d3dff4;font:950 clamp(23px,3vw,31px)/1 ui-monospace,SFMono-Regular,Menlo,monospace;text-shadow:0 0 14px #91aaff55}
+.microflow-score-wrap small{display:block;margin-top:5px;color:#7489aa;font-size:8px}
+.microflow-meter-shell{margin-top:13px}
+.microflow-meter-track{position:relative;height:13px;overflow:hidden;border:1px solid #42516b;border-radius:99px;background:linear-gradient(90deg,#351c2b,#282b42 50%,#14372f);box-shadow:inset 0 2px 5px #000b,0 1px #ffffff13}
+.microflow-meter-track:after{content:"";position:absolute;top:-2px;bottom:-2px;left:50%;width:2px;background:#dbe8ff9c;box-shadow:0 0 7px #c7d8ff}
+.microflow-meter-track span{position:absolute;top:0;bottom:0;left:50%;width:0;border-radius:99px;background:#9baec8;box-shadow:0 0 8px currentColor;transition:left .13s linear,width .13s linear}
+.microflow-meter-track span.up{background:linear-gradient(90deg,#1d8a66,#4fffc0);box-shadow:0 0 9px #36e5a5,0 0 21px #27dd9a88}
+.microflow-meter-track span.down{background:linear-gradient(90deg,#ff7894,#a93258);box-shadow:0 0 9px #ff557e,0 0 21px #ff426a88}
+.microflow-meter-labels{display:flex;justify-content:space-between;margin-top:5px;color:#7187a7;font-size:7px;font-weight:900;letter-spacing:.09em}
+.microflow-readouts{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-top:12px}
+.microflow-readout{min-width:0;padding:9px 10px;border:1px solid #2b3d58;border-radius:8px;background:linear-gradient(145deg,#111d2c,#0a111d);box-shadow:inset 0 1px #ffffff0a,0 3px 0 #080d14}
+.microflow-readout small{display:block;color:#8197b6;font-size:7px;font-weight:900;letter-spacing:.08em;line-height:1.35}
+.microflow-readout b{display:block;margin-top:6px;color:#d6e1f1;font:850 11px/1.3 ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere}
+.microflow-readout b.up{color:#59e5ad;text-shadow:0 0 9px #32d99a55}
+.microflow-readout b.down{color:#ff819b;text-shadow:0 0 9px #ff547655}
+.microflow-reason{margin-top:11px;padding-top:9px;border-top:1px solid #ffffff13;color:#91a7c8;font-size:8px;line-height:1.55;letter-spacing:.03em}
+.microflow-panel.up{border-color:#287d62;box-shadow:inset 0 1px #ffffff15,inset 0 -18px 32px #0008,0 13px 0 #050912,0 17px 24px #0009,0 0 27px #32e7a544}
+.microflow-panel.up .microflow-signal{color:#5ff0b5;text-shadow:0 0 10px #38e5a8aa,0 0 25px #2de09a55}
+.microflow-panel.up .microflow-command{border-color:#327c65;background:linear-gradient(110deg,#102c27,#10242a 64%,#142c2b)}
+.microflow-panel.down{border-color:#8b3d59;box-shadow:inset 0 1px #ffffff15,inset 0 -18px 32px #0008,0 13px 0 #050912,0 17px 24px #0009,0 0 27px #ff4d7b44}
+.microflow-panel.down .microflow-signal{color:#ff819d;text-shadow:0 0 10px #ff557baa,0 0 25px #ec416955}
+.microflow-panel.down .microflow-command{border-color:#84415a;background:linear-gradient(110deg,#321824,#241724 64%,#2d1828)}
+.microflow-panel.up.charged .microflow-meter-track span,.microflow-panel.down.charged .microflow-meter-track span{animation:microflowElectricPulse 1.05s ease-in-out infinite}
+.microflow-panel.up.charged,.microflow-panel.down.charged{animation:microflowCardPulse 2.8s ease-in-out infinite}
+.microflow-panel.neutral{border-color:#46536b}
+.microflow-panel.waiting{border-color:#39485e}
+@keyframes microflowSweep{0%{transform:translateX(-60%)}100%{transform:translateX(60%)}}
+@keyframes microflowElectricPulse{0%,100%{filter:brightness(1);opacity:.88}50%{filter:brightness(1.6);opacity:1}}
+@keyframes microflowCardPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
+@media(max-width:900px){.microflow-readouts{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:520px){.microflow-panel{padding:12px}.microflow-command{padding:11px}.microflow-score-wrap{min-width:74px}.microflow-readouts{grid-template-columns:repeat(2,minmax(0,1fr))}.microflow-signal{font-size:19px}}
+@media(prefers-reduced-motion:reduce){.microflow-panel:after,.microflow-panel.up.charged,.microflow-panel.down.charged,.microflow-meter-track span{animation:none;transition:none}}
+
 .basis-hold-guard{position:relative;isolation:isolate;overflow:hidden;margin-top:9px;padding:13px 15px;border:1px solid #654da0;border-radius:12px;background:linear-gradient(110deg,#17132b 0%,#171b32 52%,#211636 100%);color:#e6dcff;box-shadow:inset 0 0 26px #885bff12,0 0 18px #7543bd10}
 .basis-hold-guard:before{content:"";position:absolute;z-index:-1;inset:-70% -30%;background:linear-gradient(105deg,transparent 42%,#ad8aff10 49%,#d8c5ff20 50%,#8c5dff10 52%,transparent 59%);transform:translateX(-52%);animation:holdElectricSweep 7s linear infinite;pointer-events:none}
 .basis-hold-guard:after{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid #b79aff18;pointer-events:none}
@@ -628,7 +678,7 @@ button{font-family:inherit}
   <div class="card"><div class="label">Binance BTCUSDT</div><div id="binance" class="value">—</div><div id="binanceDiff" class="small">Fast momentum reference</div></div>
 </section>
 
-<section class="market-focus">
+<section class="market-focus" style="display:none!important" aria-hidden="true">
   <div class="focus-top"><div class="focus-tag"><span></span> ACTIVE MARKET · 5 MINUTES</div><div><div class="label">TIME LEFT</div><div id="countdown" class="timer">5:00</div></div></div>
   <div class="focus-main">
     <div><div class="label">PRICE TO BEAT · EXACT CHAINLINK TWAP60 REFERENCE</div><div id="targetLarge" class="target-number">Waiting for next market…</div><div id="targetTime" class="small">Exact boundary observation · missing data means WAIT</div></div>
@@ -638,22 +688,85 @@ button{font-family:inherit}
 </section>
 
 
-<section class="card live-chart-card">
-  <div class="chart-head">
+<section class="card basis-orderflow-card microflow-home-card">
+  <div class="basis-orderflow-top">
     <div>
-      <div class="label">LIVE BTC PRICE ACTION · MULTI-SOURCE</div>
-      <div class="chart-subtitle">Binance spot trades update in real time; Chainlink spot and TWAP60 remain the settlement-side reference.</div>
+      <div class="label">BASIS CHART · LIVE BTCUSDT ORDER FLOW</div>
+      <div class="chart-subtitle">Live Basis footprint and liquidity heatmap. Switch views using the controls below.</div>
     </div>
-    <span id="fastExchangeStatus" class="poly-live">WAITING FOR BINANCE TAPE</span><span id="fastBookDetail" class="poly-live">BINANCE BBO · CONNECTING</span><span id="chartStatus" class="poly-live">WAITING FOR CHAINLINK</span>
+    <span class="fp-live-status live">BASIS CHART</span>
   </div>
-  <div id="liveChart" aria-label="Live Chainlink BTC price and 60-second time-weighted average chart"></div>
-  <div class="chart-legend">
-    <span><i class="legend-twap"></i>CHAINLINK TWAP60</span>
-    <span><i class="legend-spot"></i>CHAINLINK BTC/USD SPOT</span>
-    <span><i style="background:#54d6a2"></i>BINANCE BTCUSDT · LIVE TRADE TAPE</span>
-    <span><i class="legend-target"></i>PRICE TO BEAT</span>
+  <div class="basis-orderflow-controls" role="group" aria-label="Basis chart view">
+    <button id="basisFootprintBtn" class="basis-view-btn" type="button" aria-pressed="true">FOOTPRINT · BID × ASK</button>
+    <button id="basisHeatmapBtn" class="basis-view-btn" type="button" aria-pressed="false">LIQUIDITY HEATMAP</button>
+  </div>
+  <iframe id="basisOrderflowFrame" class="basis-widget-frame"
+    src="https://www.basischarts.com/embed/chart?symbol=BTCUSDT&view=footprint"
+    title="Live BTCUSDT footprint chart by Basis"
+    loading="eager"
+    sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+    referrerpolicy="strict-origin-when-cross-origin"></iframe>
+  <div class="basis-orderflow-foot">
+    <span id="basisViewDescription">Basis live footprint: executed bid × ask volume and delta by price.</span>
+    <span><a href="https://www.basischarts.com/" target="_blank" rel="noopener noreferrer">Open Basis terminal</a></span>
+  </div>
+  <div id="microflowPanel" class="microflow-panel waiting" aria-label="Bitcoin microstructure order flow signal">
+    <div class="microflow-scanline" aria-hidden="true"></div>
+    <div class="microflow-top">
+      <div>
+        <div class="microflow-kicker">BTC MICROFLOW EDGE · ORDER FLOW IMBALANCE</div>
+        <div class="microflow-subtitle">100ms Binance Futures depth updates · bid/ask queue changes · microprice · aggressive trade confirmation</div>
+      </div>
+      <span id="microflowStatus" class="microflow-status">DEPTH BOOK · SYNCING</span>
+    </div>
+    <div class="microflow-command">
+      <div class="microflow-signal-wrap">
+        <span class="microflow-overline">LIVE BTC PRESSURE</span>
+        <b id="microflowSignal" class="microflow-signal">WAIT · SYNCING ORDER BOOK</b>
+        <span id="microflowSignalDetail" class="microflow-signal-detail">Building the futures order book and waiting for fresh flow.</span>
+      </div>
+      <div class="microflow-score-wrap">
+        <span class="microflow-overline">MICROFLOW EDGE</span>
+        <b id="microflowScore">—</b>
+        <small>−100 / +100</small>
+      </div>
+    </div>
+    <div class="microflow-meter-shell">
+      <div class="microflow-meter-track"><span id="microflowMeterFill"></span><i></i></div>
+      <div class="microflow-meter-labels"><span>SELL PRESSURE</span><span>NEUTRAL</span><span>BUY PRESSURE</span></div>
+    </div>
+    <div class="microflow-readouts">
+      <div class="microflow-readout"><small>OFI · 1 SECOND</small><b id="microflowOfi1">—</b></div>
+      <div class="microflow-readout"><small>OFI · 3 SECONDS</small><b id="microflowOfi3">—</b></div>
+      <div class="microflow-readout"><small>MICROPRICE</small><b id="microflowMicroprice">—</b></div>
+      <div class="microflow-readout"><small>TRADE SPEED · 1.5S</small><b id="microflowTradePressure">—</b></div>
+      <div class="microflow-readout"><small>PRICE RESPONSE</small><b id="microflowAbsorption">COLLECTING</b></div>
+      <div class="microflow-readout"><small>DEPTH UPDATE AGE</small><b id="microflowDepthAge">—</b></div>
+    </div>
+    <div id="microflowReason" class="microflow-reason">A directional call requires synchronized book updates and confirmation from fast BTC trades.</div>
+  </div>
+  <div id="basisHoldGuard" class="basis-hold-guard wait" role="status" aria-live="polite">
+    <div class="hold-guard-top">
+      <span class="hold-guard-kicker">HOLD GUARD · CHOP FILTER</span>
+      <span id="basisHoldState" class="hold-guard-state">ASSESSING</span>
+    </div>
+    <div class="hold-guard-main">
+      <b id="basisHoldCall" class="hold-guard-call">WAIT · NO SIDE TO HOLD</b>
+      <b id="basisHoldScore" class="hold-guard-score">—/100</b>
+    </div>
+    <div class="hold-guard-track" aria-label="Hold support meter">
+      <span id="basisHoldFill" class="hold-guard-fill"></span>
+    </div>
+    <div class="hold-guard-scale"><span>WEAK</span><span>65 · STRONG</span><span>80 · HIGH</span></div>
+    <div id="basisHoldDetail" class="hold-guard-detail">Waiting for a persistent leader, fresh flow, and price acceptance.</div>
   </div>
 </section>
+<div class="chart-data-hidden" hidden aria-hidden="true">
+  <div id="liveChart"></div>
+  <span id="fastExchangeStatus">BINANCE TAPE HIDDEN</span>
+  <span id="fastBookDetail">BINANCE BBO HIDDEN</span>
+  <span id="chartStatus">CHAINLINK LIVE</span>
+</div>
 
 <section class="card momentum-engine-card">
   <div class="momentum-engine-head">
@@ -749,49 +862,7 @@ button{font-family:inherit}
 
 
 
-<section class="card basis-orderflow-card">
-  <div class="basis-orderflow-top">
-    <div>
-      <div class="label">BASIS CHART · LIVE BTCUSDT ORDER FLOW</div>
-      <div class="chart-subtitle">Live Basis footprint and liquidity heatmap. Switch views using the controls below.</div>
-    </div>
-    <span class="fp-live-status live">BASIS CHART</span>
-  </div>
-  <div class="basis-orderflow-controls" role="group" aria-label="Basis chart view">
-    <button id="basisFootprintBtn" class="basis-view-btn" type="button" aria-pressed="true">FOOTPRINT · BID × ASK</button>
-    <button id="basisHeatmapBtn" class="basis-view-btn" type="button" aria-pressed="false">LIQUIDITY HEATMAP</button>
-  </div>
-  <iframe id="basisOrderflowFrame" class="basis-widget-frame"
-    src="https://www.basischarts.com/embed/chart?symbol=BTCUSDT&view=footprint"
-    title="Live BTCUSDT footprint chart by Basis"
-    loading="eager"
-    sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-    referrerpolicy="strict-origin-when-cross-origin"></iframe>
-  <div class="basis-orderflow-foot">
-    <span id="basisViewDescription">Basis live footprint: executed bid × ask volume and delta by price.</span>
-    <span><a href="https://www.basischarts.com/" target="_blank" rel="noopener noreferrer">Open Basis terminal</a></span>
-  </div>
-  <div id="basisClobBubble" class="basis-clob-bubble neutral" aria-label="Polymarket CLOB directional edge from minus 100 to plus 100">
-    <small>POLYMARKET CLOB</small>
-    <div class="basis-clob-track" aria-hidden="true"><span id="basisClobFill" style="left:50%;width:0%"></span></div>
-    <b id="basisClobValue">CLOB · WAIT</b>
-  </div>
-  <div id="basisHoldGuard" class="basis-hold-guard wait" role="status" aria-live="polite">
-    <div class="hold-guard-top">
-      <span class="hold-guard-kicker">HOLD GUARD · CHOP FILTER</span>
-      <span id="basisHoldState" class="hold-guard-state">ASSESSING</span>
-    </div>
-    <div class="hold-guard-main">
-      <b id="basisHoldCall" class="hold-guard-call">WAIT · NO SIDE TO HOLD</b>
-      <b id="basisHoldScore" class="hold-guard-score">—/100</b>
-    </div>
-    <div class="hold-guard-track" aria-label="Hold support meter">
-      <span id="basisHoldFill" class="hold-guard-fill"></span>
-    </div>
-    <div class="hold-guard-scale"><span>WEAK</span><span>65 · STRONG</span><span>80 · HIGH</span></div>
-    <div id="basisHoldDetail" class="hold-guard-detail">Waiting for a persistent leader, fresh flow, and price acceptance.</div>
-  </div>
-</section>
+
 
 <section class="card confluence-card">
   <div class="feature-head">
@@ -932,7 +1003,7 @@ button{font-family:inherit}
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,liveMomentumUpdatedAt:0,liveMomentumSide:"WAIT",liveMomentumCandidate:"WAIT",liveMomentumCandidateSince:0,liveMomentumWeakSince:0,liveMomentumHistory:[],flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,flipTimer:null,binanceFastHistory:[],fastSpotSeries:null,lastFastChartUpdate:0,binanceBbo:null,bboWs:null,bboReconnect:null,bboConnectAt:0,bboLastAt:0,basisFootprint:null,basisBarMemory:null,basisBarLastPersistAt:0,basisFootprintRenderTimer:null,nextRoundForecast:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,liveMomentumUpdatedAt:0,liveMomentumSide:"WAIT",liveMomentumCandidate:"WAIT",liveMomentumCandidateSince:0,liveMomentumWeakSince:0,liveMomentumHistory:[],flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,flipTimer:null,binanceFastHistory:[],fastSpotSeries:null,lastFastChartUpdate:0,binanceBbo:null,bboWs:null,bboReconnect:null,bboConnectAt:0,bboLastAt:0,basisFootprint:null,basisBarMemory:null,basisBarLastPersistAt:0,basisFootprintRenderTimer:null,depthWs:null,depthReconnect:null,depthConnectAt:0,depthLastAt:0,depthBuffer:[],depthSyncing:false,depthSyncAttempts:0,depthBook:null,microDepthHistory:[],microflowLastAt:0,microflowScoreUpdatedAt:0,microflowEma:null,microflowSide:"WAIT",microflowCandidate:"WAIT",microflowCandidateSince:0,microflowVotes:[],nextRoundForecast:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -1871,6 +1942,182 @@ button{font-family:inherit}
       $("flowAlertToggle").className="flow-toggle";
     }
   }
+  async function fetchMicroDepthSnapshot(){
+    return fetchJson("https://fapi.binance.com/fapi/v1/depth?symbol=BTCUSDT&limit=1000",6500);
+  }
+  function microDepthMapsFromSnapshot(snapshot){
+    const bids=new Map(),asks=new Map();
+    (snapshot.bids||[]).forEach(x=>{const p=Number(x[0]),q=Number(x[1]);if(p>0&&q>0)bids.set(p,q)});
+    (snapshot.asks||[]).forEach(x=>{const p=Number(x[0]),q=Number(x[1]);if(p>0&&q>0)asks.set(p,q)});
+    return {bids,asks};
+  }
+  function microDepthSorted(map,descending){
+    return Array.from(map.entries()).map(([price,qty])=>({price,qty})).sort((a,b)=>descending?b.price-a.price:a.price-b.price);
+  }
+  function microDepthTop(book){
+    if(!book)return null;
+    const bids=microDepthSorted(book.bids,true),asks=microDepthSorted(book.asks,false),bid=bids[0],ask=asks[0];
+    if(!bid||!ask||ask.price<=bid.price||bid.qty<=0||ask.qty<=0)return null;
+    return {bid:bid.price,bidQty:bid.qty,ask:ask.price,askQty:ask.qty,bids,asks};
+  }
+  function microDepthOfi(previous,current){
+    if(!previous||!current)return {value:0,activity:0};
+    const bidTerm=current.bid>previous.bid?current.bidQty:current.bid===previous.bid?current.bidQty-previous.bidQty:-previous.bidQty;
+    const askTerm=current.ask<previous.ask?-current.askQty:current.ask===previous.ask?previous.askQty-current.askQty:previous.askQty;
+    return {value:bidTerm+askTerm,activity:Math.abs(bidTerm)+Math.abs(askTerm)};
+  }
+  function applyMicroDepthEvent(event,allowFirst=false){
+    const book=state.depthBook;
+    if(!book||!event||!Number.isFinite(Number(event.u)))return false;
+    const finalId=Number(event.u),firstId=Number(event.U),previousId=book.lastUpdateId;
+    if(finalId<=previousId)return true;
+    if(!allowFirst&&Number.isFinite(Number(event.pu))&&Number(event.pu)!==previousId)return false;
+    if(Number.isFinite(firstId)&&firstId>previousId+1)return false;
+    const before=microDepthTop(book);
+    for(const row of event.b||[]){const price=Number(row[0]),qty=Number(row[1]);if(!(price>0)||!Number.isFinite(qty))continue;if(qty<=0)book.bids.delete(price);else book.bids.set(price,qty);}
+    for(const row of event.a||[]){const price=Number(row[0]),qty=Number(row[1]);if(!(price>0)||!Number.isFinite(qty))continue;if(qty<=0)book.asks.delete(price);else book.asks.set(price,qty);}
+    book.lastUpdateId=finalId;
+    const after=microDepthTop(book);if(!after)return false;
+    const ofi=microDepthOfi(before,after),mid=(after.bid+after.ask)/2,spread=after.ask-after.bid,queueTotal=after.bidQty+after.askQty;
+    const microprice=queueTotal?(after.ask*after.bidQty+after.bid*after.askQty)/queueTotal:mid;
+    const microEdge=spread>0?Math.max(-1,Math.min(1,(microprice-mid)/(spread/2))):0;
+    let bidDepth=0,askDepth=0;
+    for(let i=0;i<Math.min(5,after.bids.length);i++)bidDepth+=after.bids[i].qty*after.bids[i].price*(1-i*.12);
+    for(let i=0;i<Math.min(5,after.asks.length);i++)askDepth+=after.asks[i].qty*after.asks[i].price*(1-i*.12);
+    const depthTotal=bidDepth+askDepth,depthImbalance=depthTotal?(bidDepth-askDepth)/depthTotal:0,now=Date.now();
+    state.microDepthHistory.push({ts:now,ofi:ofi.value,activity:ofi.activity,microEdge,depthImbalance,mid,spread});
+    state.microDepthHistory=state.microDepthHistory.filter(x=>now-x.ts<=6000);
+    if(state.microDepthHistory.length>300)state.microDepthHistory=state.microDepthHistory.slice(-260);
+    book.ts=now;book.top=after;book.microEdge=microEdge;book.depthImbalance=depthImbalance;
+    state.depthLastAt=now;state.microflowLastAt=now;renderMicroflowEdge(now);
+    return true;
+  }
+  async function synchronizeMicroDepth(ws){
+    if(state.depthWs!==ws||state.depthSyncing)return;
+    state.depthSyncing=true;
+    for(let attempt=0;attempt<3;attempt++){
+      try{
+        const snapshot=await fetchMicroDepthSnapshot();
+        if(state.depthWs!==ws)return;
+        const lastId=Number(snapshot.lastUpdateId);
+        if(!Number.isFinite(lastId)||!Array.isArray(snapshot.bids)||!Array.isArray(snapshot.asks))throw new Error("Invalid depth snapshot");
+        const buffered=state.depthBuffer.slice(),usable=buffered.filter(e=>Number(e.u)>lastId);
+        const firstIndex=usable.findIndex(e=>Number(e.U)<=lastId+1&&Number(e.u)>=lastId+1);
+        if(firstIndex<0){state.depthSyncAttempts=attempt+1;if(usable.length&&Number(usable[0].U)>lastId+1)continue;if(attempt<2){await new Promise(resolve=>setTimeout(resolve,180));continue;}throw new Error("Waiting for snapshot overlap");}
+        const maps=microDepthMapsFromSnapshot(snapshot);
+        state.depthBook={bids:maps.bids,asks:maps.asks,lastUpdateId:lastId,ts:0,top:null,microEdge:0,depthImbalance:0};
+        const events=usable.slice(firstIndex);let previousId=lastId,sequenceGood=true,first=true;
+        for(const event of events){
+          if(Number(event.u)<=previousId)continue;
+          if(!first&&Number(event.pu)!==previousId){sequenceGood=false;break;}
+          if(first&&!(Number(event.U)<=previousId+1&&Number(event.u)>=previousId+1)){sequenceGood=false;break;}
+          if(!applyMicroDepthEvent(event,true)){sequenceGood=false;break;}
+          previousId=Number(event.u);first=false;
+        }
+        if(!sequenceGood){state.depthBook=null;continue;}
+        state.depthSyncing=false;state.depthSyncAttempts=0;state.depthBuffer=[];
+        renderMicroflowEdge(Date.now());
+        const stat=$("microflowStatus");if(stat){stat.textContent="100MS DEPTH · LIVE";stat.className="microflow-status live";}
+        return;
+      }catch(err){
+        if(state.depthWs!==ws)return;
+        if(attempt===2){state.depthSyncing=false;state.depthBook=null;const stat=$("microflowStatus");if(stat){stat.textContent="DEPTH SYNC RETRY";stat.className="microflow-status bad";}}
+      }
+    }
+    state.depthSyncing=false;
+  }
+  function connectMicroDepth(){
+    if(state.depthReconnect){clearTimeout(state.depthReconnect);state.depthReconnect=null;}
+    if(state.depthWs){try{state.depthWs.close()}catch(_){}}
+    state.depthConnectAt=Date.now();state.depthLastAt=0;state.depthBuffer=[];state.depthBook=null;state.depthSyncing=false;
+    state.microDepthHistory=[];state.microflowScoreUpdatedAt=0;state.microflowEma=null;state.microflowSide="WAIT";state.microflowCandidate="WAIT";state.microflowCandidateSince=0;state.microflowVotes=[];
+    const stat=$("microflowStatus");if(stat){stat.textContent="100MS DEPTH · CONNECTING";stat.className="microflow-status";}
+    const ws=new WebSocket("wss://fstream.binance.com/public/ws/btcusdt@depth@100ms");state.depthWs=ws;
+    ws.onopen=()=>{if(state.depthWs!==ws)return;state.depthConnectAt=Date.now();state.depthSyncing=false;state.depthBuffer=[];synchronizeMicroDepth(ws);};
+    ws.onmessage=e=>{
+      if(state.depthWs!==ws)return;
+      let event;try{event=JSON.parse(e.data)}catch(_){return}
+      if(event&&event.data)event=event.data;if(!event||event.e!=="depthUpdate")return;
+      state.depthLastAt=Date.now();
+      if(state.depthSyncing||!state.depthBook){state.depthBuffer.push(event);if(state.depthBuffer.length>4000)state.depthBuffer=state.depthBuffer.slice(-2500);return;}
+      if(!applyMicroDepthEvent(event,false)){state.depthBook=null;state.depthSyncing=false;state.depthBuffer=[event];synchronizeMicroDepth(ws);}
+    };
+    ws.onerror=()=>{if(state.depthWs===ws)try{ws.close()}catch(_){}};
+    ws.onclose=()=>{
+      if(state.depthWs!==ws)return;
+      state.depthBook=null;state.depthSyncing=false;
+      const stat=$("microflowStatus");if(stat){stat.textContent="DEPTH DISCONNECTED · RECONNECTING";stat.className="microflow-status bad";}
+      state.depthReconnect=setTimeout(()=>{state.depthReconnect=null;if(state.depthWs===ws)connectMicroDepth()},1700);
+    };
+  }
+  function microflowOfiWindow(ms,now){
+    const rows=state.microDepthHistory.filter(x=>now-x.ts<=ms&&x.activity>0),net=rows.reduce((a,x)=>a+x.ofi,0),activity=rows.reduce((a,x)=>a+x.activity,0);
+    return {score:activity?Math.max(-1,Math.min(1,net/activity)):null,count:rows.length,activity};
+  }
+  function microflowTradeWindow(ms,now){
+    const cutoff=now-ms;let spotBuy=0,spotSell=0,perpBuy=0,perpSell=0,spotCount=0,perpCount=0;
+    for(const trade of state.flowTrades){
+      if(trade.ts<cutoff||trade.ts>now)continue;
+      if(trade.venue==="BINANCE SPOT"){if(trade.buy)spotBuy+=trade.notional;else spotSell+=trade.notional;spotCount++;}
+      else if(trade.venue==="BINANCE PERP"){if(trade.buy)perpBuy+=trade.notional;else perpSell+=trade.notional;perpCount++;}
+    }
+    const spotTotal=spotBuy+spotSell,perpTotal=perpBuy+perpSell,active=[];
+    if(spotCount>=3&&spotTotal>=15000)active.push((spotBuy-spotSell)/spotTotal);
+    if(perpCount>=3&&perpTotal>=15000)active.push((perpBuy-perpSell)/perpTotal);
+    return {score:active.length?active.reduce((a,b)=>a+b,0)/active.length:null,spotCount,perpCount,count:spotCount+perpCount,spotTotal,perpTotal};
+  }
+  function renderMicroflowEdge(now=Date.now()){
+    const panel=$("microflowPanel");if(!panel)return;
+    const status=$("microflowStatus"),signal=$("microflowSignal"),detail=$("microflowSignalDetail");
+    const scoreEl=$("microflowScore"),fill=$("microflowMeterFill"),reason=$("microflowReason");
+    const ofi1El=$("microflowOfi1"),ofi3El=$("microflowOfi3"),microEl=$("microflowMicroprice");
+    const tradeEl=$("microflowTradePressure"),absorptionEl=$("microflowAbsorption"),ageEl=$("microflowDepthAge");
+    const book=state.depthBook,depthAge=state.depthLastAt?now-state.depthLastAt:Infinity,fresh=!!book&&!!book.top&&depthAge<1200&&!state.depthSyncing;
+    if(ageEl)ageEl.textContent=Number.isFinite(depthAge)?Math.round(depthAge)+"ms":"—";
+    if(!fresh){
+      panel.className="microflow-panel waiting";
+      if(status){status.textContent=state.depthSyncing?"SYNCING ORDER BOOK":"DEPTH FEED · STALE";status.className="microflow-status bad";}
+      if(signal)signal.textContent="WAIT · "+(state.depthSyncing?"SYNCING BOOK":"DEPTH DATA STALE");
+      if(detail)detail.textContent="No directional reading until the futures order book is synchronized and fresh.";
+      if(scoreEl)scoreEl.textContent="—";if(fill){fill.style.left="50%";fill.style.width="0%";fill.className="";}
+      if(reason)reason.textContent="The engine pauses rather than using an out-of-date order book.";
+      return;
+    }
+    const ofi1=microflowOfiWindow(1100,now),ofi3=microflowOfiWindow(3200,now),trades=microflowTradeWindow(1500,now);
+    const microEdge=book.microEdge,depthImbalance=book.depthImbalance,priceRows=state.prices.filter(x=>x.ts>=now-2600&&x.ts<=now);
+    const priceMove=priceRows.length>=2?priceRows[priceRows.length-1].price-priceRows[0].price:null;
+    const tradeParticipation=trades.count>=6&&(trades.spotTotal+trades.perpTotal)>=50000,flowScore=tradeParticipation?trades.score:null;
+    const parts=[{v:ofi1.count>=3?ofi1.score:null,w:.38},{v:ofi3.count>=7?ofi3.score:null,w:.22},{v:microEdge,w:.18},{v:depthImbalance,w:.10},{v:flowScore,w:.12}].filter(x=>x.v!==null&&Number.isFinite(x.v));
+    const weight=parts.reduce((a,x)=>a+x.w,0),raw=weight?Math.max(-1,Math.min(1,parts.reduce((a,x)=>a+x.v*x.w,0)/weight)):0;
+    const dt=state.microflowScoreUpdatedAt?Math.max(35,Math.min(1000,now-state.microflowScoreUpdatedAt)):100,alpha=1-Math.exp(-dt/420);
+    state.microflowEma=state.microflowEma===null?raw:state.microflowEma+alpha*(raw-state.microflowEma);state.microflowScoreUpdatedAt=now;
+    const score=Math.max(-1,Math.min(1,state.microflowEma)),enough=parts.length>=3&&ofi1.count>=3&&ofi3.count>=7;
+    const absorption=flowScore!==null&&Math.abs(flowScore)>.35&&priceMove!==null&&Math.abs(priceMove)<1.25&&trades.spotTotal+trades.perpTotal>=90000;
+    const absorptionText=absorption?(flowScore>0?"BUY FLOW STALLING":"SELL FLOW STALLING"):"NO CLEAR ABSORPTION";
+    const rawSide=!enough||Math.abs(score)<.27?"WAIT":score>0?"UP":"DOWN";
+    state.microflowVotes.push({ts:now,side:rawSide,score});state.microflowVotes=state.microflowVotes.filter(x=>now-x.ts<=900);
+    let side=state.microflowSide||"WAIT";
+    if(rawSide!=="WAIT"&&rawSide!==side){
+      if(state.microflowCandidate!==rawSide){state.microflowCandidate=rawSide;state.microflowCandidateSince=now;}
+      const votes=state.microflowVotes.filter(x=>x.side===rawSide).length,required=side==="WAIT"?3:4,duration=side==="WAIT"?260:420,fastStrength=Math.abs(score)>=(side==="WAIT"?.31:.39);
+      if(votes>=required&&now-state.microflowCandidateSince>=duration&&fastStrength){side=rawSide;state.microflowSide=side;state.microflowCandidate="WAIT";state.microflowCandidateSince=0;}
+    }else{state.microflowCandidate="WAIT";state.microflowCandidateSince=0;}
+    if(side!=="WAIT"&&Math.abs(score)<.14){side="WAIT";state.microflowSide="WAIT";}
+    const tone=side==="UP"?"up":side==="DOWN"?"down":"neutral";
+    panel.className="microflow-panel "+(tone==="neutral"?"neutral":tone)+(Math.abs(score)>=.65&&side!=="WAIT"?" charged":"");
+    if(status){status.textContent="100MS DEPTH · LIVE · "+Math.round(depthAge)+"ms";status.className="microflow-status live";}
+    if(signal)signal.textContent=side==="UP"?"BUYERS TAKING CONTROL":side==="DOWN"?"SELLERS TAKING CONTROL":"MIXED · NO CLEAR EDGE";
+    if(detail)detail.textContent=side==="UP"?"Bid-side queue pressure and fast trade flow are leaning upward.":side==="DOWN"?"Ask-side queue pressure and fast trade flow are leaning downward.":"Waiting for enough synchronized book changes to establish direction.";
+    if(scoreEl)scoreEl.textContent=(score>=0?"+":"")+Math.round(score*100);
+    if(fill){const width=Math.abs(score)*50;fill.className=tone;fill.style.width=width+"%";fill.style.left=score>=0?"50%":(50-width)+"%";}
+    if(ofi1El){ofi1El.textContent=ofi1.score===null?"—":(ofi1.score>0?"+":"")+Math.round(ofi1.score*100);ofi1El.className=ofi1.score>0?"up":ofi1.score<0?"down":"";}
+    if(ofi3El){ofi3El.textContent=ofi3.score===null?"—":(ofi3.score>0?"+":"")+Math.round(ofi3.score*100);ofi3El.className=ofi3.score>0?"up":ofi3.score<0?"down":"";}
+    if(microEl){microEl.textContent=(microEdge>0?"UP ":"DOWN ")+Math.round(Math.abs(microEdge)*100);microEl.className=microEdge>0?"up":microEdge<0?"down":"";}
+    if(tradeEl){tradeEl.textContent=flowScore===null?"BUILDING":(flowScore>0?"BUY ":"SELL ")+Math.round(Math.abs(flowScore)*100)+"% · "+(trades.count/1.5).toFixed(0)+"/s";tradeEl.className=flowScore>0?"up":flowScore<0?"down":"";}
+    if(absorptionEl){absorptionEl.textContent=absorptionText;absorptionEl.className=absorption?"down":"";}
+    if(reason){reason.textContent=["TOP-5 DEPTH SKEW "+(depthImbalance>=0?"+":"")+Math.round(depthImbalance*100)+"%",flowScore===null?"FAST SPOT/PERP FLOW BUILDING":"AGGRESSOR FLOW "+(flowScore>=0?"BUY ":"SELL ")+Math.round(Math.abs(flowScore)*100)+"%",absorptionText,parts.length+" INPUTS · PRESSURE SCORE, NOT PROBABILITY"].join(" · ");}
+  }
+
   function connectBinanceBookTicker(){
     if(state.bboReconnect){clearTimeout(state.bboReconnect);state.bboReconnect=null;}
     if(state.bboWs){try{state.bboWs.close()}catch(_){}}
@@ -2648,7 +2895,7 @@ button{font-family:inherit}
     const now=Date.now();if(state.lastFeedRecoveryAt&&now-state.lastFeedRecoveryAt<2500)return;
     state.lastFeedRecoveryAt=now;state.volumeEdge=null;
     const statusEl=$("flowEdgeStatus");if(statusEl){statusEl.textContent="RESTARTING LIVE FEEDS…";statusEl.className="feature-status";}
-    connect();connectTrades();connectFuturesTakerTape();connectCoinbase();connectHyperliquid();
+    connect();connectTrades();connectFuturesTakerTape();connectMicroDepth();connectCoinbase();connectHyperliquid();
     setTimeout(()=>{state.volumeEdge=null;updateMomentum();renderFlowIntelligence();renderFlowPressure();updateConfluenceForecast()},1200);
   }
   function feedSocketStale(ws,lastAt,connectAt,threshold,now){
@@ -2668,6 +2915,7 @@ button{font-family:inherit}
       const rtdsStale=feedSocketStale(state.ws,state.rtdsLastAt,state.rtdsConnectAt,12000,now)||topicAgeStale;
       if(rtdsStale){connect();return;}
       if(feedSocketStale(state.tradeWs,state.spotTradeLastAt,state.spotTradeConnectAt,12000,now)){connectTrades();return;}
+      if(feedSocketStale(state.depthWs,state.depthLastAt,state.depthConnectAt,5000,now)){connectMicroDepth();return;}
       if(feedSocketStale(state.bboWs,state.bboLastAt,state.bboConnectAt,12000,now)){connectBinanceBookTicker();return;}
       if(feedSocketStale(state.futuresWs,state.futuresTradeLastAt,state.futuresConnectAt,12000,now)){connectFuturesTakerTape();return;}
       if(feedSocketStale(state.cbWs,state.coinbaseLastAt,state.coinbaseConnectAt,25000,now)){connectCoinbase();return;}
@@ -2677,6 +2925,7 @@ button{font-family:inherit}
 
   function startFlowAndSwingSystems(){
     connectFuturesTakerTape();
+    connectMicroDepth();
     connectBinanceBookTicker();
     startMomentumFeedWatchdog();
     initFlowChart();
@@ -2686,8 +2935,6 @@ button{font-family:inherit}
     updateConfluenceForecast();
     if(state.flipTimer)clearInterval(state.flipTimer);
     state.flipTimer=setInterval(()=>{if(document.visibilityState!=="hidden")updateConfluenceForecast();},350);
-    if(state.basisFootprintRenderTimer)clearInterval(state.basisFootprintRenderTimer);
-    state.basisFootprintRenderTimer=setInterval(()=>{if(document.visibilityState!=="hidden")renderBasisFootprint();},250);
     state.flowTimer=setInterval(()=>{
       updateMomentum();
       if(!state.flowChart&&typeof LightweightCharts!=="undefined")initFlowChart();
@@ -3608,7 +3855,7 @@ button{font-family:inherit}
   $("reconnect").addEventListener("click",connect);
   const flowRestartBtn=$("flowRestartBtn");if(flowRestartBtn)flowRestartBtn.addEventListener("click",restartMomentumFeeds);
   $("exportLab").addEventListener("click",exportMarketLab);
-  loadMarketLab();initLiveChart();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();state.timer=setInterval(tick,500);
+  loadMarketLab();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();state.timer=setInterval(tick,500);
 })();
 
 </script>

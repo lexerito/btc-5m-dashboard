@@ -873,7 +873,7 @@ body>.reader-shell{
 
   <section id="polymarketPerpsCard" class="perps-strip" aria-label="Polymarket Bitcoin perpetual futures live data" aria-live="polite">
     <div class="perps-identity"><div class="perps-mark">₿</div><div><div class="perps-name">BTC · BITCOIN PERPS</div><div class="perps-source">POLYMARKET · LIVE MARK PRICE</div></div></div>
-    <div class="perps-price-wrap"><div id="perpsBtcChange" class="perps-change neutral">—</div><div id="perpsBtcPrice" class="perps-price">Connecting…</div><div id="perpsBtcDelta" class="perps-delta">24H DOLLAR CHANGE</div><div id="perpsFiveMinSignal" class="perps-delta neutral">5M CLOSE BASELINE · WAITING</div><div id="perpsBtcUpdated" class="perps-updated">Waiting for Polymarket data</div></div>
+    <div class="perps-price-wrap"><div id="perpsBtcChange" class="perps-change neutral">—</div><div id="perpsBtcPrice" class="perps-price">Connecting…</div><div id="perpsBtcDelta" class="perps-delta">24H DOLLAR CHANGE</div><div id="perpsFiveMinSignal" class="perps-delta neutral">24H CHANGE · TRACKING FROM −0.34%</div><div id="perpsBtcUpdated" class="perps-updated">Waiting for Polymarket data</div></div>
   </section>
 
   <section class="target-strip" aria-label="Current five minute market reference">
@@ -4173,7 +4173,7 @@ body>.reader-shell{
 
   // Polymarket BTC perpetuals: public mark ticker + official 24H statistics.
   const polymarketPerps={instrumentId:null,timer:null,busy:false,lastGoodAt:0,lastPct:null,baselinePct:null,baselineMarketStart:null};
-  const perpsBaselineKey="btc5m_perps_change_baseline_v1";
+  const perpsBaselineKey="btc5m_perps_change_baseline_v2";
   function loadPerpsBaseline(){
     try{
       const saved=JSON.parse(localStorage.getItem(perpsBaselineKey)||"null");
@@ -4183,9 +4183,9 @@ body>.reader-shell{
         return;
       }
     }catch(_){}
-    // User supplied the last completed market's 24H change as +1.10%.
+    // User supplied the large Perps 24H change was -0.34% at the reference close.
     polymarketPerps.baselineMarketStart=boundaryAtOrBefore(Date.now());
-    polymarketPerps.baselinePct=1.10;
+    polymarketPerps.baselinePct=-0.34;
     savePerpsBaseline();
   }
   function savePerpsBaseline(){
@@ -4206,7 +4206,7 @@ body>.reader-shell{
     const cls=delta>0.000001?"positive":delta< -0.000001?"negative":"neutral";
     const sign=delta>0?"+":delta<0?"−":"";
     el.className="perps-delta "+cls;
-    el.textContent="SINCE LAST 5M CLOSE · "+side+" · "+sign+Math.abs(delta).toFixed(3)+" pp (BASE "+(baseline>=0?"+":"")+baseline.toFixed(2)+"%)";
+    el.textContent="24H CHANGE VS LAST 5M CLOSE · "+side+" · "+sign+Math.abs(delta).toFixed(3)+" pp (BASE "+(baseline>=0?"+":"")+baseline.toFixed(2)+"%)";
   }
   loadPerpsBaseline();
   const perpsEl=id=>document.getElementById(id);

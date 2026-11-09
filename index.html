@@ -819,6 +819,18 @@ body>.reader-shell{
   .reference-card>span{font-size:7px;letter-spacing:.08em}
   .reference-card>b{font-size:clamp(14px,4.3vw,19px)}
 }
+
+.reader-score-pair{display:grid;grid-template-columns:repeat(2,minmax(126px,1fr));gap:10px;flex:0 1 310px;min-width:0}
+.reader-score-pair .reader-score{min-width:0;width:100%;text-align:center}
+.reader-side-score{border-color:rgba(157,135,220,.26);transition:border-color .3s,box-shadow .3s,background .3s}
+.reader-side-score>b{color:#c8c0df;transition:color .3s,text-shadow .3s}
+.reader-side-score.side-up{border-color:rgba(59,224,158,.55);background:linear-gradient(145deg,rgba(12,54,43,.62),rgba(9,18,29,.75));box-shadow:inset 0 0 22px rgba(48,232,157,.10),0 0 17px rgba(48,232,157,.10)}
+.reader-side-score.side-up>b{color:#63f2b2;text-shadow:0 0 16px rgba(63,239,169,.35)}
+.reader-side-score.side-down{border-color:rgba(255,91,132,.58);background:linear-gradient(145deg,rgba(66,19,39,.62),rgba(20,13,28,.75));box-shadow:inset 0 0 22px rgba(255,76,124,.10),0 0 17px rgba(255,76,124,.10)}
+.reader-side-score.side-down>b{color:#ff829f;text-shadow:0 0 16px rgba(255,91,132,.35)}
+.reader-side-score.side-neutral>b{color:#c7b8ef}
+@media(max-width:680px){.reader-score-pair{width:100%;flex:1 1 100%;grid-template-columns:repeat(2,minmax(0,1fr))}.reader-score-pair .reader-score{padding:10px 8px}}
+@media(max-width:390px){.reader-score-pair{grid-template-columns:1fr 1fr;gap:7px}.reader-score-pair .reader-score>span{font-size:7px;letter-spacing:.09em}.reader-score-pair .reader-score>b{font-size:23px}}
 </style>
 </head>
 <body>
@@ -875,10 +887,17 @@ body>.reader-shell{
         <b id="viewLeader">COLLECTING DATA</b>
         <p id="viewDetail">Waiting for fresh Chainlink observations.</p>
       </div>
-      <div class="reader-score">
-        <span>LEADING PRESSURE</span>
-        <b id="viewConfidence">—</b>
-        <small id="viewLeadGap">Waiting for directional samples</small>
+      <div class="reader-score-pair">
+        <div class="reader-score">
+          <span>LEADING PRESSURE</span>
+          <b id="viewConfidence">—</b>
+          <small id="viewLeadGap">Waiting for directional samples</small>
+        </div>
+        <div id="viewSideLeadBox" class="reader-score reader-side-score side-neutral">
+          <span>HIGHER SHARE</span>
+          <b id="viewSideLead">WAIT</b>
+          <small id="viewSideLeadDetail">Waiting for pressure readings</small>
+        </div>
       </div>
     </div>
 
@@ -3649,9 +3668,15 @@ body>.reader-shell{
     const upShare=Number.isFinite(upVal)?upVal:50,downShare=Number.isFinite(downVal)?downVal:50;
     const leading=Math.max(upShare,downShare),gap=Math.abs(upShare-downShare);
     const score=$("viewConfidence"),gapEl=$("viewLeadGap"),fill=$("viewConfidenceFill");
-    if(score)score.textContent=(Number.isFinite(upVal)&&Number.isFinite(downVal))?leading+"/100":"—";
-    if(gapEl)gapEl.textContent=(Number.isFinite(upVal)&&Number.isFinite(downVal))?gap+" point pressure gap":"Waiting for directional samples";
+    const sideLeadBox=$("viewSideLeadBox"),sideLead=$("viewSideLead"),sideLeadDetail=$("viewSideLeadDetail");
+    const hasShares=Number.isFinite(upVal)&&Number.isFinite(downVal);
+    const higherSide=!hasShares?"WAIT":upVal>downVal?"UP":downVal>upVal?"DOWN":"EVEN";
+    if(score)score.textContent=hasShares?leading+"/100":"—";
+    if(gapEl)gapEl.textContent=hasShares?gap+" point pressure gap":"Waiting for directional samples";
     if(fill){fill.style.width=leading+"%";fill.className=side==="UP"?"up":side==="DOWN"?"down":"neutral";}
+    if(sideLead)sideLead.textContent=higherSide;
+    if(sideLeadDetail)sideLeadDetail.textContent=!hasShares?"Waiting for pressure readings":higherSide==="EVEN"?"UP and DOWN shares are tied":(higherSide==="UP"?upShare:downShare)+"/100 pressure share";
+    if(sideLeadBox)sideLeadBox.className="reader-score reader-side-score "+(higherSide==="UP"?"side-up":higherSide==="DOWN"?"side-down":"side-neutral");
     const mirror=(target,value)=>{const el=$(target);if(el)el.textContent=value;};
     mirror("viewUpShare",upText);mirror("viewDownShare",downText);
     mirror("viewUpDetail",upTicks?.textContent||"Rising samples · collecting");

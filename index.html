@@ -664,6 +664,17 @@ button{font-family:inherit}
 .basis-reference .basis-orderflow-foot{padding-bottom:9px}
 @media(max-width:760px){.fp-summary{grid-template-columns:repeat(3,minmax(0,1fr))}.fp-ladder-head,.fp-ladder-row{grid-template-columns:minmax(0,1fr) 66px minmax(0,1fr)}.fp-side-content{gap:4px;padding:0 4px}.fp-side-content small{font-size:7px}}
 @media(max-width:480px){.fp-summary{grid-template-columns:repeat(2,minmax(0,1fr))}.fp-time-stat{grid-column:span 2}.fp-ladder-head,.fp-ladder-row{grid-template-columns:minmax(0,1fr) 60px minmax(0,1fr);gap:3px}.fp-side-content b{font-size:9px}.fp-side-content small{display:none}.fp-round-meta{font-size:7px}}
+
+.pressure-share-card{display:block!important;margin:13px 0;border:1px solid #354a78;background:linear-gradient(145deg,#11172e,#0b1020)}
+.pressure-share-card .momentum-score-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.pressure-share-card .momentum-score-box{padding:14px;border-radius:11px;background:#090f20;border:1px solid #2e416d}
+.pressure-share-card .momentum-score-box span{display:block;font-size:10px;color:#94a9d0;font-weight:850;letter-spacing:.12em}
+.pressure-share-card .momentum-score-box b{display:block;font-size:28px;font-weight:900;margin-top:7px;font-variant-numeric:tabular-nums}
+.pressure-share-card .momentum-score-box small{display:block;margin-top:5px;color:#9aadd0;font-size:10px;line-height:1.45}
+.pressure-share-card .pressure-track{display:flex;height:9px;margin-top:12px;border-radius:20px;overflow:hidden;background:#202945}
+.pressure-share-card .pressure-track .up-fill{background:#38dca0}.pressure-share-card .pressure-track .down-fill{background:#f05e89}
+.pressure-share-card .chart-foot{font-size:10px;color:#879bc1;line-height:1.5;margin-top:9px}
+@media(max-width:520px){.pressure-share-card .momentum-score-box{padding:10px}.pressure-share-card .momentum-score-box b{font-size:23px}}
 </style>
 </head>
 <body>
@@ -692,13 +703,9 @@ button{font-family:inherit}
   <div class="basis-orderflow-top">
     <div>
       <div class="label">BASIS CHART · LIVE BTCUSDT ORDER FLOW</div>
-      <div class="chart-subtitle">Live Basis footprint and liquidity heatmap. Switch views using the controls below.</div>
+      <div class="chart-subtitle">Basis live footprint: executed bid × ask volume and delta by price.</div>
     </div>
     <span class="fp-live-status live">BASIS CHART</span>
-  </div>
-  <div class="basis-orderflow-controls" role="group" aria-label="Basis chart view">
-    <button id="basisFootprintBtn" class="basis-view-btn" type="button" aria-pressed="true">FOOTPRINT · BID × ASK</button>
-    <button id="basisHeatmapBtn" class="basis-view-btn" type="button" aria-pressed="false">LIQUIDITY HEATMAP</button>
   </div>
   <iframe id="basisOrderflowFrame" class="basis-widget-frame"
     src="https://www.basischarts.com/embed/chart?symbol=BTCUSDT&view=footprint"
@@ -710,56 +717,8 @@ button{font-family:inherit}
     <span id="basisViewDescription">Basis live footprint: executed bid × ask volume and delta by price.</span>
     <span><a href="https://www.basischarts.com/" target="_blank" rel="noopener noreferrer">Open Basis terminal</a></span>
   </div>
-  <div id="microflowPanel" class="microflow-panel waiting" aria-label="Bitcoin microstructure order flow signal">
-    <div class="microflow-scanline" aria-hidden="true"></div>
-    <div class="microflow-top">
-      <div>
-        <div class="microflow-kicker">BTC MOMENTUM EDGE · PRICE LEAD VS CLOB</div>
-        <div class="microflow-subtitle">Fast Binance BTC trade tape · price velocity + acceleration · exact Chainlink target · live Polymarket CLOB comparison</div>
-      </div>
-      <span id="microflowStatus" class="microflow-status">WAITING FOR BTC TAPE + CLOB</span>
-    </div>
-    <div class="microflow-command">
-      <div class="microflow-signal-wrap">
-        <span class="microflow-overline">LIVE PRICE MOMENTUM</span>
-        <b id="microflowSignal" class="microflow-signal">WAIT · MEASURING PRICE SPEED</b>
-        <span id="microflowSignalDetail" class="microflow-signal-detail">Waiting for fresh trade tape, an exact target and both CLOB contracts.</span>
-      </div>
-      <div class="microflow-score-wrap">
-        <span class="microflow-overline">PRICE / CLOB EDGE</span>
-        <b id="microflowScore">—</b>
-        <small>−100 / +100</small>
-      </div>
-    </div>
-    <div class="microflow-meter-shell">
-      <div class="microflow-meter-track"><span id="microflowMeterFill"></span><i></i></div>
-      <div class="microflow-meter-labels"><span>SELL PRESSURE</span><span>NEUTRAL</span><span>BUY PRESSURE</span></div>
-    </div>
-    <div class="microflow-readouts">
-      <div class="microflow-readout"><small>BTC MOVE · 1 SECOND</small><b id="microflowOfi1">—</b></div>
-      <div class="microflow-readout"><small>BTC MOVE · 3 SECONDS</small><b id="microflowOfi3">—</b></div>
-      <div class="microflow-readout"><small>DISTANCE TO BEAT · CHAINLINK</small><b id="microflowMicroprice">—</b></div>
-      <div class="microflow-readout"><small>AGGRESSOR FLOW · FAST TAPE</small><b id="microflowTradePressure">—</b></div>
-      <div class="microflow-readout"><small>CLOB LEAD</small><b id="microflowAbsorption">COLLECTING</b></div>
-      <div class="microflow-readout"><small>BTC TAPE AGE</small><b id="microflowDepthAge">—</b></div>
-    </div>
-    <div id="microflowReason" class="microflow-reason">Comparing millisecond BTC price pressure and aggressor flow against the live Polymarket contract lead.</div>
-  </div>
-  <div id="basisHoldGuard" class="basis-hold-guard wait" role="status" aria-live="polite">
-    <div class="hold-guard-top">
-      <span class="hold-guard-kicker">HOLD GUARD · CHOP FILTER</span>
-      <span id="basisHoldState" class="hold-guard-state">ASSESSING</span>
-    </div>
-    <div class="hold-guard-main">
-      <b id="basisHoldCall" class="hold-guard-call">WAIT · NO SIDE TO HOLD</b>
-      <b id="basisHoldScore" class="hold-guard-score">—/100</b>
-    </div>
-    <div class="hold-guard-track" aria-label="Hold support meter">
-      <span id="basisHoldFill" class="hold-guard-fill"></span>
-    </div>
-    <div class="hold-guard-scale"><span>WEAK</span><span>65 · STRONG</span><span>80 · HIGH</span></div>
-    <div id="basisHoldDetail" class="hold-guard-detail">Waiting for a persistent leader, fresh flow, and price acceptance.</div>
-  </div>
+
+
 </section>
 <div class="chart-data-hidden" hidden aria-hidden="true">
   <div id="liveChart"></div>
@@ -768,7 +727,18 @@ button{font-family:inherit}
   <span id="chartStatus">CHAINLINK LIVE</span>
 </div>
 
-<section class="card momentum-engine-card">
+<section class="card pressure-share-card">
+  <div class="feature-head">
+    <div><div class="label">CONTINUOUS BTC PRESSURE SHARE</div><div class="small">Rolling Chainlink directional samples · relative UP / DOWN pressure, not a win probability</div></div>
+  </div>
+  <div class="momentum-score-grid">
+        <div class="momentum-score-box up-box"><span>UP PRESSURE SHARE</span><b id="upMomentumScore">—</b><small id="upMomentumTicks">— rising samples</small></div>
+        <div class="momentum-score-box down-box"><span>DOWN PRESSURE SHARE</span><b id="downMomentumScore">—</b><small id="downMomentumTicks">— falling samples</small></div>
+      </div>
+  <div class="pressure-track"><div id="pressureUpBar" class="up-fill" style="width:50%"></div><div id="pressureDownBar" class="down-fill" style="width:50%"></div></div>
+  <div id="momentumFeedDetail" class="chart-foot">The momentum split is relative strength, not a win probability. Rising / falling samples count distinct Chainlink price updates, recorded once per second.</div>
+</section>
+<div class="momentum-runtime-hidden" hidden aria-hidden="true">
   <div class="momentum-engine-head">
     <div>
       <div class="label">MOMENTUM PULSE · CONTINUOUS BTC TAPE</div>
@@ -796,14 +766,11 @@ button{font-family:inherit}
         <div class="fast-pulse-box"><small>LAST 10 SECONDS</small><b id="momentumFast10">COLLECTING</b><span id="momentumFast10Bias">Short-term pressure</span></div>
         <div class="fast-pulse-box"><small>LAST 60 SECONDS</small><b id="momentumFast60">COLLECTING</b><span id="momentumFast60Bias">Sustained direction</span></div>
       </div>
-      <div class="momentum-score-grid">
-        <div class="momentum-score-box up-box"><span>UP PRESSURE SHARE</span><b id="upMomentumScore">—</b><small id="upMomentumTicks">— rising samples</small></div>
-        <div class="momentum-score-box down-box"><span>DOWN PRESSURE SHARE</span><b id="downMomentumScore">—</b><small id="downMomentumTicks">— falling samples</small></div>
-      </div>
+      
     </div>
   </div>
-  <div class="pressure-track"><div id="pressureUpBar" class="up-fill" style="width:50%"></div><div id="pressureDownBar" class="down-fill" style="width:50%"></div></div>
-  <div id="momentumFeedDetail" class="chart-foot">The momentum split is relative strength, not a win probability. Rising / falling samples count distinct Chainlink price updates, recorded once per second.</div>
+  
+  
   <div class="trend-momentum-summary">
     <div><small>UNIFIED TREND + MOMENTUM READ</small><b id="trendMomentumSide">COLLECTING</b><span id="trendMomentumDetail">Blending the rolling 60-second momentum pulse with confirmed swing structure and live Chainlink price movement.</span></div>
     <strong id="trendMomentumScore">—</strong>
@@ -827,7 +794,7 @@ button{font-family:inherit}
   <div id="swingEvent" class="swing-event">WAIT · BUILDING CONFIRMED SWING STRUCTURE</div>
   <div id="swingNarrative" class="feature-foot">A swing is confirmed only after two bars form to its right. This avoids treating every one-second wiggle as a trend reversal.</div>
 </div>
-</section>
+</div>
 
 
 <section class="card flow-card" hidden style="display:none!important">
@@ -864,40 +831,7 @@ button{font-family:inherit}
 
 
 
-<section class="card confluence-card">
-  <div class="feature-head">
-    <div><div class="label">FIVE-MINUTE OUTCOME ENGINE · CROSS-SIGNAL CONFLUENCE</div><div class="small">New price to beat each five-minute market · continuous BTC trend memory carries across rounds</div></div>
-    <span id="confluenceStatus" class="feature-status">COLLECTING</span>
-  </div>
-  <div class="confluence-main">
-    <div id="confluenceCall" class="confluence-call">WAIT · COLLECTING DATA</div>
-    <div id="confluenceScore" class="confluence-score">—</div>
-  </div>
-  <div class="confluence-meter"><span id="confluenceMeter"></span></div>
-  <div id="confluenceMemory" class="confluence-memory">CONTINUOUS BTC TREND · COLLECTING</div>
-  <div id="flipRadar" class="flip-radar wait"><b id="flipRadarStatus">FLIP RADAR · STARTING</b><span id="flipRadarDetail">Separating small counter-breaks from major reversals.</span></div>
-  <div class="flow-edge-panel">
-    <div class="feature-head"><div><div class="label">REAL VOLUME EDGE · SPOT CVD vs PERP CVD</div><div class="small">Spot CVD = aggressive spot buys minus sells; Perp CVD = the same measure in futures. Agreement plus price progress supports a move; strong flow with stalled price can flag absorption.</div></div><div class="flow-status-tools"><span id="flowEdgeStatus" class="feature-status">COLLECTING</span><button id="flowRestartBtn" class="flow-restart-btn" type="button" title="Reconnect live momentum feeds and rebuild flow calculations">RESTART FEEDS</button></div></div>
-    <div class="flow-cvd-legend"><span><i class="spot-line"></i> SPOT CVD</span><span><i class="perp-line"></i> PERP CVD</span><span>1-SECOND UPDATES · 15-MINUTE CONTINUOUS NORMALIZED DELTA</span></div>
-    <div id="flowCvdChart"></div>
-    <div class="flow-edge-grid">
-      <div class="flow-edge-cell"><span>SPOT CUMULATIVE DELTA</span><b id="flowSpotRead">—</b></div>
-      <div class="flow-edge-cell"><span>PERP CUMULATIVE DELTA</span><b id="flowPerpRead">—</b></div>
-      <div class="flow-edge-cell"><span>FAST SPOT PRESSURE · 5S / 10S</span><b id="flowFastSpotRead">—</b></div>
-      <div class="flow-edge-cell"><span>FAST PERP PRESSURE · 5S / 10S</span><b id="flowFastPerpRead">—</b></div>
-      <div class="flow-edge-cell"><span>REAL VOLUME REGIME</span><b id="flowVolumeRead">—</b></div>
-      <div class="flow-edge-cell"><span>OPEN INTEREST</span><b id="flowOiRead">—</b></div>
-      <div class="flow-edge-cell"><span>LIQUIDATION CONTEXT · 60S</span><b id="flowLiqRead">—</b></div>
-      <div class="flow-edge-cell"><span>EFFORT vs PRICE RESULT</span><b id="flowAbsorbRead">—</b></div>
-    </div>
-    <div id="flowTurnRead" class="flow-turn-read">Waiting for high-volume price + delta confirmation</div>
-    <div id="flowHoldRead" class="flow-hold-read">HOLD READ · WAITING FOR INDEPENDENT FLOW</div>
-  </div>
-  <div id="confluenceDetail" class="confluence-detail">No directional call until enough live inputs are fresh and aligned.</div>
-  <div id="confluenceChips" class="confluence-chips"></div>
-  <div id="confluenceClock" class="feature-foot">Five-minute market · waiting for exact price-to-beat and both Polymarket books.</div>
-  <div class="feature-foot">The score is a confluence meter, not a probability. Its historical hit rate will be shown only after completed five-minute markets.</div>
-</section>
+
 
 <section class="prediction-board">
   <div class="prediction-panel">
@@ -3915,22 +3849,6 @@ button{font-family:inherit}
   }
 
 
-
-  const basisOrderflowFrame=$("basisOrderflowFrame");
-  function setBasisOrderflowView(view){
-    try{localStorage.setItem("btc5m_basis_view",view)}catch(_){}
-    const heatmap=view==="heatmap";
-    const src="https://www.basischarts.com/embed/chart?symbol=BTCUSDT&view="+(heatmap?"heatmap":"footprint");
-    if(basisOrderflowFrame.getAttribute("src")!==src)basisOrderflowFrame.src=src;
-    $("basisFootprintBtn").setAttribute("aria-pressed",String(!heatmap));
-    $("basisHeatmapBtn").setAttribute("aria-pressed",String(heatmap));
-    $("basisViewDescription").textContent=heatmap
-      ?"Heatmap shows displayed Binance perpetual liquidity, executed trades and cumulative delta. Depth history starts building while the chart is open."
-      :"Footprint shows executed buy/sell volume and delta at each price. It is not a full order book.";
-  }
-  $("basisFootprintBtn").addEventListener("click",()=>setBasisOrderflowView("footprint"));
-  $("basisHeatmapBtn").addEventListener("click",()=>setBasisOrderflowView("heatmap"));
-  try{const savedView=localStorage.getItem("btc5m_basis_view");if(savedView==="heatmap")setBasisOrderflowView("heatmap")}catch(_){}
 
   $("reconnect").addEventListener("click",connect);
   const flowRestartBtn=$("flowRestartBtn");if(flowRestartBtn)flowRestartBtn.addEventListener("click",restartMomentumFeeds);

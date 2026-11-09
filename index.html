@@ -4150,7 +4150,7 @@ body>.reader-shell{
   $("reconnect").addEventListener("click",connect);
   const flowRestartBtn=$("flowRestartBtn");if(flowRestartBtn)flowRestartBtn.addEventListener("click",restartMomentumFeeds);
   $("exportLab").addEventListener("click",exportMarketLab);
-  loadMarketLab();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();renderMomentumDashboard();setInterval(renderMomentumDashboard,250);state.timer=setInterval(tick,500);const readerReconnect=$("readerReconnect");if(readerReconnect)readerReconnect.addEventListener("click",restartMomentumFeeds);
+  loadMarketLab();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();renderMomentumDashboard();setInterval(renderMomentumDashboard,1000);state.timer=setInterval(tick,1000);const readerReconnect=$("readerReconnect");if(readerReconnect)readerReconnect.addEventListener("click",restartMomentumFeeds);
 })();
 
 </script>

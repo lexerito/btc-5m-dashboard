@@ -113,8 +113,9 @@ button,input{font:inherit}
 .flowrows{display:grid;gap:10px}
 .flowrow{display:grid;grid-template-columns:90px 1fr 54px;align-items:center;gap:9px}
 .flowrow>span{color:#8c9db9;font-size:8px;font-weight:900;letter-spacing:.09em}
-.flowbar{height:8px;overflow:hidden;border-radius:10px;background:#293147}
-.flowbar i{display:block;width:50%;height:100%;background:linear-gradient(90deg,#ec6788,#69728a,#45e7ac);transition:width .3s}
+.flowbar{position:relative;height:8px;overflow:hidden;border-radius:10px;background:#293147}
+.flowbar:after{content:"";position:absolute;left:50%;top:0;width:1px;height:100%;background:#9aa9c4aa}
+.flowbar i{position:absolute;left:50%;top:0;display:block;width:0;height:100%;background:#8f9bb2;transition:left .3s,width .3s,background .3s}
 .flowrow b{text-align:right;color:#dce5f5;font-size:9px;font-variant-numeric:tabular-nums}
 .flow-note{margin-top:11px;color:#8292ae;font-size:9px;line-height:1.5}
 .calibration{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
@@ -411,7 +412,7 @@ function feePerShare(price){return FEE_RATE*price*(1-price)}
 function render(){
  const now=Date.now();syncRound(now);const start=state.roundStart,end=start+300000,left=Math.max(0,end-now);
  setText("countdown",Math.floor(left/60000)+":"+String(Math.floor(left%60000/1000)).padStart(2,"0"));
- setText("targetPrice",state.targetReady||state.targetTs===start?usd(state.target):"WAIT · EXACT OPEN");
+ setText("targetPrice",state.targetTs===start&&Number.isFinite(state.target)?usd(state.target):"WAIT · EXACT OPEN");
  setText("targetState",state.targetTs===start?"Opening Chainlink TWAP60 captured · "+new Date(start).toLocaleTimeString():"Exact opening TWAP60 sample missing · trade locked");
  setText("currentTwap",usd(state.twap));setText("twapAge",state.twapTs?"Updated "+(Math.max(0,now-state.twapTs)/1000).toFixed(1)+"s ago":"Waiting for TWAP stream");
  setText("chainlinkSpot",usd(state.chainlink));setText("chainlinkAge",state.chainlinkTs?"Updated "+(Math.max(0,now-state.chainlinkTs)/1000).toFixed(1)+"s ago":"Waiting for oracle stream");
@@ -512,7 +513,7 @@ function render(){
 }
 function setFlowDisplay(valueId,barId,stats){
  const val=stats.imbalance,el=$(valueId);if(el){el.textContent=val===null?"—":(val>0?"+":"")+(val*100).toFixed(0)+"%";el.className=val===null?"":val>.08?"up":val<-.08?"down":""}
- const b=$(barId);if(b)b.style.width=((val===null?0:Math.abs(val))*50+50)+"%";
+ const b=$(barId);if(b){const width=Math.abs(val||0)*50;b.style.width=width+"%";b.style.left=(val<0?50-width:50)+"%";b.style.background=val>0?"linear-gradient(90deg,#13875e,#40e7a3)":val<0?"linear-gradient(90deg,#a52c50,#ff6d8d)":"#8490a8";}
 }
 function updateFeeds(now,m,clobFresh){
  const set=(id,age,limit,word)=>{const e=$(id);if(!e)return;const fresh=Number.isFinite(age)&&age<limit;e.textContent=fresh?"LIVE · "+Math.round(age)+"ms":word||"STALE";e.className=fresh?"ok":Number.isFinite(age)?"bad":"warn"};
@@ -545,29 +546,6 @@ function captureCheckpoint(now,m){
   }
  }
 }
-function renderCalibration(){
- const checkpoints=[60,180,240,270];
- for(const cp of checkpoints){
-  const rows=state.rounds.filter(r=>r.outcome!==null&&r.checkpoints&&r.checkpoints[String(cp)]&&Number.isFinite(r.checkpoints[String(cp)].pUp));
-  if(!rows.length){setText("hit"+cp,"—");setText("count"+cp,"0 samples · Brier —");continue}
-  const hit=rows.filter(r=>(r.checkpoints[String(cp)].pUp>=.5?1:0)===r.outcome).length/rows.length;
-  const brier=rows.reduce((a,r)=>a+Math.pow(r.checkpoints[String(cp)].pUp-r.outcome,2),0)/rows.length;
-  setText("hit"+cp,Math.round(hit*100)+"%");
-  setText("count"+cp,rows.length+" samples · Brier "+brier.toFixed(3));
- }
- const done=state.rounds.filter(r=>r.outcome!==null);
- setText("sampleBadge",done.length+" COMPLETED");cls("sampleBadge",done.length>=20?"pill up":"pill wait");
- setText("journalSummary",done.length<20?done.length+" completed markets · forward test warming up; 20+ samples recommended before judging the model.":done.length+" completed markets stored locally · compare checkpoint hit rate and Brier score before trusting the signal.");
-}
-function exportJournal(){
- const rows=state.rounds.filter(r=>r.outcome!==null);if(!rows.length){alert("No completed markets recorded yet.");return}
- const headers=["market_start_utc","target_twap","final_twap","outcome", "p60","p120","p180","p240","p270"];
- const lines=[headers.join(",")];
- for(const r of rows){lines.push([new Date(r.start).toISOString(),r.target,r.final,r.outcome===1?"UP":"DOWN",60,120,180,240,270].map((x,i)=>i<4?String(x):((r.checkpoints&&r.checkpoints[String(x)]?.pUp)??"")).join(","))}
- const blob=new Blob([lines.join("\n")],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="btc-5m-quant-journal.csv";a.click();URL.revokeObjectURL(url);
-}
-function setRoundTargetFromHistory(){syncRound(Date.now())}
-
 function connectReference(){
  if(state.rtdsReconnect){clearTimeout(state.rtdsReconnect);state.rtdsReconnect=null}
  if(state.rtdsPing){clearInterval(state.rtdsPing);state.rtdsPing=null}

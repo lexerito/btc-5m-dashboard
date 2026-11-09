@@ -4175,8 +4175,18 @@ body>.reader-shell{
   const polymarketPerps={instrumentId:null,timer:null,busy:false,lastGoodAt:0,lastPct:null,baselinePct:null,baselineMarketStart:null};
   const perpsBaselineKey="btc5m_perps_change_baseline_v1";
   function loadPerpsBaseline(){
-    try{const saved=JSON.parse(localStorage.getItem(perpsBaselineKey)||"null");if(saved&&Number.isFinite(saved.marketStart)&&Number.isFinite(saved.pct)){polymarketPerps.baselineMarketStart=saved.marketStart;polymarketPerps.baselinePct=saved.pct;}}
-    catch(_){}
+    try{
+      const saved=JSON.parse(localStorage.getItem(perpsBaselineKey)||"null");
+      if(saved&&Number.isFinite(saved.marketStart)&&Number.isFinite(saved.pct)){
+        polymarketPerps.baselineMarketStart=saved.marketStart;
+        polymarketPerps.baselinePct=saved.pct;
+        return;
+      }
+    }catch(_){}
+    // User supplied the last completed market's 24H change as +1.10%.
+    polymarketPerps.baselineMarketStart=boundaryAtOrBefore(Date.now());
+    polymarketPerps.baselinePct=1.10;
+    savePerpsBaseline();
   }
   function savePerpsBaseline(){
     try{localStorage.setItem(perpsBaselineKey,JSON.stringify({marketStart:polymarketPerps.baselineMarketStart,pct:polymarketPerps.baselinePct}));}

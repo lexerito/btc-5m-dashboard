@@ -274,7 +274,7 @@ const JOURNAL_KEY="btc5m-quant-journal-v1";
 const FEE_RATE=.07;
 const SLIPPAGE=.005;
 const state={
- roundStart:0,target:null,targetTs:null,chainlink:null,chainlinkTs:0,twap:null,twapTs:0,
+ roundStart:0,target:null,targetTs:null,chainlink:null,chainlinkTs:0,chainlinkEventTs:0,twap:null,twapTs:0,twapEventTs:0,
  chainlinkHistory:[],twapHistory:[],spotHistory:[],perpHistory:[],coinbaseHistory:[],flows:[],
  spotPrice:null,spotTs:0,perpPrice:null,perpTs:0,coinbasePrice:null,coinbaseTs:0,
  rtds:null,rtdsReconnect:null,rtdsPing:null,rtdsLastAt:0,
@@ -321,13 +321,14 @@ function syncRound(now=Date.now()){
  if(state.targetTs!==start){const exact=state.twapHistory.find(x=>x.ts===start);if(exact){finalizePriorRound(start,exact.value);state.target=exact.value;state.targetTs=start;ensureRoundRecord(start,exact.value)}}
 }
 function addTwap(ts,value){
- append(state.twapHistory,{ts,value},3000);state.twap=value;state.twapTs=Date.now();
+ append(state.twapHistory,{ts,value},3000);
+ if(ts>=state.twapEventTs){state.twap=value;state.twapTs=Date.now();state.twapEventTs=ts}
  const liveStart=boundary(Date.now());
  if(state.roundStart!==liveStart)syncRound(Date.now());
  if(ts===state.roundStart)setRoundTarget(state.roundStart,value);
  if(ts%5000<1200)persistTwap();
 }
-function addChainlink(ts,value){append(state.chainlinkHistory,{ts,value},4000);state.chainlink=value;state.chainlinkTs=Date.now()}
+function addChainlink(ts,value){append(state.chainlinkHistory,{ts,value},4000);if(ts>=state.chainlinkEventTs){state.chainlink=value;state.chainlinkTs=Date.now();state.chainlinkEventTs=ts}}
 function sampleAt(h,cut){for(let i=h.length-1;i>=0;i--)if(h[i].ts<=cut)return h[i];return null}
 function delta(h,seconds,now=Date.now()){
  if(!h.length)return null;const last=sampleAt(h,now),base=sampleAt(h,now-seconds*1000);if(!last||!base||now-last.ts>2200||last.ts-base.ts<seconds*550)return null;return last.value-base.value
@@ -395,7 +396,7 @@ function forecastModel(now=Date.now()){
   sigmaFinal=Math.max(.75,sigma*Math.sqrt(Math.max(0,varianceFactor)));
   if(knownSeconds>0)coverage=Math.min(1,knownCount/Math.max(1,knownSeconds*.55));
  }
- const z=projected!==null&&sigmaFinal!==null?(projected-state.target)/sigmaFinal:null;
+ const z=targetReady&&projected!==null&&sigmaFinal!==null?(projected-state.target)/sigmaFinal:null;
  const pUp=z===null||!targetReady||!chainFresh||!twapFresh||!spotFresh||!perpFresh||vol.count<30||coverage<.7?null:Math.max(.005,Math.min(.995,normalCDF(z)));
  const flowSpotStrong=spotFlow5.count>=3&&spotFlow5.total>=12000&&Math.abs(spotFlow5.imbalance||0)>.22;
  const flowPerpStrong=perpFlow5.count>=3&&perpFlow5.total>=12000&&Math.abs(perpFlow5.imbalance||0)>.22;

@@ -839,6 +839,7 @@ body>.reader-shell{
 .perps-name{font-size:13px;font-weight:850;letter-spacing:.04em;color:#eaf0ff}
 .perps-source{margin-top:4px;font-size:9px;color:#879ac1;letter-spacing:.13em;text-transform:uppercase}
 .perps-price-wrap{text-align:right;min-width:0}
+ .perps-change-label{font-size:9px;font-weight:900;letter-spacing:.13em;color:#9aadd2;margin-bottom:3px}
 .perps-price{margin-top:2px;font-size:clamp(14px,2vw,18px);font-weight:850;color:#edf3ff;font-variant-numeric:tabular-nums}
 .perps-change{margin-top:0;font-size:clamp(27px,4vw,36px);font-weight:950;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
 .perps-change.positive{color:#43efae;text-shadow:0 0 17px #43efae30}.perps-change.negative{color:#ff6b96;text-shadow:0 0 17px #ff6b9630}.perps-change.neutral{color:#b8c5df}
@@ -872,8 +873,8 @@ body>.reader-shell{
   </section>
 
   <section id="polymarketPerpsCard" class="perps-strip" aria-label="Polymarket Bitcoin perpetual futures live data" aria-live="polite">
-    <div class="perps-identity"><div class="perps-mark">₿</div><div><div class="perps-name">BTC · BITCOIN PERPS</div><div class="perps-source">POLYMARKET · LIVE MARK PRICE</div></div></div>
-    <div class="perps-price-wrap"><div id="perpsBtcChange" class="perps-change neutral">—</div><div id="perpsBtcPrice" class="perps-price">Connecting…</div><div id="perpsBtcDelta" class="perps-delta">24H DOLLAR CHANGE</div><div id="perpsBtcUpdated" class="perps-updated">Waiting for Polymarket data</div></div>
+    <div class="perps-identity"><div class="perps-mark">₿</div><div><div class="perps-name">BTC · 5-MINUTE DIRECTION SIGNAL</div><div class="perps-source">POLYMARKET PERPS · SIGNAL USES LIVE 24H % CHANGE</div></div></div>
+    <div class="perps-price-wrap"><div class="perps-change-label">5M BTC DIRECTIONAL BIAS</div><div id="perpsBtcChange" class="perps-change neutral">—</div><div id="perpsBtcPrice" class="perps-price">Connecting…</div><div id="perpsBtcDelta" class="perps-delta">24H DOLLAR CHANGE</div><div id="perpsBtcUpdated" class="perps-updated">Waiting for Polymarket data</div></div>
   </section>
 
   <section class="target-strip" aria-label="Current five minute market reference">
@@ -4184,7 +4185,7 @@ body>.reader-shell{
     const delta=mark-open,pct=(delta/open)*100,sign=delta>0?"+":delta<0?"−":"";
     const price=perpsEl("perpsBtcPrice"),change=perpsEl("perpsBtcChange"),deltaEl=perpsEl("perpsBtcDelta");
     if(price)price.textContent=perpsMoney(mark);
-    if(change){change.className="perps-change "+(pct>0?"positive":pct<0?"negative":"neutral");change.textContent=(pct>0?"▲ ":pct<0?"▼ ":"")+sign+Math.abs(pct).toFixed(2)+"%";}
+    if(change){change.className="perps-change "+(pct>0?"positive":pct<0?"negative":"neutral");change.textContent=(pct>0?"▲ UP ":pct<0?"▼ DOWN ":"FLAT ")+sign+Math.abs(pct).toFixed(2)+"%";}
     if(deltaEl){deltaEl.className="perps-delta "+(delta>0?"positive":delta<0?"negative":"");deltaEl.textContent=sign+perpsMoney(Math.abs(delta))+" · 24H CHANGE";}
     polymarketPerps.lastGoodAt=Date.now();
     renderPerpsUnavailable("POLYMARKET MARK PRICE · UPDATED "+new Date().toLocaleTimeString());

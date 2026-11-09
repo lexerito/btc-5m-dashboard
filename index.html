@@ -321,7 +321,8 @@ function syncRound(now=Date.now()){
 }
 function addTwap(ts,value){
  append(state.twapHistory,{ts,value},3000);state.twap=value;state.twapTs=Date.now();
- syncRound(ts);
+ const liveStart=boundary(Date.now());
+ if(state.roundStart!==liveStart)syncRound(Date.now());
  if(ts===state.roundStart)setRoundTarget(state.roundStart,value);
  if(ts%5000<1200)persistTwap();
 }
@@ -401,8 +402,8 @@ function forecastModel(now=Date.now()){
  return{start,end,elapsed,remaining,targetReady,chainFresh,twapFresh,spotFresh,perpFresh,chainAge,twapAge,spotAge,perpAge,vol,oracleSlope,spotSlope,perpSlope,drift,spot5,spot15,perp5,perp15,spotFlow5,spotFlow15,perpFlow5,perpFlow15,projected,sigmaFinal,z,pUp,knownSeconds,knownCount,coverage,flowAgree};
 }
 function marketMetrics(book){
- if(!book)return null;const bids=book.bids.slice().sort((a,b)=>b.p-a.p),asks=book.asks.slice().sort((a,b)=>a.p-b.p);
- const bid=bids[0]?.p??null,ask=asks[0]?.p??null,mid=bid!==null&&ask!==null?(bid+ask)/2:null;
+ if(!book)return null;const bids=(book.bids||[]).slice().sort((a,b)=>b.p-a.p),asks=(book.asks||[]).slice().sort((a,b)=>a.p-b.p);
+ const bid=book.bestBid??(bids[0]?.p??null),ask=book.bestAsk??(asks[0]?.p??null),mid=bid!==null&&ask!==null?(bid+ask)/2:null;
  const bd=bids.slice(0,5).reduce((a,x)=>a+x.s,0),ad=asks.slice(0,5).reduce((a,x)=>a+x.s,0);
  return{bid,ask,mid,spread:bid!==null&&ask!==null?ask-bid:null,depth:bd+ad,bidDepth:bd,askDepth:ad};
 }
@@ -429,7 +430,7 @@ function render(){
  $("probDownBar").style.width=(m.pUp===null?50:(1-m.pUp)*100)+"%";
  setText("modelGap",marketGap===null?"—":(marketGap>=0?"+":"")+(marketGap*100).toFixed(1)+"¢");
  setText("marketFair",clobUp===null?"Market implied —":"CLOB UP fair "+(clobUp*100).toFixed(1)+"%");
- setText("forecastGap",m.projected===null?"—":(m.projected>=m.target?"+":"−")+usd(Math.abs(m.projected-m.target)));
+ setText("forecastGap",m.projected===null||!m.targetReady?"—":(m.projected>=m.target?"+":"−")+usd(Math.abs(m.projected-m.target)));
  setText("forecastSigma",m.sigmaFinal===null?"Uncertainty unavailable":"Forecast σ "+usd(m.sigmaFinal));
  setText("realizedVol",m.vol.sigma===null?"—":usd(m.vol.sigma));
  setText("volSampleCount",m.vol.count+" one-second returns · 3m window");
@@ -487,7 +488,7 @@ function render(){
  setText("upMid",cents(up?.mid));setText("downMid",cents(down?.mid));
  setText("upBook","Bid "+cents(up?.bid)+" · Ask "+cents(up?.ask));setText("downBook","Bid "+cents(down?.bid)+" · Ask "+cents(down?.ask));
  setText("clobProbability",clobUp===null?"—":"UP "+(clobUp*100).toFixed(1)+"% · DOWN "+((1-clobUp)*100).toFixed(1)+"%");
- setText("clobSpread",up?.spread===null||up?.spread===undefined?"—":Math.max(up.spread,down?.spread||0)*100 .toFixed);
+ setText("clobSpread",!up||!down||up.spread===null||down.spread===null?"—":(Math.max(up.spread,down.spread)*100).toFixed(1)+"¢");
  setText("clobDepth",up&&down?Math.round(up.depth+down.depth).toLocaleString("en-US")+" shares":"—");
  setText("clobAge",clobFresh?Math.round(Math.min(upBookAge,downBookAge))+"ms":"STALE");
  setText("clobStatus",clobFresh?"LIVE · BOOKS":"STALE");cls("clobStatus",clobFresh?"pill up":"pill wait");

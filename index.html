@@ -675,13 +675,205 @@ button{font-family:inherit}
 .pressure-share-card .pressure-track .up-fill{background:#38dca0}.pressure-share-card .pressure-track .down-fill{background:#f05e89}
 .pressure-share-card .chart-foot{font-size:10px;color:#879bc1;line-height:1.5;margin-top:9px}
 @media(max-width:520px){.pressure-share-card .momentum-score-box{padding:10px}.pressure-share-card .momentum-score-box b{font-size:23px}}
+
+/* Clean momentum-reader layout */
+body{max-width:1040px;padding:26px 22px 44px;background:
+  radial-gradient(ellipse at 50% -18%,rgba(112,65,190,.30),transparent 48%),
+  radial-gradient(ellipse at 2% 35%,rgba(27,66,130,.12),transparent 40%),
+  linear-gradient(155deg,#080713 0%,#0b0d1b 52%,#0e0b1d 100%);color:#edf2ff}
+body>header{margin:0 auto 20px;padding:4px 2px 17px;border-bottom:1px solid rgba(144,124,210,.17)}
+body>header .brand h1{font-size:23px;letter-spacing:-.045em}
+body>header .sub{color:#8e9fbd;letter-spacing:.13em}
+.reader-shell{display:grid;gap:15px;min-width:0}
+.reference-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+.reference-card{position:relative;min-width:0;padding:14px 16px;border:1px solid #293553;border-radius:13px;background:linear-gradient(145deg,rgba(20,26,47,.96),rgba(10,15,29,.96));box-shadow:0 8px 24px rgba(0,0,0,.18),inset 0 1px rgba(255,255,255,.025)}
+.reference-card:after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(115deg,rgba(153,117,255,.07),transparent 48%)}
+.reference-card>span,.target-copy>span,.target-clock>span{display:block;color:#8795b7;font-size:9px;font-weight:850;letter-spacing:.14em}
+.reference-card>b{display:block;margin-top:8px;color:#f2f2ff;font-size:clamp(18px,2.6vw,25px);font-weight:850;letter-spacing:-.035em;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.reference-card>small{display:block;margin-top:5px;color:#7788a9;font-size:10px}
+.target-strip{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 18px;border:1px solid rgba(115,100,181,.40);border-radius:14px;background:linear-gradient(110deg,rgba(31,26,60,.94),rgba(15,20,39,.96) 68%,rgba(20,16,40,.96));box-shadow:inset 0 0 25px rgba(117,81,199,.08)}
+.target-copy{min-width:0}
+.target-copy>b{display:block;margin-top:6px;color:#eee8ff;font-size:clamp(19px,3vw,26px);font-weight:900;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+.target-copy>small{display:block;margin-top:4px;color:#9289b7;font-size:10px}
+.target-clock{flex:0 0 auto;text-align:right;padding-left:15px;border-left:1px solid rgba(147,125,207,.22)}
+.target-clock>b{display:block;margin-top:5px;color:#d9c9ff;font-size:27px;font-weight:900;letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.momentum-reader-card{--reader-accent:#aa8cff;--reader-glow:rgba(143,100,255,.30);position:relative;isolation:isolate;overflow:hidden;min-width:0;padding:22px;border:1px solid rgba(137,112,218,.58);border-radius:19px;background:
+  radial-gradient(ellipse at 5% 0%,rgba(117,77,200,.22),transparent 44%),
+  radial-gradient(ellipse at 100% 100%,rgba(76,44,140,.19),transparent 43%),
+  linear-gradient(145deg,#16142b 0%,#101629 50%,#121025 100%);
+  box-shadow:0 18px 48px rgba(0,0,0,.42),0 0 35px rgba(115,81,205,.16),inset 0 1px rgba(255,255,255,.055)}
+.momentum-reader-card.up-state{--reader-accent:#48f0ab;--reader-glow:rgba(50,235,162,.23);border-color:rgba(53,207,147,.62)}
+.momentum-reader-card.down-state{--reader-accent:#ff668d;--reader-glow:rgba(255,67,116,.24);border-color:rgba(242,82,124,.65)}
+.reader-glow{position:absolute;z-index:-1;inset:-25% -10%;pointer-events:none;background:radial-gradient(ellipse at 50% 0%,var(--reader-glow),transparent 48%);opacity:.85;animation:readerBreath 4.8s ease-in-out infinite}
+.reader-scan{position:absolute;z-index:-1;left:-45%;top:0;width:35%;height:100%;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(196,177,255,.045),transparent);transform:skewX(-14deg);animation:readerSweep 8s linear infinite}
+.reader-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding-bottom:16px;border-bottom:1px solid rgba(182,164,255,.14)}
+.reader-eyebrow{display:block;color:#ab99dc;font-size:9px;font-weight:900;letter-spacing:.18em}
+.reader-head h2{margin:7px 0 0;color:#f5f0ff;font-size:clamp(21px,3vw,27px);font-weight:950;letter-spacing:-.045em}
+.reader-head p{max-width:620px;margin:6px 0 0;color:#a0a5c1;font-size:11px;line-height:1.5}
+.reader-status{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;padding:7px 10px;border:1px solid rgba(143,119,220,.35);border-radius:20px;background:rgba(27,23,51,.65);color:#c7b7ff;font-size:9px;font-weight:900;letter-spacing:.12em}
+.reader-status i{width:7px;height:7px;border-radius:50%;background:var(--reader-accent);box-shadow:0 0 10px var(--reader-accent);animation:readerDot 1.8s ease-in-out infinite}
+.reader-main{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:21px 1px 15px}
+.reader-leader{min-width:0}
+.reader-label{display:block;color:#9a8dc5;font-size:9px;font-weight:900;letter-spacing:.16em}
+.reader-leader>b{display:block;margin-top:7px;color:#d9c7ff;font-size:clamp(25px,4.2vw,39px);font-weight:950;letter-spacing:-.055em;text-shadow:0 0 25px rgba(167,127,255,.18);overflow-wrap:anywhere;transition:color .3s,text-shadow .3s}
+.up-state .reader-leader>b{color:#7bffbf;text-shadow:0 0 25px rgba(65,240,169,.25)}
+.down-state .reader-leader>b{color:#ff91aa;text-shadow:0 0 25px rgba(255,81,127,.25)}
+.reader-leader>p{margin:6px 0 0;color:#aeb7d2;font-size:11px;line-height:1.5}
+.reader-score{flex:0 0 auto;min-width:125px;text-align:right;padding:11px 14px;border:1px solid rgba(155,130,231,.25);border-radius:13px;background:rgba(9,12,27,.52);box-shadow:inset 0 0 22px rgba(132,92,222,.075)}
+.reader-score>span{display:block;color:#9388b7;font-size:8px;font-weight:900;letter-spacing:.14em}
+.reader-score>b{display:block;margin-top:5px;color:#e5d7ff;font-size:31px;font-weight:950;letter-spacing:-.05em;font-variant-numeric:tabular-nums}
+.reader-score>small{display:block;margin-top:3px;color:#828eaf;font-size:9px}
+.up-state .reader-score>b{color:#72f4b5}.down-state .reader-score>b{color:#ff7d9d}
+.confidence-meter{margin-top:2px;padding:14px 14px 10px;border:1px solid rgba(137,117,207,.26);border-radius:13px;background:rgba(7,10,23,.55);box-shadow:inset 0 0 25px rgba(95,68,178,.08)}
+.confidence-track{position:relative;height:13px;overflow:hidden;border-radius:20px;background:linear-gradient(90deg,#3a1c34 0%,#24203f 50%,#143c35 100%);box-shadow:inset 0 2px 5px rgba(0,0,0,.55),0 0 14px rgba(147,112,231,.12)}
+.confidence-track>span{position:absolute;left:0;top:0;height:100%;width:0;border-radius:20px;background:linear-gradient(90deg,#7b55d9,#b49aff);box-shadow:0 0 16px rgba(167,130,255,.72),0 0 28px rgba(128,87,229,.42);transition:width .65s cubic-bezier(.2,.7,.2,1),background .35s ease,box-shadow .35s ease}
+.confidence-track>span.up{background:linear-gradient(90deg,#168e68,#40f1a6);box-shadow:0 0 13px rgba(52,239,165,.75),0 0 27px rgba(35,220,147,.38)}
+.confidence-track>span.down{background:linear-gradient(90deg,#a52c52,#ff668d);box-shadow:0 0 13px rgba(255,77,124,.75),0 0 27px rgba(224,54,104,.38)}
+.confidence-track>i{position:absolute;top:-3px;left:50%;width:2px;height:19px;background:#e4d9ff;box-shadow:0 0 8px #c6a9ff;opacity:.85}
+.confidence-labels{display:flex;justify-content:space-between;margin-top:8px;color:#807d9f;font-size:8px;font-weight:850;letter-spacing:.12em}
+.pressure-share-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:14px}
+.pressure-share-box{min-width:0;padding:14px;border:1px solid rgba(142,126,195,.20);border-radius:12px;background:rgba(8,13,27,.58);transition:border-color .3s,box-shadow .3s}
+.pressure-share-box.up-pressure{border-color:rgba(48,192,139,.3)}.pressure-share-box.down-pressure{border-color:rgba(219,74,111,.3)}
+.pressure-share-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pressure-share-head>span{color:#9ba9c8;font-size:9px;font-weight:900;letter-spacing:.12em}
+.pressure-share-head>b{font-size:24px;font-weight:950;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.up-pressure .pressure-share-head>b{color:#58eaae}.down-pressure .pressure-share-head>b{color:#ff7797}
+.share-track{height:6px;margin-top:10px;overflow:hidden;border-radius:10px;background:#1c263b}
+.share-track>span{display:block;width:0;height:100%;border-radius:10px;transition:width .65s ease}
+.up-pressure .share-track>span{background:linear-gradient(90deg,#13815d,#4af0aa);box-shadow:0 0 12px rgba(51,239,165,.7)}
+.down-pressure .share-track>span{background:linear-gradient(90deg,#9b2a4c,#ff688c);box-shadow:0 0 12px rgba(255,87,126,.7)}
+.pressure-share-box>small{display:block;margin-top:8px;color:#8999b9;font-size:10px;line-height:1.45}
+.reader-pulse-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}
+.reader-pulse{padding:11px 12px;border:1px solid rgba(134,119,190,.20);border-radius:10px;background:rgba(9,13,27,.45)}
+.reader-pulse>span{display:block;color:#8c91b2;font-size:8px;font-weight:900;letter-spacing:.12em}
+.reader-pulse>b{display:block;margin-top:6px;color:#d6ceef;font-size:16px;font-weight:850;font-variant-numeric:tabular-nums}
+.reader-explanation{margin-top:14px;padding:12px 13px;border-left:2px solid rgba(165,133,255,.55);border-radius:0 9px 9px 0;background:rgba(107,79,170,.09)}
+.reader-explanation p{margin:6px 0 0;color:#abb4cf;font-size:10px;line-height:1.55}
+.reader-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:13px;color:#7e8eaf;font-size:9px;line-height:1.5}
+.reader-foot>span{min-width:0}
+.reader-foot button{flex:0 0 auto;border:1px solid rgba(162,135,237,.42);border-radius:8px;padding:8px 11px;background:linear-gradient(140deg,#272044,#171a32);color:#d8caff;font-size:8px;font-weight:900;letter-spacing:.11em;cursor:pointer;box-shadow:0 0 17px rgba(129,91,209,.12);transition:box-shadow .2s,border-color .2s,transform .2s}
+.reader-foot button:hover{border-color:#b69bff;box-shadow:0 0 21px rgba(155,115,249,.3);transform:translateY(-1px)}
+.reader-note{display:flex;align-items:center;gap:8px;padding:0 3px;color:#7786a4;font-size:10px;line-height:1.5}
+.note-dot{width:6px;height:6px;flex:0 0 auto;border-radius:50%;background:#9275e8;box-shadow:0 0 9px rgba(150,111,246,.85)}
+.legacy-runtime{display:none!important}
+@keyframes readerBreath{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.035)}}
+@keyframes readerSweep{0%{left:-45%}100%{left:120%}}
+@keyframes readerDot{0%,100%{opacity:.65;transform:scale(.85)}50%{opacity:1;transform:scale(1.16)}}
+@media(max-width:680px){
+  body{padding:17px 13px 30px}
+  .reference-grid{gap:7px}.reference-card{padding:11px 9px}.reference-card>span{font-size:7px;letter-spacing:.09em}.reference-card>b{font-size:17px}.reference-card>small{font-size:8px}
+  .momentum-reader-card{padding:16px;border-radius:15px}
+  .reader-main{gap:10px;padding:17px 0 12px}.reader-score{min-width:91px;padding:9px}.reader-score>b{font-size:25px}
+  .reader-leader>b{font-size:clamp(21px,6vw,31px)}
+}
+@media(max-width:450px){
+  body>header .brand h1{font-size:19px}.target-strip{padding:12px;gap:8px}.target-clock{padding-left:9px}.target-clock>b{font-size:22px}
+  .reader-head{align-items:flex-start;flex-direction:column}.reader-status{align-self:flex-start}
+  .reader-main{align-items:flex-start;flex-direction:column}.reader-score{display:flex;align-items:center;gap:8px;width:100%;justify-content:space-between}.reader-score>b{margin:0}.reader-score>small{margin:0}
+  .pressure-share-grid{grid-template-columns:1fr}.reader-pulse-grid{gap:6px}.reader-pulse{padding:9px 7px}.reader-pulse>span{font-size:7px}.reader-pulse>b{font-size:13px}
+  .reader-foot{align-items:flex-start;flex-direction:column}.reader-foot button{width:100%}
+}
 </style>
 </head>
 <body>
 <header>
   <div class="brand"><div class="coin">₿</div><div><h1>BTC Market Dashboard</h1><p class="sub">Polymarket · live 5-minute reference</p></div></div>
   <div id="status" class="status"><span class="dot"></span><span>Connecting to live feeds…</span></div>
-</header>
+</header> 
+<main class="reader-shell">
+  <section class="reference-grid" aria-label="Live Bitcoin price references">
+    <div class="reference-card">
+      <span>CHAINLINK BTC / USD</span>
+      <b id="viewChainlink">—</b>
+      <small>Oracle spot reference</small>
+    </div>
+    <div class="reference-card">
+      <span>CHAINLINK TWAP60</span>
+      <b id="viewTwap">—</b>
+      <small id="viewTwapTime">Settlement reference feed</small>
+    </div>
+    <div class="reference-card">
+      <span>BINANCE BTCUSDT</span>
+      <b id="viewBinance">—</b>
+      <small id="viewBinanceDetail">Fast exchange tape</small>
+    </div>
+  </section>
+
+  <section class="target-strip" aria-label="Current five minute market reference">
+    <div class="target-copy">
+      <span>PRICE TO BEAT · EXACT CHAINLINK OPENING REFERENCE</span>
+      <b id="viewTarget">Waiting for market reference…</b>
+      <small id="viewTargetTime">The opening TWAP60 observation will appear here.</small>
+    </div>
+    <div class="target-clock">
+      <span>MARKET TIME LEFT</span>
+      <b id="viewCountdown">5:00</b>
+    </div>
+  </section>
+
+  <section id="momentumReaderCard" class="momentum-reader-card neutral-state">
+    <div class="reader-glow" aria-hidden="true"></div>
+    <div class="reader-scan" aria-hidden="true"></div>
+    <div class="reader-head">
+      <div>
+        <span class="reader-eyebrow">LIVE MARKET PRESSURE · CONTINUOUS BTC TAPE</span>
+        <h2>BTC MOMENTUM READER</h2>
+        <p>Rolling directional pressure from Chainlink price movement, checked against fast BTC market activity.</p>
+      </div>
+      <div class="reader-status"><i></i><span id="viewPhase">COLLECTING</span></div>
+    </div>
+
+    <div class="reader-main">
+      <div class="reader-leader">
+        <span class="reader-label">STRONGER SIDE · ROLLING 60 SECONDS</span>
+        <b id="viewLeader">COLLECTING DATA</b>
+        <p id="viewDetail">Waiting for fresh Chainlink observations.</p>
+      </div>
+      <div class="reader-score">
+        <span>LEADING PRESSURE</span>
+        <b id="viewConfidence">—</b>
+        <small id="viewLeadGap">Waiting for directional samples</small>
+      </div>
+    </div>
+
+    <div class="confidence-meter">
+      <div class="confidence-track"><span id="viewConfidenceFill"></span><i class="confidence-marker"></i></div>
+      <div class="confidence-labels"><span>LOW PRESSURE</span><span>NEUTRAL</span><span>HIGH PRESSURE</span></div>
+    </div>
+
+    <div class="pressure-share-grid">
+      <div class="pressure-share-box up-pressure">
+        <div class="pressure-share-head"><span>UP PRESSURE SHARE</span><b id="viewUpShare">—</b></div>
+        <div class="share-track"><span id="viewUpFill"></span></div>
+        <small id="viewUpDetail">Rising samples · collecting</small>
+      </div>
+      <div class="pressure-share-box down-pressure">
+        <div class="pressure-share-head"><span>DOWN PRESSURE SHARE</span><b id="viewDownShare">—</b></div>
+        <div class="share-track"><span id="viewDownFill"></span></div>
+        <small id="viewDownDetail">Falling samples · collecting</small>
+      </div>
+    </div>
+
+    <div class="reader-pulse-grid">
+      <div class="reader-pulse"><span>LAST 5 SECONDS</span><b id="viewPulse5">—</b></div>
+      <div class="reader-pulse"><span>LAST 10 SECONDS</span><b id="viewPulse10">—</b></div>
+      <div class="reader-pulse"><span>LAST 60 SECONDS</span><b id="viewPulse60">—</b></div>
+    </div>
+
+    <div class="reader-explanation">
+      <span class="reader-label">LIVE MARKET READ</span>
+      <p id="viewWhy">Building a rolling read from live Chainlink price changes.</p>
+    </div>
+    <div class="reader-foot">
+      <span id="viewFeedDetail">Pressure share measures the balance of rising and falling samples, not a win probability.</span>
+      <button id="readerReconnect" type="button">RECONNECT FEEDS</button>
+    </div>
+  </section>
+
+  <div class="reader-note"><span class="note-dot"></span><span>Pressure shares are directional evidence, not calibrated odds. A stronger reading can still reverse.</span></div>
+</main>
+
+<div class="legacy-runtime" hidden aria-hidden="true">
 
 <section class="grid">
   <div class="card"><div class="label">Chainlink BTC / USD</div><div id="chainlink" class="value">—</div><div class="small">Oracle spot price</div></div>
@@ -699,27 +891,7 @@ button{font-family:inherit}
 </section>
 
 
-<section class="card basis-orderflow-card microflow-home-card">
-  <div class="basis-orderflow-top">
-    <div>
-      <div class="label">BASIS CHART · LIVE BTCUSDT ORDER FLOW</div>
-      <div class="chart-subtitle">Basis live footprint: executed bid × ask volume and delta by price.</div>
-    </div>
-    <span class="fp-live-status live">BASIS CHART</span>
-  </div>
-  <iframe id="basisOrderflowFrame" class="basis-widget-frame"
-    src="https://www.basischarts.com/embed/chart?symbol=BTCUSDT&view=footprint"
-    title="Live BTCUSDT footprint chart by Basis"
-    loading="eager"
-    sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
-    referrerpolicy="strict-origin-when-cross-origin"></iframe>
-  <div class="basis-orderflow-foot">
-    <span id="basisViewDescription">Basis live footprint: executed bid × ask volume and delta by price.</span>
-    <span><a href="https://www.basischarts.com/" target="_blank" rel="noopener noreferrer">Open Basis terminal</a></span>
-  </div>
 
-
-</section>
 <div class="chart-data-hidden" hidden aria-hidden="true">
   <div id="liveChart"></div>
   <span id="fastExchangeStatus">BINANCE TAPE HIDDEN</span>
@@ -933,6 +1105,8 @@ button{font-family:inherit}
 <div class="note"><b>Settlement rule:</b> Polymarket BTC 5-minute markets resolve using Chainlink BTC/USD TWAP60 at the exact start and end of the interval. The dashboard only accepts the exact timestamped start observation; if it was not captured or recovered from the recent feed replay / browser history, the signal stays WAIT. Coinbase and Hyperliquid are confirmation feeds, not settlement sources. Scores are heuristics, not calibrated probabilities. No outcome is guaranteed.</div>
 
 <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.2.1/dist/lightweight-charts.standalone.production.js"></script>
+
+</div>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -3406,6 +3580,41 @@ button{font-family:inherit}
     state.liveMomentumTimer=setInterval(updateLiveMomentum,1000);
   }
 
+  function renderMomentumDashboard(){
+    const copy=(from,to)=>{const source=$(from),target=$(to);if(source&&target)target.textContent=source.textContent||"—";};
+    copy("chainlink","viewChainlink");copy("twap","viewTwap");copy("twapTime","viewTwapTime");
+    copy("binance","viewBinance");copy("binanceDiff","viewBinanceDetail");
+    copy("targetLarge","viewTarget");copy("targetTime","viewTargetTime");copy("countdown","viewCountdown");
+    copy("momentumPulseStatus","viewPhase");copy("liveMomentumDetail","viewDetail");copy("liveMomentumWhy","viewWhy");
+    copy("momentumFast5","viewPulse5");copy("momentumFast10","viewPulse10");copy("momentumFast60","viewPulse60");
+    copy("momentumFeedDetail","viewFeedDetail");
+
+    const leader=$("liveMomentumLeader"),card=$("momentumReaderCard"),visibleLeader=$("viewLeader");
+    const up=$("upMomentumScore"),down=$("downMomentumScore"),upTicks=$("upMomentumTicks"),downTicks=$("downMomentumTicks");
+    const upText=up?.textContent||"—",downText=down?.textContent||"—";
+    const upVal=Number.parseInt(upText,10),downVal=Number.parseInt(downText,10);
+    const side=leader?.classList.contains("up")?"UP":leader?.classList.contains("down")?"DOWN":"NEUTRAL";
+    if(card){card.classList.toggle("up-state",side==="UP");card.classList.toggle("down-state",side==="DOWN");card.classList.toggle("neutral-state",side==="NEUTRAL");}
+    if(visibleLeader){
+      let text=leader?.textContent||"COLLECTING DATA";
+      text=text.replace("POSITIVE / UP LEADING","UP LEADING").replace("NEGATIVE / DOWN LEADING","DOWN LEADING");
+      visibleLeader.textContent=text;
+    }
+    const upShare=Number.isFinite(upVal)?upVal:50,downShare=Number.isFinite(downVal)?downVal:50;
+    const leading=Math.max(upShare,downShare),gap=Math.abs(upShare-downShare);
+    const score=$("viewConfidence"),gapEl=$("viewLeadGap"),fill=$("viewConfidenceFill");
+    if(score)score.textContent=(Number.isFinite(upVal)&&Number.isFinite(downVal))?leading+"/100":"—";
+    if(gapEl)gapEl.textContent=(Number.isFinite(upVal)&&Number.isFinite(downVal))?gap+" point pressure gap":"Waiting for directional samples";
+    if(fill){fill.style.width=leading+"%";fill.className=side==="UP"?"up":side==="DOWN"?"down":"neutral";}
+    const mirror=(target,value)=>{const el=$(target);if(el)el.textContent=value;};
+    mirror("viewUpShare",upText);mirror("viewDownShare",downText);
+    mirror("viewUpDetail",upTicks?.textContent||"Rising samples · collecting");
+    mirror("viewDownDetail",downTicks?.textContent||"Falling samples · collecting");
+    const newUpFill=$("viewUpFill"),newDownFill=$("viewDownFill");
+    if(newUpFill)newUpFill.style.width=Number.isFinite(upVal)?upShare+"%":"0%";
+    if(newDownFill)newDownFill.style.width=Number.isFinite(downVal)?downShare+"%":"0%";
+  }
+
   const LAB_KEY="btc5m-market-lab-v2",TWAP_KEY="btc5m-twap-history-v2",ROUND_MEMORY_KEY=LAB_KEY+":continuous-trend-v1";
   function loadMarketLab(){
     try{state.journal=JSON.parse(localStorage.getItem(LAB_KEY)||"[]");if(!Array.isArray(state.journal))state.journal=[]}catch(_){state.journal=[]}
@@ -3853,7 +4062,7 @@ button{font-family:inherit}
   $("reconnect").addEventListener("click",connect);
   const flowRestartBtn=$("flowRestartBtn");if(flowRestartBtn)flowRestartBtn.addEventListener("click",restartMomentumFeeds);
   $("exportLab").addEventListener("click",exportMarketLab);
-  loadMarketLab();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();state.timer=setInterval(tick,500);setInterval(()=>renderMicroflowEdge(Date.now()),250);
+  loadMarketLab();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();renderMomentumDashboard();setInterval(renderMomentumDashboard,250);state.timer=setInterval(tick,500);const readerReconnect=$("readerReconnect");if(readerReconnect)readerReconnect.addEventListener("click",restartMomentumFeeds);
 })();
 
 </script>

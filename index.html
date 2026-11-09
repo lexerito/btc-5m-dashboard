@@ -873,7 +873,7 @@ body>.reader-shell{
 
   <section id="polymarketPerpsCard" class="perps-strip" aria-label="Polymarket Bitcoin perpetual futures live data" aria-live="polite">
     <div class="perps-identity"><div class="perps-mark">₿</div><div><div class="perps-name">BTC · BITCOIN PERPS</div><div class="perps-source">POLYMARKET · LIVE MARK PRICE</div></div></div>
-    <div class="perps-price-wrap"><div id="perpsBtcChange" class="perps-change neutral">—</div><div id="perpsBtcPrice" class="perps-price">Connecting…</div><div id="perpsBtcDelta" class="perps-delta">24H DOLLAR CHANGE</div><div id="perpsFiveMinSignal" class="perps-delta neutral">24H CHANGE · TRACKING FROM −0.34%</div><div id="perpsBtcUpdated" class="perps-updated">Waiting for Polymarket data</div></div>
+    <div class="perps-price-wrap"><div id="perpsBtcChange" class="perps-change neutral">—</div><div id="perpsBtcPrice" class="perps-price">Connecting…</div><div id="perpsBtcDelta" class="perps-delta">24H DOLLAR CHANGE</div><div id="perpsBtcUpdated" class="perps-updated">Waiting for Polymarket data</div></div>
   </section>
 
   <section class="target-strip" aria-label="Current five minute market reference">
@@ -4172,43 +4172,7 @@ body>.reader-shell{
   loadMarketLab();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();renderMomentumDashboard();setInterval(renderMomentumDashboard,1000);state.timer=setInterval(tick,1000);const readerReconnect=$("readerReconnect");if(readerReconnect)readerReconnect.addEventListener("click",restartMomentumFeeds);
 
   // Polymarket BTC perpetuals: public mark ticker + official 24H statistics.
-  const polymarketPerps={instrumentId:null,timer:null,busy:false,lastGoodAt:0,lastPct:null,baselinePct:null,baselineMarketStart:null};
-  const perpsBaselineKey="btc5m_perps_change_baseline_v2";
-  function loadPerpsBaseline(){
-    try{
-      const saved=JSON.parse(localStorage.getItem(perpsBaselineKey)||"null");
-      if(saved&&Number.isFinite(saved.marketStart)&&Number.isFinite(saved.pct)){
-        polymarketPerps.baselineMarketStart=saved.marketStart;
-        polymarketPerps.baselinePct=saved.pct;
-        return;
-      }
-    }catch(_){}
-    // User supplied the large Perps 24H change was -0.34% at the reference close.
-    polymarketPerps.baselineMarketStart=boundaryAtOrBefore(Date.now());
-    polymarketPerps.baselinePct=-0.34;
-    savePerpsBaseline();
-  }
-  function savePerpsBaseline(){
-    try{localStorage.setItem(perpsBaselineKey,JSON.stringify({marketStart:polymarketPerps.baselineMarketStart,pct:polymarketPerps.baselinePct}));}
-    catch(_){}
-  }
-  function updatePerpsFiveMinuteSignal(pct){
-    const marketStart=boundaryAtOrBefore(Date.now());
-    if(polymarketPerps.baselineMarketStart!==marketStart){
-      // The previous market's last observed 24H change becomes this market's reference.
-      polymarketPerps.baselinePct=polymarketPerps.lastPct===null?pct:polymarketPerps.lastPct;
-      polymarketPerps.baselineMarketStart=marketStart;
-      savePerpsBaseline();
-    }
-    const baseline=polymarketPerps.baselinePct,delta=pct-baseline,el=perpsEl("perpsFiveMinSignal");
-    if(!el)return;
-    const side=delta>0.000001?"UP PRESSURE":delta< -0.000001?"DOWN PRESSURE":"FLAT";
-    const cls=delta>0.000001?"positive":delta< -0.000001?"negative":"neutral";
-    const sign=delta>0?"+":delta<0?"−":"";
-    el.className="perps-delta "+cls;
-    el.textContent="24H CHANGE VS LAST 5M CLOSE · "+side+" · "+sign+Math.abs(delta).toFixed(3)+" pp (BASE "+(baseline>=0?"+":"")+baseline.toFixed(2)+"%)";
-  }
-  loadPerpsBaseline();
+  const polymarketPerps={instrumentId:null,timer:null,busy:false,lastGoodAt:0};
   const perpsEl=id=>document.getElementById(id);
   const perpsNumber=value=>value===null||value===undefined||value===""?null:(Number.isFinite(Number(value))?Number(value):null);
   const perpsMoney=value=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2}).format(value);
@@ -4218,8 +4182,6 @@ body>.reader-shell{
     const open=perpsNumber(statistics.open_price??statistics.openPrice);
     if(mark===null||open===null||open===0){renderPerpsUnavailable("WAITING FOR POLYMARKET 24H STATISTICS");return;}
     const delta=mark-open,pct=(delta/open)*100,sign=delta>0?"+":delta<0?"−":"";
-    updatePerpsFiveMinuteSignal(pct);
-    polymarketPerps.lastPct=pct;
     const price=perpsEl("perpsBtcPrice"),change=perpsEl("perpsBtcChange"),deltaEl=perpsEl("perpsBtcDelta");
     if(price)price.textContent=perpsMoney(mark);
     if(change){change.className="perps-change "+(pct>0?"positive":pct<0?"negative":"neutral");change.textContent=(pct>0?"▲ ":pct<0?"▼ ":"")+sign+Math.abs(pct).toFixed(2)+"%";}

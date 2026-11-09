@@ -773,6 +773,52 @@ body>header .sub{color:#8e9fbd;letter-spacing:.13em}
   .pressure-share-grid{grid-template-columns:1fr}.reader-pulse-grid{gap:6px}.reader-pulse{padding:9px 7px}.reader-pulse>span{font-size:7px}.reader-pulse>b{font-size:13px}
   .reader-foot{align-items:flex-start;flex-direction:column}.reader-foot button{width:100%}
 }
+
+/* Final width fix: the legacy terminal used a 12-column BODY grid.
+   This single-purpose reader must use a normal full-width page flow. */
+html,body{width:100%;min-width:0}
+body{
+  display:block!important;
+  grid-template-columns:none!important;
+  grid-auto-flow:initial!important;
+  gap:0!important;
+  width:100%!important;
+  max-width:1180px!important;
+  min-height:100vh;
+  margin:0 auto!important;
+  padding:24px clamp(14px,2.4vw,30px) 44px!important;
+  box-sizing:border-box;
+}
+body>header{
+  display:flex!important;
+  width:100%!important;
+  max-width:none!important;
+  margin:0 0 20px!important;
+  padding:4px 2px 17px!important;
+  box-sizing:border-box;
+}
+body>.reader-shell{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr)!important;
+  grid-column:auto!important;
+  width:100%!important;
+  max-width:none!important;
+  min-width:0!important;
+  margin:0!important;
+}
+.reader-shell>*{min-width:0;width:100%;box-sizing:border-box}
+.reference-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.reference-card{min-width:0;overflow-wrap:anywhere}
+.reference-card>b{white-space:nowrap;overflow-wrap:normal;font-size:clamp(18px,2.2vw,25px)}
+.momentum-reader-card{width:100%;min-width:0}
+.legacy-runtime{display:none!important;width:0!important;height:0!important;overflow:hidden!important}
+@media(max-width:620px){
+  body{padding:16px 12px 30px!important}
+  .reference-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:7px}
+  .reference-card{padding:11px 9px}
+  .reference-card>span{font-size:7px;letter-spacing:.08em}
+  .reference-card>b{font-size:clamp(14px,4.3vw,19px)}
+}
 </style>
 </head>
 <body>

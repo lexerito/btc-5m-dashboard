@@ -4271,7 +4271,18 @@ body>.reader-shell{
     }finally{polymarketPerps.busy=false;}
   }
   updatePolymarketBtcPerps();
-  polymarketPerps.timer=setInterval(updatePolymarketBtcPerps,5000);})();
+  polymarketPerps.timer=setInterval(updatePolymarketBtcPerps,5000);
+  // Take one extra live 24H reading in the final two seconds before each five-minute boundary.
+  let perpsCloseSampledRound=null;
+  setInterval(()=>{
+    if(document.visibilityState==="hidden"||polymarketPerps.busy)return;
+    const now=Date.now(),roundStart=Math.floor(now/300000)*300000;
+    const msToClose=roundStart+300000-now;
+    if(msToClose>0&&msToClose<=2000&&perpsCloseSampledRound!==roundStart){
+      perpsCloseSampledRound=roundStart;
+      updatePolymarketBtcPerps();
+    }
+  },250);})();
 
 </script>
 </body>

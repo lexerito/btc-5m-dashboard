@@ -3955,7 +3955,7 @@ body>.reader-shell{
       }
       if(m.channel==="market_trades")for(const ev of (m.events||[]))for(const t of (ev.trades||[])){
         const p=Number(t.price),size=Number(t.size),ts=Date.parse(t.time)||now;
-        if(p>0&&size>0){state.coinbaseTrades.push({ts,price:p,size,buy:String(t.side||"").toUpperCase()==="SELL"});pushFlowTrade("COINBASE",t.trade_id??(ts+"-"+p+"-"+size),ts,p,size,String(t.side||"").toUpperCase()==="SELL");state.coinbaseTrades=state.coinbaseTrades.filter(x=>now-x.ts<65000);renderMicroflowEdge(now);state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,ts,p);renderCrossVenue()}
+        const takerSide=String(t.side||"").toUpperCase();if(p>0&&size>0&&(takerSide==="BUY"||takerSide==="SELL")){const aggressiveBuy=takerSide==="BUY";state.coinbaseTrades.push({ts,price:p,size,buy:aggressiveBuy});pushFlowTrade("COINBASE",t.trade_id??(ts+"-"+p+"-"+size),ts,p,size,aggressiveBuy);state.coinbaseTrades=state.coinbaseTrades.filter(x=>now-x.ts<65000);renderMicroflowEdge(now);state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,ts,p);renderCrossVenue()}
       }
     };
     ws.onerror=()=>crossStatus("COINBASE FEED ERROR","bad");
@@ -4360,22 +4360,53 @@ body>.reader-shell{
   function renderBreach(){
     const now=Date.now(),start=Math.floor(now/300000)*300000,left=Math.max(0,Math.ceil((start+300000-now)/1000));
     const timer=document.getElementById("breachCountdown");if(timer)timer.textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
-    const trades=(state.coinbaseTrades||[]).filter(t=>now-t.ts>=0&&now-t.ts<=60000&&t.price>0&&t.size>0);
-    let buy=0,sell=0,soldiers=0,giants=0;const buckets=Array.from({length:31},()=>({buy:0,sell:0}));
-    for(const t of trades){const usd=t.price*t.size;if(t.buy)buy+=usd;else sell+=usd;if(usd>=1000)soldiers++;if(usd>=10000)giants++;const strike=Number(state.target),diff=Number.isFinite(strike)&&strike>0?t.price-strike:0,idx=Math.max(0,Math.min(30,Math.round(15+diff/10)));if(t.buy)buckets[idx].buy+=usd;else buckets[idx].sell+=usd;}
-    const total=buy+sell,bullPct=total?buy/total*100:50,bearPct=100-bullPct,set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
-    const bb=document.getElementById("breachBullBar"),rb=document.getElementById("breachBearBar");if(bb)bb.style.width=bullPct+"%";if(rb)rb.style.width=bearPct+"%";
-    const board=document.getElementById("breachBoard");if(board){board.classList.toggle("bull-dominant",buy>sell);board.classList.toggle("bear-dominant",sell>buy);board.classList.toggle("balanced",buy===sell||total===0);}
-    set("breachBullPct",Math.round(bullPct)+"%");set("breachBearPct",Math.round(bearPct)+"%");
-    set("breachBuyDetail","bought · "+breachUsd(buy)+" · last 60s");set("breachSellDetail","sold · "+breachUsd(sell)+" · last 60s");
-    set("breachPush",(buy>sell?"BULLS PUSHING":sell>buy?"BEARS PUSHING":"BALANCED TAPE")+" · "+trades.length+" PRINTS");
-    const price=Number(state.coinbasePrice)||Number(state.chainlink)||Number(state.binance),strike=Number(state.target),dist=price>0&&strike>0?price-strike:null;
-    set("breachPrice",price>0?breachUsd(price):"—");set("breachDistance",dist===null?"WAITING FOR STRIKE":(dist>=0?"+":"−")+breachUsd(dist)+(dist>=0?" ABOVE":" BELOW"));
-    set("breachSoldiers",String(soldiers));set("breachGiants",String(giants));set("breachPriceTag",price>0?"BTC · "+breachUsd(price):"BTC · —");
+    // Coinbase market_trades.side is the taker/aggressor side: BUY lifts the ask, SELL hits the bid.
+    const trades=(state.coinbaseTrades||[]).filter(t=>now-t.ts>=0&&now-t.ts<=60000&&t.price>0&&t.size>0&&typeof t.buy==="boolean");
+    let buy=0,sell=0,buyCount=0,sellCount=0,soldiers=0,giants=0,bigBuy=0,bigSell=0;
+    const buckets=Array.from({length:31},()=>({buy:0,sell:0}));
+    const strike=Number(state.target);
+    for(const t of trades){
+      const usd=t.price*t.size;
+      if(t.buy){buy+=usd;buyCount++;if(usd>=1000)bigBuy+=usd;}
+      else{sell+=usd;sellCount++;if(usd>=1000)bigSell+=usd;}
+      if(usd>=1000)soldiers++;if(usd>=10000)giants++;
+      const diff=Number.isFinite(strike)&&strike>0?t.price-strike:0;
+      const idx=Math.max(0,Math.min(30,Math.round(15+diff/10)));
+      if(t.buy)buckets[idx].buy+=usd;else buckets[idx].sell+=usd;
+    }
+    const total=buy+sell,net=buy-sell,bullPct=total?buy/total*100:0,bearPct=total?sell/total*100:0;
+    const leader=total===0?"balanced":net>0?"bull":"bear";
+    const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+    const bb=document.getElementById("breachBullBar"),rb=document.getElementById("breachBearBar");
+    if(bb)bb.style.width=bullPct+"%";if(rb)rb.style.width=bearPct+"%";
+    const board=document.getElementById("breachBoard");
+    if(board){board.classList.toggle("bull-dominant",leader==="bull");board.classList.toggle("bear-dominant",leader==="bear");board.classList.toggle("balanced",leader==="balanced");}
+    set("breachBullPct",total?Math.round(bullPct)+"%":"—");
+    set("breachBearPct",total?Math.round(bearPct)+"%":"—");
+    set("breachBuyDetail","bought · "+breachUsd(buy)+" · "+buyCount+" prints · last 60s");
+    set("breachSellDetail","sold · "+breachUsd(sell)+" · "+sellCount+" prints · last 60s");
+    const push=document.getElementById("breachPush");
+    const pushText=leader==="bull"?"BULLS PUSHING":leader==="bear"?"BEARS PUSHING":"WAITING FOR VALID PRINTS";
+    set("breachPush",pushText+" · "+trades.length+" PRINTS · NET "+(net>0?"+":"−")+breachUsd(net));
+    if(push){push.style.color=leader==="bull"?"#00efad":leader==="bear"?"#ff568d":"#bd91ff";push.style.textShadow=leader==="bull"?"0 0 12px #00efad66":leader==="bear"?"0 0 12px #ff397a66":"none";}
+    const price=Number(state.coinbasePrice)||Number(state.chainlink)||Number(state.binance),dist=price>0&&strike>0?price-strike:null;
+    set("breachPrice",price>0?breachUsd(price):"—");
+    set("breachDistance",dist===null?"WAITING FOR STRIKE":(dist>=0?"+":"−")+breachUsd(dist)+(dist>=0?" ABOVE":" BELOW"));
+    set("breachSoldiers",String(soldiers));set("breachGiants",String(giants));
+    set("breachPriceTag",price>0?"BTC · "+breachUsd(price)+" · "+(dist===null?"LIVE":dist>=0?"ABOVE":"BELOW"):"BTC · —");
     set("breachStrikeTag",strike>0?"POLYMARKET PRICE TO BEAT · "+breachUsd(strike):"PRICE TO BEAT · CHAINLINK SYNCING");
-    set("breachTapeRate","TAPE "+(trades.length/60).toFixed(1)+"/SEC");set("breachTapeStatus",state.coinbaseLastAt&&now-state.coinbaseLastAt<15000?"COINBASE TAPE LIVE":"COINBASE TAPE CONNECTING");
-    const bc=document.getElementById("breachBullCall"),rc=document.getElementById("breachBearCall");if(bc)bc.classList.toggle("active-up",buy>sell);if(rc)rc.classList.toggle("active-down",sell>buy);
-    const priceTag=document.getElementById("breachPriceTag");if(priceTag&&dist!==null){const w=breachCanvas?.clientWidth||900;priceTag.style.left=Math.max(5,Math.min(95,50+dist/300*45))+"%";priceTag.classList.toggle("above",dist>=0);priceTag.classList.toggle("below",dist<0);}
+    set("breachTapeRate","TAPE "+(trades.length/60).toFixed(1)+"/SEC");
+    set("breachTapeStatus",state.coinbaseLastAt&&now-state.coinbaseLastAt<15000?"COINBASE TAPE LIVE":"COINBASE TAPE CONNECTING");
+    const bc=document.getElementById("breachBullCall"),rc=document.getElementById("breachBearCall");
+    if(bc)bc.classList.toggle("active-up",leader==="bull");if(rc)rc.classList.toggle("active-down",leader==="bear");
+    const priceTag=document.getElementById("breachPriceTag");
+    if(priceTag&&dist!==null){
+      const w=breachCanvas?.clientWidth||900;
+      priceTag.style.left=Math.max(5,Math.min(95,50+dist/300*45))+"%";
+      // The marker glow follows tape pressure; ABOVE/BELOW remains explicit in its label.
+      priceTag.classList.toggle("above",leader==="bull");priceTag.classList.toggle("below",leader==="bear");
+      if(leader==="balanced"){priceTag.classList.remove("above","below");}
+    }
     if(!breachCtx||!breachCanvas)return;
     const w=Math.max(1,breachCanvas.clientWidth),h=Math.max(1,breachCanvas.clientHeight),dpr=Math.min(2,window.devicePixelRatio||1);
     if(breachCanvas.width!==Math.round(w*dpr)||breachCanvas.height!==Math.round(h*dpr)){breachCanvas.width=Math.round(w*dpr);breachCanvas.height=Math.round(h*dpr);}
@@ -4383,30 +4414,31 @@ body>.reader-shell{
     const mid=w/2,top=20,bottom=h-28,rowH=(bottom-top)/buckets.length,max=Math.max(1,...buckets.flatMap(x=>[x.buy,x.sell]));
     const bg=breachCtx.createLinearGradient(0,0,w,0);bg.addColorStop(0,"rgba(0,226,160,.16)");bg.addColorStop(.43,"rgba(0,226,160,.025)");bg.addColorStop(.5,"rgba(255,255,255,.025)");bg.addColorStop(1,"rgba(255,48,116,.16)");breachCtx.fillStyle=bg;breachCtx.fillRect(0,0,w,h);
     const aura=breachCtx.createRadialGradient(mid,h*.5,5,mid,h*.5,w*.48);aura.addColorStop(0,"rgba(255,206,105,.08)");aura.addColorStop(.42,"rgba(180,130,255,.025)");aura.addColorStop(1,"rgba(0,0,0,0)");breachCtx.fillStyle=aura;breachCtx.fillRect(0,0,w,h);
-    breachCtx.strokeStyle="rgba(255,255,255,.045)";breachCtx.lineWidth=1;for(let i=1;i<8;i++){const y=top+(bottom-top)*i/8;breachCtx.beginPath();breachCtx.moveTo(0,y);breachCtx.lineTo(w,y);breachCtx.stroke();}
+    breachCtx.strokeStyle="rgba(255,255,255,.045)";breachCtx.lineWidth=1;
+    for(let i=1;i<8;i++){const y=top+(bottom-top)*i/8;breachCtx.beginPath();breachCtx.moveTo(0,y);breachCtx.lineTo(w,y);breachCtx.stroke();}
     for(let i=1;i<8;i++){const x=w*i/8;breachCtx.strokeStyle=i===4?"rgba(240,199,95,.16)":"rgba(255,255,255,.025)";breachCtx.beginPath();breachCtx.moveTo(x,0);breachCtx.lineTo(x,h);breachCtx.stroke();}
     const maxWidth=w*.42,nowAnim=Date.now();
-    buckets.forEach((b,i)=>{
-      const cy=top+i*rowH+rowH*.5,hh=Math.max(2,rowH-2),bw=Math.max(0,b.buy/max*maxWidth),sw=Math.max(0,b.sell/max*maxWidth);
-      if(b.buy>0){
+    buckets.forEach((bucket,i)=>{
+      const cy=top+i*rowH+rowH*.5,hh=Math.max(2,rowH-2),bw=Math.max(0,bucket.buy/max*maxWidth),sw=Math.max(0,bucket.sell/max*maxWidth);
+      if(bucket.buy>0){
         const grad=breachCtx.createLinearGradient(mid-bw,cy,mid,cy);grad.addColorStop(0,"rgba(0,125,91,.58)");grad.addColorStop(1,"rgba(36,255,190,.96)");
-        breachCtx.shadowColor="#00efad";breachCtx.shadowBlur=5+10*b.buy/max;breachCtx.fillStyle=grad;breachCtx.fillRect(mid-bw,cy-hh*.5,bw,hh);breachCtx.shadowBlur=0;
-        breachCtx.strokeStyle="rgba(94,255,213,.95)";breachCtx.lineWidth=1;breachCtx.beginPath();breachCtx.moveTo(mid-bw,cy-hh*.48);breachCtx.lineTo(mid-bw-4-(b.buy/max*4),cy);breachCtx.lineTo(mid-bw,cy+hh*.48);breachCtx.stroke();
-        const spark=((nowAnim/700+i*17)%100)/100;breachCtx.fillStyle="rgba(170,255,232,.85)";breachCtx.shadowColor="#00efad";breachCtx.shadowBlur=8;breachCtx.beginPath();breachCtx.arc(mid-bw+spark*bw,cy,1+1.3*b.buy/max,0,Math.PI*2);breachCtx.fill();breachCtx.shadowBlur=0;
+        breachCtx.shadowColor="#00efad";breachCtx.shadowBlur=5+10*bucket.buy/max;breachCtx.fillStyle=grad;breachCtx.fillRect(mid-bw,cy-hh*.5,bw,hh);breachCtx.shadowBlur=0;
+        breachCtx.strokeStyle="rgba(94,255,213,.95)";breachCtx.lineWidth=1;breachCtx.beginPath();breachCtx.moveTo(mid-bw,cy-hh*.48);breachCtx.lineTo(mid-bw-4-(bucket.buy/max*4),cy);breachCtx.lineTo(mid-bw,cy+hh*.48);breachCtx.stroke();
+        const spark=((nowAnim/700+i*17)%100)/100;breachCtx.fillStyle="rgba(170,255,232,.85)";breachCtx.shadowColor="#00efad";breachCtx.shadowBlur=8;breachCtx.beginPath();breachCtx.arc(mid-bw+spark*bw,cy,1+1.3*bucket.buy/max,0,Math.PI*2);breachCtx.fill();breachCtx.shadowBlur=0;
       }
-      if(b.sell>0){
+      if(bucket.sell>0){
         const grad=breachCtx.createLinearGradient(mid,cy,mid+sw,cy);grad.addColorStop(0,"rgba(255,116,157,.96)");grad.addColorStop(1,"rgba(145,23,69,.58)");
-        breachCtx.shadowColor="#ff397a";breachCtx.shadowBlur=5+10*b.sell/max;breachCtx.fillStyle=grad;breachCtx.fillRect(mid,cy-hh*.5,sw,hh);breachCtx.shadowBlur=0;
-        breachCtx.strokeStyle="rgba(255,157,188,.95)";breachCtx.lineWidth=1;breachCtx.beginPath();breachCtx.moveTo(mid+sw,cy-hh*.48);breachCtx.lineTo(mid+sw+4+(b.sell/max*4),cy);breachCtx.lineTo(mid+sw,cy+hh*.48);breachCtx.stroke();
-        const spark=((nowAnim/700+i*23)%100)/100;breachCtx.fillStyle="rgba(255,207,220,.9)";breachCtx.shadowColor="#ff397a";breachCtx.shadowBlur=8;breachCtx.beginPath();breachCtx.arc(mid+spark*sw,cy,1+1.3*b.sell/max,0,Math.PI*2);breachCtx.fill();breachCtx.shadowBlur=0;
+        breachCtx.shadowColor="#ff397a";breachCtx.shadowBlur=5+10*bucket.sell/max;breachCtx.fillStyle=grad;breachCtx.fillRect(mid,cy-hh*.5,sw,hh);breachCtx.shadowBlur=0;
+        breachCtx.strokeStyle="rgba(255,157,188,.95)";breachCtx.lineWidth=1;breachCtx.beginPath();breachCtx.moveTo(mid+sw,cy-hh*.48);breachCtx.lineTo(mid+sw+4+(bucket.sell/max*4),cy);breachCtx.lineTo(mid+sw,cy+hh*.48);breachCtx.stroke();
+        const spark=((nowAnim/700+i*23)%100)/100;breachCtx.fillStyle="rgba(255,207,220,.9)";breachCtx.shadowColor="#ff397a";breachCtx.shadowBlur=8;breachCtx.beginPath();breachCtx.arc(mid+spark*sw,cy,1+1.3*bucket.sell/max,0,Math.PI*2);breachCtx.fill();breachCtx.shadowBlur=0;
       }
     });
-    // The gold strike is the fixed zero point; the colored marker is live BTC relative to it.
     breachCtx.strokeStyle="rgba(255,215,117,.35)";breachCtx.lineWidth=6;breachCtx.shadowColor="#f0c75f";breachCtx.shadowBlur=18;breachCtx.beginPath();breachCtx.moveTo(mid,0);breachCtx.lineTo(mid,h);breachCtx.stroke();
     breachCtx.strokeStyle="#ffe18a";breachCtx.lineWidth=1.7;breachCtx.shadowBlur=7;breachCtx.beginPath();breachCtx.moveTo(mid,0);breachCtx.lineTo(mid,h);breachCtx.stroke();breachCtx.shadowBlur=0;
     if(dist!==null){
-      const x=Math.max(4,Math.min(w-4,mid+dist/300*maxWidth)),above=dist>=0,color=above?"#00efad":"#ff568d";
-      breachCtx.strokeStyle=above?"rgba(0,239,173,.25)":"rgba(255,86,141,.25)";breachCtx.lineWidth=7;breachCtx.shadowColor=color;breachCtx.shadowBlur=19;breachCtx.beginPath();breachCtx.moveTo(x,0);breachCtx.lineTo(x,h);breachCtx.stroke();
+      const x=Math.max(4,Math.min(w-4,mid+dist/300*maxWidth)),color=leader==="bull"?"#00efad":leader==="bear"?"#ff568d":"#bd91ff";
+      breachCtx.strokeStyle=leader==="bull"?"rgba(0,239,173,.25)":leader==="bear"?"rgba(255,86,141,.25)":"rgba(189,145,255,.22)";
+      breachCtx.lineWidth=7;breachCtx.shadowColor=color;breachCtx.shadowBlur=19;breachCtx.beginPath();breachCtx.moveTo(x,0);breachCtx.lineTo(x,h);breachCtx.stroke();
       breachCtx.strokeStyle=color;breachCtx.lineWidth=2;breachCtx.shadowBlur=9;breachCtx.beginPath();breachCtx.moveTo(x,0);breachCtx.lineTo(x,h);breachCtx.stroke();breachCtx.shadowBlur=0;
       breachCtx.fillStyle=color;breachCtx.shadowColor=color;breachCtx.shadowBlur=13;breachCtx.beginPath();breachCtx.arc(x,top,3.1,0,Math.PI*2);breachCtx.fill();breachCtx.beginPath();breachCtx.arc(x,bottom,3.1,0,Math.PI*2);breachCtx.fill();breachCtx.shadowBlur=0;
     }

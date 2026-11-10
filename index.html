@@ -4173,25 +4173,73 @@ body>.reader-shell{
   loadMarketLab();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();renderMomentumDashboard();setInterval(renderMomentumDashboard,1000);state.timer=setInterval(tick,1000);const readerReconnect=$("readerReconnect");if(readerReconnect)readerReconnect.addEventListener("click",restartMomentumFeeds);
 
   // Polymarket BTC perpetuals: public mark ticker + official 24H statistics.
-  const polymarketPerps={instrumentId:null,timer:null,busy:false,lastGoodAt:0};
+  // Each five-minute round inherits the previous round's last observed 24H percentage.
+  const perpsSignalStorageKey="btc5m_perps_close_reference_v1";
+  function restorePerpsSignalState(){
+    try{
+      const saved=JSON.parse(localStorage.getItem(perpsSignalStorageKey)||"null");
+      if(!saved||typeof saved!=="object")return {roundKey:null,referencePct:null,side:null,lastPct:null};
+      return {
+        roundKey:Number.isFinite(Number(saved.roundKey))?Number(saved.roundKey):null,
+        referencePct:Number.isFinite(Number(saved.referencePct))?Number(saved.referencePct):null,
+        side:saved.side==="up"||saved.side==="down"?saved.side:null,
+        lastPct:Number.isFinite(Number(saved.lastPct))?Number(saved.lastPct):null
+      };
+    }catch(_){return {roundKey:null,referencePct:null,side:null,lastPct:null};}
+  }
+  const polymarketPerps={instrumentId:null,timer:null,busy:false,lastGoodAt:0,signal:restorePerpsSignalState()};
+  function savePerpsSignalState(){
+    try{localStorage.setItem(perpsSignalStorageKey,JSON.stringify(polymarketPerps.signal));}catch(_){}
+  }
+  function formatPerpsPct(value){
+    return (value>0?"+":value<0?"−":"")+Math.abs(value).toFixed(2)+"%";
+  }
+  function updatePerpsDirection(pct,sampledAt){
+    const roundKey=Math.floor(sampledAt/300000)*300000;
+    const signal=polymarketPerps.signal;
+    if(signal.roundKey!==null&&roundKey<signal.roundKey)return signal.side||(pct>=0?"up":"down");
+    if(signal.roundKey===null){
+      signal.roundKey=roundKey;
+      signal.referencePct=pct;
+      if(!signal.side)signal.side=pct>=0?"up":"down";
+    }else if(roundKey>signal.roundKey){
+      // The saved last reading is the previous round's close reference.
+      signal.referencePct=Number.isFinite(signal.lastPct)?signal.lastPct:pct;
+      signal.roundKey=roundKey;
+    }
+    if(!Number.isFinite(signal.referencePct)){
+      signal.referencePct=pct;
+      if(!signal.side)signal.side=pct>=0?"up":"down";
+    }
+    // Hold the current side until the live 24H percentage crosses the saved reference.
+    if(pct>signal.referencePct)signal.side="up";
+    else if(pct<signal.referencePct)signal.side="down";
+    signal.lastPct=pct;
+    signal.lastSampleAt=sampledAt;
+    savePerpsSignalState();
+    return signal.side||(pct>=0?"up":"down");
+  }
   const perpsEl=id=>document.getElementById(id);
   const perpsNumber=value=>value===null||value===undefined||value===""?null:(Number.isFinite(Number(value))?Number(value):null);
   const perpsMoney=value=>new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2}).format(value);
   function renderPerpsUnavailable(message){const el=perpsEl("perpsBtcUpdated");if(el)el.textContent=message;}
-  function renderPolymarketBtcPerps(ticker,statistics){
+  function renderPolymarketBtcPerps(ticker,statistics,sampledAt){
     const mark=perpsNumber(ticker.mark_price??ticker.markPrice);
     const open=perpsNumber(statistics.open_price??statistics.openPrice);
     if(mark===null||open===null||open===0){renderPerpsUnavailable("WAITING FOR POLYMARKET 24H STATISTICS");return;}
     const delta=mark-open,pct=(delta/open)*100,sign=delta>0?"+":delta<0?"−":"";
+    const signalSide=updatePerpsDirection(pct,sampledAt);
+    const signalReference=polymarketPerps.signal.referencePct;
     const price=perpsEl("perpsBtcPrice"),change=perpsEl("perpsBtcChange"),deltaEl=perpsEl("perpsBtcDelta");
     if(price)price.textContent=perpsMoney(mark);
-    if(change){change.className="perps-change "+(pct>0?"positive":pct<0?"negative":"neutral");change.textContent=(pct>0?"▲ UP ":pct<0?"▼ DOWN ":"FLAT ")+sign+Math.abs(pct).toFixed(2)+"%";}
-    if(deltaEl){deltaEl.className="perps-delta "+(delta>0?"positive":delta<0?"negative":"");deltaEl.textContent=sign+perpsMoney(Math.abs(delta))+" · 24H CHANGE";}
+    if(change){change.className="perps-change "+(signalSide==="up"?"positive":"negative");change.textContent=(signalSide==="up"?"▲ UP ":"▼ DOWN ")+formatPerpsPct(pct);}
+    if(deltaEl){deltaEl.className="perps-delta "+(delta>0?"positive":delta<0?"negative":"neutral");deltaEl.textContent="24H Δ "+sign+perpsMoney(Math.abs(delta))+" · 5M CLOSE REF "+formatPerpsPct(signalReference);}
     polymarketPerps.lastGoodAt=Date.now();
-    renderPerpsUnavailable("POLYMARKET MARK PRICE · UPDATED "+new Date().toLocaleTimeString());
+    renderPerpsUnavailable("LIVE 24H CHANGE · 5M CLOSE REFERENCE SAVED · UPDATED "+new Date().toLocaleTimeString());
   }
   async function updatePolymarketBtcPerps(){
     if(polymarketPerps.busy||document.visibilityState==="hidden")return;
+    const sampledAt=Date.now();
     polymarketPerps.busy=true;
     try{
       if(polymarketPerps.instrumentId===null){
@@ -4216,7 +4264,7 @@ body>.reader-shell{
       const ticker=tickerList.find(x=>Number(x.instrument_id??x.instrumentId)===polymarketPerps.instrumentId)||tickerList[0];
       const statistics=statsList.find(x=>Number(x.instrument_id??x.instrumentId)===polymarketPerps.instrumentId)||statsList[0];
       if(!ticker||!statistics)throw new Error("BTC live ticker or 24H statistics unavailable");
-      renderPolymarketBtcPerps(ticker,statistics);
+      renderPolymarketBtcPerps(ticker,statistics,sampledAt);
     }catch(error){
       if(!polymarketPerps.lastGoodAt)renderPerpsUnavailable("POLYMARKET FEED CONNECTING · "+(error&&error.message?error.message:"RETRYING"));
       else if(Date.now()-polymarketPerps.lastGoodAt>30000)renderPerpsUnavailable("POLYMARKET FEED STALE · RECONNECTING");

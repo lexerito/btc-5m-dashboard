@@ -863,6 +863,61 @@ body>.reader-shell{
 .perps-delta{font-size:11px;font-weight:700;margin-top:1px}
 .perps-delta.positive{color:#43efae}.perps-delta.negative{color:#ff6b96}.perps-delta.neutral{color:#aebbd7}.perps-updated{font-size:9px;color:#8294b8;margin-top:5px;letter-spacing:.06em}
 @media(max-width:480px){.perps-strip{padding:13px;gap:8px}.perps-mark{width:34px;height:34px}.perps-source{font-size:8px}.perps-change{font-size:23px}}
+
+/* Breach visual polish: neon frame, animated tape scan, and stronger live pressure states */
+#breachBoard{position:relative;isolation:isolate;animation:breachFramePulse 8s ease-in-out infinite}
+#breachBoard:before{content:"";position:absolute;z-index:4;top:0;bottom:0;left:-42%;width:34%;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(181,92,255,.075),rgba(91,157,255,.10),transparent);transform:skewX(-18deg);animation:breachFrameSweep 11s ease-in-out infinite}
+#breachBoard.bull-dominant{--breach-live:#00efad;box-shadow:0 16px 48px #0009,0 0 34px #00e6a128,0 0 85px #00e6a10d}
+#breachBoard.bear-dominant{--breach-live:#ff397a;box-shadow:0 16px 48px #0009,0 0 34px #ff397a28,0 0 85px #ff397a0d}
+#breachBoard.balanced{--breach-live:#bd91ff}
+.breach-top{position:relative;background:linear-gradient(100deg,#0b0912,#111020 52%,#0b0912)}
+.breach-brand>span{filter:drop-shadow(0 0 7px #b98aff);animation:breachBrandPulse 3s ease-in-out infinite}
+.breach-live{background:#071b16;box-shadow:0 0 16px #00e6a11c,inset 0 0 10px #00e6a10b}
+.breach-live i{box-shadow:0 0 7px #00e6a1;animation:breachLivePulse 1.5s ease-in-out infinite}
+.breach-pressure-head{position:relative;background:radial-gradient(ellipse at 14% 50%,#00dfa014,transparent 43%),radial-gradient(ellipse at 86% 50%,#ff397a14,transparent 43%),#0b0a12}
+.bulls-side b{ text-shadow:0 0 12px #00e6a155}
+.bears-side b{text-shadow:0 0 12px #ff397a55}
+.breach-meter{background:linear-gradient(90deg,#1a2a2c,#24212b);box-shadow:inset 0 1px 5px #000b}
+.breach-meter i{position:relative;filter:saturate(1.25);transition:width .35s cubic-bezier(.2,.8,.2,1)}
+.bulls-side .breach-meter i{box-shadow:0 0 8px #00dfa0aa,0 0 19px #00dfa044}
+.bears-side .breach-meter i{box-shadow:0 0 8px #ff397aaa,0 0 19px #ff397a44}
+.breach-round>b{ text-shadow:0 0 12px #fff5,0 0 28px #c8a5ff44;animation:breachTimerGlow 3.8s ease-in-out infinite}
+.breach-ticks i{border-radius:2px;box-shadow:0 0 7px #ffcf6c77;animation:breachTick 1.8s ease-in-out infinite}
+.breach-ticks i:nth-child(2n){animation-delay:.15s}.breach-ticks i:nth-child(3n){animation-delay:.3s}.breach-ticks i:nth-child(4n){animation-delay:.45s}
+.breach-round>strong{min-height:10px;text-shadow:0 0 9px currentColor}
+.breach-chart-wrap{isolation:isolate;background:radial-gradient(ellipse at 50% 50%,#16121b 0,#0a0910 65%);border-color:#32263c}
+.breach-chart-wrap:before{content:"";position:absolute;z-index:1;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0,transparent 23px,rgba(255,255,255,.025) 24px),linear-gradient(90deg,rgba(0,235,165,.055),transparent 42%,rgba(255,54,119,.055));mix-blend-mode:screen}
+.breach-chart-wrap:after{content:"";position:absolute;z-index:2;top:0;bottom:0;left:-3px;width:2px;pointer-events:none;background:linear-gradient(180deg,transparent,#b4f9ffb0,transparent);box-shadow:0 0 15px #60dfff99;animation:breachChartScan 8s linear infinite}
+#breachFlowCanvas{position:relative;z-index:0}
+.breach-strike-tag{z-index:3;background:linear-gradient(110deg,#1b150c,#30220d,#17110a);border-color:#d7a944;color:#ffe19a;box-shadow:0 0 13px #e4b84c45,inset 0 0 9px #f0c75f14;animation:breachGoldPulse 2.8s ease-in-out infinite}
+.breach-price-tag{z-index:3;box-shadow:0 0 12px #00e6a188,0 0 28px #00e6a144;transition:left .25s ease,background .25s,color .25s,box-shadow .25s}
+.breach-price-tag.above{background:linear-gradient(110deg,#00a875,#51ffd0);color:#041b13;box-shadow:0 0 13px #00efadbb,0 0 30px #00efad55}
+.breach-price-tag.below{background:linear-gradient(110deg,#d91e5b,#ff75a0);color:#250610;box-shadow:0 0 13px #ff397abb,0 0 30px #ff397a55}
+.breach-verdict-row{background:linear-gradient(90deg,#0c0a12,#100e18 50%,#0c0a12)}
+.breach-verdict-buttons span{position:relative;overflow:hidden;transition:transform .18s ease,box-shadow .2s ease,background .2s ease}
+.breach-verdict-buttons span:after{content:"";position:absolute;inset:-60% auto -60% -45%;width:32%;transform:rotate(20deg);background:linear-gradient(90deg,transparent,#ffffff24,transparent);transition:left .45s ease}
+.breach-verdict-buttons span:hover:after{left:120%}
+.breach-verdict-buttons .active-up{box-shadow:0 0 15px #00e6a155,inset 0 0 18px #00e6a11c;transform:translateY(-1px)}
+.breach-verdict-buttons .active-down{box-shadow:0 0 15px #ff397a55,inset 0 0 18px #ff397a1c;transform:translateY(-1px)}
+.breach-stats{background:#0a0910}
+.breach-stats>div{position:relative;transition:background .2s ease}
+.breach-stats>div:hover{background:linear-gradient(135deg,#ffffff08,transparent)}
+.breach-stats b{font-variant-numeric:tabular-nums;text-shadow:0 0 13px #ffffff16}
+.breach-foot span:first-child{filter:drop-shadow(0 0 5px #00dfa077)}
+.breach-explainer{background:linear-gradient(90deg,#0a0910,#100d18,#0a0910)}
+#breachBoard.bull-dominant .breach-side.bulls-side .breach-meter{box-shadow:0 0 14px #00e6a125}
+#breachBoard.bear-dominant .breach-side.bears-side .breach-meter{box-shadow:0 0 14px #ff397a25}
+@keyframes breachFramePulse{0%,100%{box-shadow:0 16px 48px #0008,0 0 36px #7b20d52b}50%{box-shadow:0 18px 52px #0009,0 0 48px #8b31ed48}}
+@keyframes breachFrameSweep{0%,65%{left:-42%;opacity:0}72%{opacity:1}94%,100%{left:120%;opacity:0}}
+@keyframes breachBrandPulse{0%,100%{filter:drop-shadow(0 0 4px #b98aff)}50%{filter:drop-shadow(0 0 10px #b98aff)}}
+@keyframes breachLivePulse{0%,100%{opacity:1;box-shadow:0 0 5px #00e6a1}50%{opacity:.5;box-shadow:0 0 13px #00e6a1}}
+@keyframes breachTimerGlow{0%,100%{text-shadow:0 0 9px #fff4,0 0 20px #c8a5ff33}50%{text-shadow:0 0 15px #fff8,0 0 32px #c8a5ff77}}
+@keyframes breachTick{0%,100%{opacity:.45;filter:brightness(.8)}50%{opacity:1;filter:brightness(1.6)}}
+@keyframes breachChartScan{0%{left:-3px;opacity:0}8%{opacity:.7}92%{opacity:.55}100%{left:100%;opacity:0}}
+@keyframes breachGoldPulse{0%,100%{box-shadow:0 0 9px #e4b84c33,inset 0 0 6px #f0c75f0d}50%{box-shadow:0 0 18px #e4b84c77,inset 0 0 12px #f0c75f1c}}
+@media(prefers-reduced-motion:reduce){#breachBoard,.breach-brand>span,.breach-live i,.breach-round>b,.breach-ticks i,.breach-chart-wrap:after,.breach-strike-tag{animation:none!important}.breach-meter i,.breach-price-tag,.breach-verdict-buttons span{transition:none!important}}
+@media(max-width:650px){#breachBoard:before{display:none}.breach-chart-wrap:after{animation-duration:11s}.breach-stats>div:hover{background:transparent}}
+
 </style>
 </head>
 <body>
@@ -4310,6 +4365,7 @@ body>.reader-shell{
     for(const t of trades){const usd=t.price*t.size;if(t.buy)buy+=usd;else sell+=usd;if(usd>=1000)soldiers++;if(usd>=10000)giants++;const strike=Number(state.target),diff=Number.isFinite(strike)&&strike>0?t.price-strike:0,idx=Math.max(0,Math.min(30,Math.round(15+diff/10)));if(t.buy)buckets[idx].buy+=usd;else buckets[idx].sell+=usd;}
     const total=buy+sell,bullPct=total?buy/total*100:50,bearPct=100-bullPct,set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
     const bb=document.getElementById("breachBullBar"),rb=document.getElementById("breachBearBar");if(bb)bb.style.width=bullPct+"%";if(rb)rb.style.width=bearPct+"%";
+    const board=document.getElementById("breachBoard");if(board){board.classList.toggle("bull-dominant",buy>sell);board.classList.toggle("bear-dominant",sell>buy);board.classList.toggle("balanced",buy===sell||total===0);}
     set("breachBullPct",Math.round(bullPct)+"%");set("breachBearPct",Math.round(bearPct)+"%");
     set("breachBuyDetail","bought · "+breachUsd(buy)+" · last 60s");set("breachSellDetail","sold · "+breachUsd(sell)+" · last 60s");
     set("breachPush",(buy>sell?"BULLS PUSHING":sell>buy?"BEARS PUSHING":"BALANCED TAPE")+" · "+trades.length+" PRINTS");
@@ -4319,17 +4375,41 @@ body>.reader-shell{
     set("breachStrikeTag",strike>0?"POLYMARKET PRICE TO BEAT · "+breachUsd(strike):"PRICE TO BEAT · CHAINLINK SYNCING");
     set("breachTapeRate","TAPE "+(trades.length/60).toFixed(1)+"/SEC");set("breachTapeStatus",state.coinbaseLastAt&&now-state.coinbaseLastAt<15000?"COINBASE TAPE LIVE":"COINBASE TAPE CONNECTING");
     const bc=document.getElementById("breachBullCall"),rc=document.getElementById("breachBearCall");if(bc)bc.classList.toggle("active-up",buy>sell);if(rc)rc.classList.toggle("active-down",sell>buy);
-    const priceTag=document.getElementById("breachPriceTag");if(priceTag&&dist!==null){const w=breachCanvas?.clientWidth||900;priceTag.style.left=Math.max(5,Math.min(95,50+dist/300*45))+"%";}
+    const priceTag=document.getElementById("breachPriceTag");if(priceTag&&dist!==null){const w=breachCanvas?.clientWidth||900;priceTag.style.left=Math.max(5,Math.min(95,50+dist/300*45))+"%";priceTag.classList.toggle("above",dist>=0);priceTag.classList.toggle("below",dist<0);}
     if(!breachCtx||!breachCanvas)return;
     const w=Math.max(1,breachCanvas.clientWidth),h=Math.max(1,breachCanvas.clientHeight),dpr=Math.min(2,window.devicePixelRatio||1);
     if(breachCanvas.width!==Math.round(w*dpr)||breachCanvas.height!==Math.round(h*dpr)){breachCanvas.width=Math.round(w*dpr);breachCanvas.height=Math.round(h*dpr);}
     breachCtx.setTransform(dpr,0,0,dpr,0,0);breachCtx.clearRect(0,0,w,h);
     const mid=w/2,top=20,bottom=h-28,rowH=(bottom-top)/buckets.length,max=Math.max(1,...buckets.flatMap(x=>[x.buy,x.sell]));
-    const bg=breachCtx.createLinearGradient(0,0,w,0);bg.addColorStop(0,"rgba(0,226,160,.12)");bg.addColorStop(.49,"rgba(0,226,160,.015)");bg.addColorStop(.5,"rgba(255,255,255,.015)");bg.addColorStop(1,"rgba(255,48,116,.12)");breachCtx.fillStyle=bg;breachCtx.fillRect(0,0,w,h);
-    breachCtx.strokeStyle="rgba(255,255,255,.045)";for(let i=1;i<8;i++){const y=top+(bottom-top)*i/8;breachCtx.beginPath();breachCtx.moveTo(0,y);breachCtx.lineTo(w,y);breachCtx.stroke();}
-    const maxWidth=w*.42;buckets.forEach((b,i)=>{const y=top+i*rowH+1,hh=Math.max(2,rowH-2),bw=Math.max(1,b.buy/max*maxWidth),sw=Math.max(1,b.sell/max*maxWidth);if(b.buy>0){breachCtx.fillStyle="rgba(0,235,165,"+(.35+.55*b.buy/max)+")";breachCtx.fillRect(mid-bw,y,bw,hh);}if(b.sell>0){breachCtx.fillStyle="rgba(255,54,119,"+(.35+.55*b.sell/max)+")";breachCtx.fillRect(mid,y,sw,hh);}});
-    breachCtx.strokeStyle="#f0c75f";breachCtx.lineWidth=2;breachCtx.shadowColor="#f0c75f";breachCtx.shadowBlur=12;breachCtx.beginPath();breachCtx.moveTo(mid,0);breachCtx.lineTo(mid,h);breachCtx.stroke();breachCtx.shadowBlur=0;
-    if(dist!==null){const x=Math.max(4,Math.min(w-4,mid+dist/300*maxWidth));breachCtx.strokeStyle="#00efad";breachCtx.lineWidth=2;breachCtx.shadowColor="#00efad";breachCtx.shadowBlur=10;breachCtx.beginPath();breachCtx.moveTo(x,0);breachCtx.lineTo(x,h);breachCtx.stroke();breachCtx.shadowBlur=0;}
+    const bg=breachCtx.createLinearGradient(0,0,w,0);bg.addColorStop(0,"rgba(0,226,160,.16)");bg.addColorStop(.43,"rgba(0,226,160,.025)");bg.addColorStop(.5,"rgba(255,255,255,.025)");bg.addColorStop(1,"rgba(255,48,116,.16)");breachCtx.fillStyle=bg;breachCtx.fillRect(0,0,w,h);
+    const aura=breachCtx.createRadialGradient(mid,h*.5,5,mid,h*.5,w*.48);aura.addColorStop(0,"rgba(255,206,105,.08)");aura.addColorStop(.42,"rgba(180,130,255,.025)");aura.addColorStop(1,"rgba(0,0,0,0)");breachCtx.fillStyle=aura;breachCtx.fillRect(0,0,w,h);
+    breachCtx.strokeStyle="rgba(255,255,255,.045)";breachCtx.lineWidth=1;for(let i=1;i<8;i++){const y=top+(bottom-top)*i/8;breachCtx.beginPath();breachCtx.moveTo(0,y);breachCtx.lineTo(w,y);breachCtx.stroke();}
+    for(let i=1;i<8;i++){const x=w*i/8;breachCtx.strokeStyle=i===4?"rgba(240,199,95,.16)":"rgba(255,255,255,.025)";breachCtx.beginPath();breachCtx.moveTo(x,0);breachCtx.lineTo(x,h);breachCtx.stroke();}
+    const maxWidth=w*.42,nowAnim=Date.now();
+    buckets.forEach((b,i)=>{
+      const cy=top+i*rowH+rowH*.5,hh=Math.max(2,rowH-2),bw=Math.max(0,b.buy/max*maxWidth),sw=Math.max(0,b.sell/max*maxWidth);
+      if(b.buy>0){
+        const grad=breachCtx.createLinearGradient(mid-bw,cy,mid,cy);grad.addColorStop(0,"rgba(0,125,91,.58)");grad.addColorStop(1,"rgba(36,255,190,.96)");
+        breachCtx.shadowColor="#00efad";breachCtx.shadowBlur=5+10*b.buy/max;breachCtx.fillStyle=grad;breachCtx.fillRect(mid-bw,cy-hh*.5,bw,hh);breachCtx.shadowBlur=0;
+        breachCtx.strokeStyle="rgba(94,255,213,.95)";breachCtx.lineWidth=1;breachCtx.beginPath();breachCtx.moveTo(mid-bw,cy-hh*.48);breachCtx.lineTo(mid-bw-4-(b.buy/max*4),cy);breachCtx.lineTo(mid-bw,cy+hh*.48);breachCtx.stroke();
+        const spark=((nowAnim/700+i*17)%100)/100;breachCtx.fillStyle="rgba(170,255,232,.85)";breachCtx.shadowColor="#00efad";breachCtx.shadowBlur=8;breachCtx.beginPath();breachCtx.arc(mid-bw+spark*bw,cy,1+1.3*b.buy/max,0,Math.PI*2);breachCtx.fill();breachCtx.shadowBlur=0;
+      }
+      if(b.sell>0){
+        const grad=breachCtx.createLinearGradient(mid,cy,mid+sw,cy);grad.addColorStop(0,"rgba(255,116,157,.96)");grad.addColorStop(1,"rgba(145,23,69,.58)");
+        breachCtx.shadowColor="#ff397a";breachCtx.shadowBlur=5+10*b.sell/max;breachCtx.fillStyle=grad;breachCtx.fillRect(mid,cy-hh*.5,sw,hh);breachCtx.shadowBlur=0;
+        breachCtx.strokeStyle="rgba(255,157,188,.95)";breachCtx.lineWidth=1;breachCtx.beginPath();breachCtx.moveTo(mid+sw,cy-hh*.48);breachCtx.lineTo(mid+sw+4+(b.sell/max*4),cy);breachCtx.lineTo(mid+sw,cy+hh*.48);breachCtx.stroke();
+        const spark=((nowAnim/700+i*23)%100)/100;breachCtx.fillStyle="rgba(255,207,220,.9)";breachCtx.shadowColor="#ff397a";breachCtx.shadowBlur=8;breachCtx.beginPath();breachCtx.arc(mid+spark*sw,cy,1+1.3*b.sell/max,0,Math.PI*2);breachCtx.fill();breachCtx.shadowBlur=0;
+      }
+    });
+    // The gold strike is the fixed zero point; the colored marker is live BTC relative to it.
+    breachCtx.strokeStyle="rgba(255,215,117,.35)";breachCtx.lineWidth=6;breachCtx.shadowColor="#f0c75f";breachCtx.shadowBlur=18;breachCtx.beginPath();breachCtx.moveTo(mid,0);breachCtx.lineTo(mid,h);breachCtx.stroke();
+    breachCtx.strokeStyle="#ffe18a";breachCtx.lineWidth=1.7;breachCtx.shadowBlur=7;breachCtx.beginPath();breachCtx.moveTo(mid,0);breachCtx.lineTo(mid,h);breachCtx.stroke();breachCtx.shadowBlur=0;
+    if(dist!==null){
+      const x=Math.max(4,Math.min(w-4,mid+dist/300*maxWidth)),above=dist>=0,color=above?"#00efad":"#ff568d";
+      breachCtx.strokeStyle=above?"rgba(0,239,173,.25)":"rgba(255,86,141,.25)";breachCtx.lineWidth=7;breachCtx.shadowColor=color;breachCtx.shadowBlur=19;breachCtx.beginPath();breachCtx.moveTo(x,0);breachCtx.lineTo(x,h);breachCtx.stroke();
+      breachCtx.strokeStyle=color;breachCtx.lineWidth=2;breachCtx.shadowBlur=9;breachCtx.beginPath();breachCtx.moveTo(x,0);breachCtx.lineTo(x,h);breachCtx.stroke();breachCtx.shadowBlur=0;
+      breachCtx.fillStyle=color;breachCtx.shadowColor=color;breachCtx.shadowBlur=13;breachCtx.beginPath();breachCtx.arc(x,top,3.1,0,Math.PI*2);breachCtx.fill();breachCtx.beginPath();breachCtx.arc(x,bottom,3.1,0,Math.PI*2);breachCtx.fill();breachCtx.shadowBlur=0;
+    }
   }
   renderBreach();setInterval(renderBreach,500);window.addEventListener("resize",renderBreach);
   updatePolymarketBtcPerps();

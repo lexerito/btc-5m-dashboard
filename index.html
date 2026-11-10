@@ -13,7 +13,7 @@
 .breach-pressure-head{display:grid;grid-template-columns:1fr 128px 1fr;gap:22px;align-items:center;padding:17px 16px 13px;background:#0b0a12}.breach-side{min-width:0}.breach-side>div:first-child{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.breach-side b{font-size:15px}.breach-side strong{font-size:11px;color:#c3c6d4}.bulls-side b{color:#00e6a1}.bears-side b{color:#ff397a}.bears-side>div:first-child{flex-direction:row-reverse}
 .breach-meter{height:8px;border-radius:2px;background:#22212a;overflow:hidden}.breach-meter i{display:block;height:100%;width:50%;transition:width .25s}.bulls-side .breach-meter i{background:#00dfa0;box-shadow:0 0 12px #00dfa077}.bears-side .breach-meter i{background:#ff397a;float:right;box-shadow:0 0 12px #ff397a77}
 .breach-side small{display:block;font-size:9px;color:#69738e;margin-top:6px}.bears-side small{text-align:right}.breach-round{text-align:center}.breach-round>small{display:block;font-size:8px;letter-spacing:.24em;color:#77819b;font-weight:900}.breach-round>b{display:block;font-size:31px;line-height:1.05;font-variant-numeric:tabular-nums;color:#f6f4fa}.breach-ticks{display:flex;justify-content:center;gap:3px;margin:6px auto 4px}.breach-ticks i{height:4px;width:7px;background:#b78a36;opacity:.8}.breach-round>strong{display:block;font-size:8px;letter-spacing:.08em;color:#00e6a1}
-.breach-prints-panel{margin:14px 0 4px;padding:14px;border:1px solid #29243a;border-radius:14px;background:linear-gradient(145deg,#0c1118,#100d18 55%,#100b14);box-shadow:inset 0 1px #ffffff08,0 10px 30px #0005}.breach-prints-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.breach-prints-title b{font-size:12px;letter-spacing:.15em;color:#eee}.breach-prints-title small{font-size:9px;letter-spacing:.12em;color:#888}.breach-prints-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}.breach-prints-summary>div{min-width:0;padding:12px;border-radius:10px;background:#080d12;border:1px solid #1c493d}.breach-prints-summary .breach-print-sell{border-color:#512235;background:#130a11}.breach-prints-summary b,.breach-prints-summary span{display:block;font-size:10px;letter-spacing:.08em;color:#9ca9a7}.breach-prints-summary .breach-print-sell b{color:#ff789f}.breach-prints-summary .breach-print-buy b{color:#4dffca}.breach-prints-summary strong{display:block;margin:5px 0;font-size:clamp(18px,3vw,25px);font-variant-numeric:tabular-nums;color:#eafff7}.breach-prints-summary .breach-print-sell strong{color:#ffe7ef}.breach-prints-summary span{font-size:10px;letter-spacing:0;color:#87918f}#breachPrintsCanvas{display:block;width:100%;height:220px;border-radius:8px;background:linear-gradient(90deg,#071a15 0%,#090d13 49.8%,#090d13 50.2%,#1b0a12 100%)}@media(max-width:600px){.breach-prints-title{align-items:flex-start;flex-direction:column}.breach-prints-summary{gap:7px}.breach-prints-summary>div{padding:9px}#breachPrintsCanvas{height:190px}}.breach-chart-wrap{height:280px;position:relative;overflow:hidden;background:#0b0a10;border-block:1px solid #24202d}#breachFlowCanvas{display:block;width:100%;height:100%}
+.breach-chart-wrap{height:280px;position:relative;overflow:hidden;background:#0b0a10;border-block:1px solid #24202d}#breachFlowCanvas{display:block;width:100%;height:100%}
 .breach-strike-tag{position:absolute;top:7px;left:50%;transform:translateX(-50%);padding:3px 8px;background:#15111a;border:1px solid #8c692d;border-radius:5px;color:#e7c36c;font-size:9px;font-weight:900;white-space:nowrap}.breach-price-tag{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:3px 7px;border-radius:4px;background:#00e6a1;color:#07130f;font-size:10px;font-weight:950;white-space:nowrap}
 .breach-chart-foot{position:absolute;bottom:7px;left:18%;right:18%;display:flex;justify-content:space-between;color:#4e5870;font-size:8px;pointer-events:none}
 .breach-verdict-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 16px;border-bottom:1px solid #2a2632;min-height:60px}.breach-verdict-row>div:first-child b{font-size:11px;letter-spacing:.1em}.breach-verdict-row small{display:block;color:#66718b;font-size:9px;margin-top:4px}
@@ -934,7 +934,6 @@ body>.reader-shell{
       <div class="breach-side bears-side"><div><b>Bears</b><strong id="breachBearPct">50%</strong></div><div class="breach-meter"><i id="breachBearBar"></i></div><small id="breachSellDetail">sold · last 60s</small></div>
     </div>
     <div class="breach-chart-wrap"><canvas id="breachFlowCanvas"></canvas><div class="breach-strike-tag" id="breachStrikeTag">PRICE TO BEAT · SYNCING</div><div class="breach-price-tag" id="breachPriceTag">BTC · —</div><div class="breach-chart-foot"><span>−$150</span><span>−$50</span><span>PRICE TO BEAT</span><span>+$50</span><span>+$150</span></div></div>
-    <div class="breach-prints-panel"><div class="breach-prints-title"><b>LIVE TRADE PRINTS</b><small>COINBASE BTC-USD · LAST 60 SECONDS</small></div><div class="breach-prints-summary"><div class="breach-print-buy"><b>BOUGHT</b><strong id="breachPrintBuyTotal">$0</strong><span id="breachPrintBuyMeta">0 prints · $0 in $1K+ prints</span></div><div class="breach-print-sell"><b>SOLD</b><strong id="breachPrintSellTotal">$0</strong><span id="breachPrintSellMeta">0 prints · $0 in $1K+ prints</span></div></div><canvas id="breachPrintsCanvas" aria-label="Recent individual Coinbase buy and sell trade prints"></canvas></div>
     <div class="breach-verdict-row"><div><b>WHO WINS THIS ROUND?</b><small id="breachGrade">graded against Polymarket at the bell · live Coinbase tape</small></div><div class="breach-verdict-buttons"><span id="breachBullCall">BULLS · UP</span><span id="breachBearCall">BEARS · DOWN</span></div></div>
     <div class="breach-stats"><div><small>BTC PRICE · COINBASE</small><b id="breachPrice">—</b></div><div><small>VS PRICE TO BEAT</small><b id="breachDistance">—</b></div><div><small>1K+ SOLDIERS</small><b id="breachSoldiers">0</b></div><div><small>10K+ GIANTS</small><b id="breachGiants">0</b></div></div>
     <div class="breach-foot"><span id="breachTapeStatus">CONNECTING TO COINBASE BTC-USD TAPE</span><span id="breachTapeRate">TAPE —/SEC</span><span>1 soldier = $1K+ · giant = $10K+ trade</span></div>
@@ -4378,8 +4377,16 @@ body>.reader-shell{
     const total=buy+sell,net=buy-sell,bullPct=total?buy/total*100:0,bearPct=total?sell/total*100:0;
     const fast=trades.filter(t=>now-t.ts<=15000),fastBuy=fast.reduce((n,t)=>n+(t.buy?t.price*t.size:0),0),fastSell=fast.reduce((n,t)=>n+(!t.buy?t.price*t.size:0),0),fastTotal=fastBuy+fastSell;
     const slowImbalance=total?net/total:0,fastImbalance=fastTotal?(fastBuy-fastSell)/fastTotal:slowImbalance;
-    const pressureScore=total?(slowImbalance*.7+fastImbalance*.3):0;
-    const leader=trades.length<3||total===0||Math.abs(pressureScore)<.035?"balanced":pressureScore>0?"bull":"bear";
+    const ordered=[...trades].sort((a,b)=>a.ts-b.ts),fastOrdered=fast.filter(t=>t.price>0).sort((a,b)=>a.ts-b.ts);
+    const slowMove=ordered.length>1?(ordered[ordered.length-1].price-ordered[0].price)/ordered[0].price:0;
+    const fastMove=fastOrdered.length>1?(fastOrdered[fastOrdered.length-1].price-fastOrdered[0].price)/fastOrdered[0].price:0;
+    const clamp=(v)=>Math.max(-1,Math.min(1,v));
+    const slowPriceScore=clamp(slowMove/0.0008),fastPriceScore=clamp(fastMove/0.00035);
+    const priceScore=slowPriceScore*.65+fastPriceScore*.35;
+    const targetScore=Number.isFinite(strike)&&strike>0&&Number(state.coinbasePrice)>0?clamp((Number(state.coinbasePrice)-strike)/100):0;
+    const finalScore=priceScore*.60+slowImbalance*.25+fastImbalance*.10+targetScore*.05;
+    const leader=Math.abs(finalScore)<.10?"balanced":finalScore>0?"bull":"bear";
+    const absorption=slowImbalance>.15&&priceScore<-.12?"BUYERS ABSORBED · PRICE FALLING":slowImbalance<-.15&&priceScore>.12?"SELLERS ABSORBED · PRICE RISING":Math.abs(slowImbalance)>.15&&Math.abs(priceScore)<.12?"FLOW NOT MOVING PRICE":"VOLUME + PRICE AGREE";
     const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
     const bb=document.getElementById("breachBullBar"),rb=document.getElementById("breachBearBar");
     if(bb)bb.style.width=bullPct+"%";if(rb)rb.style.width=bearPct+"%";
@@ -4391,7 +4398,7 @@ body>.reader-shell{
     set("breachSellDetail","sold · "+breachUsd(sell)+" · "+sellCount+" prints · "+breachUsd(bigSell)+" in $1K+ prints");
     const push=document.getElementById("breachPush");
     const pushText=leader==="bull"?"BULLS PUSHING":leader==="bear"?"BEARS PUSHING":"WAITING FOR VALID PRINTS";
-    set("breachPush",pushText+" · "+trades.length+" PRINTS · NET "+(net>0?"+":net<0?"−":"")+breachUsd(net)+" · 60S/15S BLEND");
+    set("breachPush",pushText+" · "+absorption+" · "+trades.length+" TRADES");
     if(push){push.style.color=leader==="bull"?"#00efad":leader==="bear"?"#ff568d":"#bd91ff";push.style.textShadow=leader==="bull"?"0 0 12px #00efad66":leader==="bear"?"0 0 12px #ff397a66":"none";}
     const price=Number(state.coinbasePrice)||Number(state.chainlink)||Number(state.binance),dist=price>0&&strike>0?price-strike:null;
     set("breachPrice",price>0?breachUsd(price):"—");
@@ -4407,36 +4414,9 @@ body>.reader-shell{
     if(priceTag&&dist!==null){
       const w=breachCanvas?.clientWidth||900;
       priceTag.style.left=Math.max(5,Math.min(95,50+dist/300*45))+"%";
-      // The marker glow follows tape pressure; ABOVE/BELOW remains explicit in its label.
+      // The marker glow follows the combined price-response signal; ABOVE/BELOW remains explicit in its label.
       priceTag.classList.toggle("above",leader==="bull");priceTag.classList.toggle("below",leader==="bear");
       if(leader==="balanced"){priceTag.classList.remove("above","below");}
-    }
-    const printCanvas=document.getElementById("breachPrintsCanvas"),printCtx=printCanvas?printCanvas.getContext("2d"):null;
-    const printBuy=document.getElementById("breachPrintBuyTotal"),printSell=document.getElementById("breachPrintSellTotal"),printBuyMeta=document.getElementById("breachPrintBuyMeta"),printSellMeta=document.getElementById("breachPrintSellMeta");
-    if(printBuy)printBuy.textContent=breachUsd(buy);if(printSell)printSell.textContent=breachUsd(sell);
-    if(printBuyMeta)printBuyMeta.textContent=buyCount+" prints · "+breachUsd(bigBuy)+" in $1K+ prints";
-    if(printSellMeta)printSellMeta.textContent=sellCount+" prints · "+breachUsd(bigSell)+" in $1K+ prints";
-    if(printCanvas&&printCtx){
-      const cw=Math.max(1,printCanvas.clientWidth),ch=Math.max(1,printCanvas.clientHeight),cd=Math.min(2,window.devicePixelRatio||1);
-      if(printCanvas.width!==Math.round(cw*cd)||printCanvas.height!==Math.round(ch*cd)){printCanvas.width=Math.round(cw*cd);printCanvas.height=Math.round(ch*cd);}
-      printCtx.setTransform(cd,0,0,cd,0,0);printCtx.clearRect(0,0,cw,ch);
-      const half=cw/2,gap=12,rowH=24,visible=Math.max(1,Math.floor((ch-36)/rowH));
-      printCtx.font="600 10px ui-monospace,monospace";printCtx.textBaseline="middle";
-      printCtx.fillStyle="#4dffca";printCtx.fillText("BUY PRINTS",12,14);printCtx.fillStyle="#ff789f";printCtx.fillText("SELL PRINTS",half+12,14);
-      printCtx.strokeStyle="#ffffff16";printCtx.beginPath();printCtx.moveTo(half,25);printCtx.lineTo(half,ch-5);printCtx.stroke();
-      const drawSide=(list,x,isBuy)=>{
-        const color=isBuy?"#4dffca":"#ff789f",glow=isBuy?"#00efad":"#ff397a";
-        list.slice(0,visible).forEach((t,i)=>{
-          const y=34+i*rowH,usd=t.price*t.size,barW=Math.min(half-110,Math.max(3,Math.log10(usd+1)/6*(half-110)));
-          printCtx.fillStyle=isBuy?"rgba(0,239,173,.10)":"rgba(255,57,122,.10)";printCtx.fillRect(x,y-8,half-gap-8,17);
-          printCtx.fillStyle=glow;printCtx.shadowColor=glow;printCtx.shadowBlur=7;printCtx.fillRect(x,y-8,barW,17);printCtx.shadowBlur=0;
-          printCtx.fillStyle=color;printCtx.fillText(breachUsd(usd),x+5,y);
-          const age=Math.max(0,Math.floor((now-t.ts)/1000));printCtx.fillStyle="#9aa2ad";printCtx.textAlign="right";printCtx.fillText(age+"s",x+half-gap-13,y);printCtx.textAlign="left";
-        });
-        if(!list.length){printCtx.fillStyle="#707783";printCtx.fillText("Waiting for "+(isBuy?"buy":"sell")+" prints…",x+8,48);}
-      };
-      drawSide(trades.filter(t=>t.buy).sort((a,b)=>b.ts-a.ts),8,true);
-      drawSide(trades.filter(t=>!t.buy).sort((a,b)=>b.ts-a.ts),half+8,false);
     }
     if(!breachCtx||!breachCanvas)return;
     const w=Math.max(1,breachCanvas.clientWidth),h=Math.max(1,breachCanvas.clientHeight),dpr=Math.min(2,window.devicePixelRatio||1);

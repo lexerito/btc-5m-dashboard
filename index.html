@@ -4375,7 +4375,10 @@ body>.reader-shell{
       if(t.buy)buckets[idx].buy+=usd;else buckets[idx].sell+=usd;
     }
     const total=buy+sell,net=buy-sell,bullPct=total?buy/total*100:0,bearPct=total?sell/total*100:0;
-    const leader=total===0?"balanced":net>0?"bull":"bear";
+    const fast=trades.filter(t=>now-t.ts<=15000),fastBuy=fast.reduce((n,t)=>n+(t.buy?t.price*t.size:0),0),fastSell=fast.reduce((n,t)=>n+(!t.buy?t.price*t.size:0),0),fastTotal=fastBuy+fastSell;
+    const slowImbalance=total?net/total:0,fastImbalance=fastTotal?(fastBuy-fastSell)/fastTotal:slowImbalance;
+    const pressureScore=total?(slowImbalance*.7+fastImbalance*.3):0;
+    const leader=trades.length<3||total===0||Math.abs(pressureScore)<.035?"balanced":pressureScore>0?"bull":"bear";
     const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
     const bb=document.getElementById("breachBullBar"),rb=document.getElementById("breachBearBar");
     if(bb)bb.style.width=bullPct+"%";if(rb)rb.style.width=bearPct+"%";
@@ -4383,11 +4386,11 @@ body>.reader-shell{
     if(board){board.classList.toggle("bull-dominant",leader==="bull");board.classList.toggle("bear-dominant",leader==="bear");board.classList.toggle("balanced",leader==="balanced");}
     set("breachBullPct",total?Math.round(bullPct)+"%":"—");
     set("breachBearPct",total?Math.round(bearPct)+"%":"—");
-    set("breachBuyDetail","bought · "+breachUsd(buy)+" · "+buyCount+" prints · last 60s");
-    set("breachSellDetail","sold · "+breachUsd(sell)+" · "+sellCount+" prints · last 60s");
+    set("breachBuyDetail","bought · "+breachUsd(buy)+" · "+buyCount+" prints · "+breachUsd(bigBuy)+" in $1K+ prints");
+    set("breachSellDetail","sold · "+breachUsd(sell)+" · "+sellCount+" prints · "+breachUsd(bigSell)+" in $1K+ prints");
     const push=document.getElementById("breachPush");
     const pushText=leader==="bull"?"BULLS PUSHING":leader==="bear"?"BEARS PUSHING":"WAITING FOR VALID PRINTS";
-    set("breachPush",pushText+" · "+trades.length+" PRINTS · NET "+(net>0?"+":"−")+breachUsd(net));
+    set("breachPush",pushText+" · "+trades.length+" PRINTS · NET "+(net>0?"+":net<0?"−":"")+breachUsd(net)+" · 60S/15S BLEND");
     if(push){push.style.color=leader==="bull"?"#00efad":leader==="bear"?"#ff568d":"#bd91ff";push.style.textShadow=leader==="bull"?"0 0 12px #00efad66":leader==="bear"?"0 0 12px #ff397a66":"none";}
     const price=Number(state.coinbasePrice)||Number(state.chainlink)||Number(state.binance),dist=price>0&&strike>0?price-strike:null;
     set("breachPrice",price>0?breachUsd(price):"—");

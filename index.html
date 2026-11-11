@@ -1267,6 +1267,12 @@ body>.reader-shell{
     <div class="cross-cell"><span>CONFLUENCE · 180S</span><b id="labTrend180">—</b><div class="cross-detail">Directional calls only</div></div>
     <div class="cross-cell"><span>CONFLUENCE · 240S</span><b id="labTrend240">—</b><div class="cross-detail">Directional calls only</div></div>
   </div>
+  <div class="lab-swing-heading">PAPER ENTRY RETURN · BUY AT RECORDED ASK · BEFORE FEES / SLIPPAGE</div>
+  <div class="lab-grid">
+    <div class="cross-cell"><span>60S ENTRY</span><b id="labPaper60">Collecting priced calls</b><div class="cross-detail">Equal $1 stakes · settled outcomes</div></div>
+    <div class="cross-cell"><span>180S ENTRY</span><b id="labPaper180">Collecting priced calls</b><div class="cross-detail">Equal $1 stakes · settled outcomes</div></div>
+    <div class="cross-cell"><span>240S ENTRY</span><b id="labPaper240">Collecting priced calls</b><div class="cross-detail">Equal $1 stakes · settled outcomes</div></div>
+  </div>
 
   <div class="actions"><button id="exportLab" type="button">Export results CSV</button><span class="small">No wallet access · no trades · local browser record</span></div>
 </section>
@@ -3212,6 +3218,7 @@ body>.reader-shell{
         r.trendCheckpoints[key]={
           side:forecast.side,score:Math.round(forecast.score*1000)/1000,
           up:forecast.up,down:forecast.down,valid:forecast.valid,at:Date.now(),
+          entryAsk:(forecast.side==="UP"?bookMetrics(poly.books[poly.upId])?.ask:forecast.side==="DOWN"?bookMetrics(poly.books[poly.downId])?.ask:null),
           seconds:Math.round(elapsed),leader:forecast.leader,
           persistence:Math.round(forecast.persistence*1000)/1000,
           targetAcceptance:Math.round((forecast.targetAcceptance||0)*1000)/1000,
@@ -3901,9 +3908,16 @@ body>.reader-shell{
     });
     [60,180,240].forEach(mark=>{
       const observed=done.filter(x=>x.trendCheckpoints&&x.trendCheckpoints[String(mark)]);
-      const calls=observed.filter(x=>x.trendCheckpoints[String(mark)].side!=="WAIT");
+      const calls=observed.filter(x=>x.trendCheckpoints[String(mark)].side==="UP"||x.trendCheckpoints[String(mark)].side==="DOWN");
       const hits=calls.filter(x=>x.trendCheckpoints[String(mark)].side===x.outcome).length;
       $("labTrend"+mark).textContent=calls.length?Math.round(hits/calls.length*100)+"% · "+hits+"/"+calls.length+" · "+observed.length+" observed":"—";
+      const priced=calls.filter(x=>Number.isFinite(x.trendCheckpoints[String(mark)].entryAsk)&&x.trendCheckpoints[String(mark)].entryAsk>0&&x.trendCheckpoints[String(mark)].entryAsk<1);
+      const pnl=priced.reduce((sum,x)=>{
+        const cp=x.trendCheckpoints[String(mark)],won=cp.side===x.outcome;
+        return sum+(won?(1/cp.entryAsk-1):-1);
+      },0);
+      const roi=$("labPaper"+mark);
+      if(roi)roi.textContent=priced.length?(pnl>=0?"+":"")+((pnl/priced.length)*100).toFixed(1)+"% · "+priced.length+" priced":"Collecting priced calls";
     });
     $("labStatus").textContent=done.length?"TRACKING · "+done.length+" SETTLED":"COLLECTING";
     $("labDetail").textContent=done.length?"Accuracy is measured against exact Chainlink TWAP60 settlement. WAIT calls are excluded from directional hit rate; new swing + flow scores are stored at 60s, 180s and 240s.":"No completed exact-reference markets yet. Keep the page open through market boundaries to build a real sample.";
@@ -3912,7 +3926,7 @@ body>.reader-shell{
     const marks=[30,60,120,180,240];
     const rows=[["start_utc","target_twap60","final_twap60","outcome",
       "checkpoint_60s_side","checkpoint_60s_score","checkpoint_180s_side","checkpoint_180s_score","checkpoint_240s_side","checkpoint_240s_score",
-      ...marks.flatMap(m=>["leader_"+m+"s_call","leader_"+m+"s_score","leader_"+m+"s_side","leader_"+m+"s_persistence","leader_"+m+"s_lead_changes","leader_"+m+"s_hold_seconds","spot_cvd","perp_cvd","volume_surge","oi_1m_pct","absorption","hold_read"])]];
+      ...marks.flatMap(m=>["leader_"+m+"s_call","leader_"+m+"s_score","leader_"+m+"s_side","leader_"+m+"s_persistence","leader_"+m+"s_lead_changes","leader_"+m+"s_hold_seconds","spot_cvd","perp_cvd","volume_surge","oi_1m_pct","absorption","hold_read","entry_ask"])]];
     state.journal.forEach(r=>{
       const row=[new Date(r.start).toISOString(),r.target,r.final,r.outcome,
         ...(r.checkpoints&&r.checkpoints["60"]?[r.checkpoints["60"].side,r.checkpoints["60"].score]:["",""]),
@@ -3921,7 +3935,7 @@ body>.reader-shell{
       for(const m of marks){
         const x=r.trendCheckpoints&&r.trendCheckpoints[String(m)];
         row.push(x?x.side:"",x?x.score:"",x?x.leader:"",x?x.persistence:"",x?x.leadChanges:"",x?x.leaderAge:"",
-          x?x.spotCvd:"",x?x.perpCvd:"",x?x.volumeSurge:"",x?x.oi1m:"",x?x.absorption:"",x?x.hold:"");
+          x?x.spotCvd:"",x?x.perpCvd:"",x?x.volumeSurge:"",x?x.oi1m:"",x?x.absorption:"",x?x.hold:"",x?x.entryAsk:"");
       }
       rows.push(row);
     });
@@ -4388,11 +4402,14 @@ body>.reader-shell{
     const referencePrice=Number(state.chainlink)||price;
     const dist=price>0&&strike>0?price-strike:null;
     const targetGap=referencePrice>0&&strike>0?referencePrice-strike:0;
-    const targetScore=referencePrice>0&&strike>0?clamp(targetGap/75):0;
-    // Outcome edge is driven mainly by target position and momentum; trade imbalance is supporting evidence only.
-    const finalScore=targetScore*.60+priceScore*.28+slowImbalance*.08+fastImbalance*.04;
-    const leader=Math.abs(finalScore)<.075?"balanced":finalScore>0?"bull":"bear";
-    const absorption=slowImbalance>.12&&leader==="bear"?"BUYERS ABSORBED · DOWN SIDE AHEAD":slowImbalance<-.12&&leader==="bull"?"SELLERS ABSORBED · UP SIDE AHEAD":leader==="balanced"?"NO CLEAR OUTCOME EDGE":"PRICE + OUTCOME EDGE LEADING";
+    // The Breach bar now uses the full multi-venue confluence engine.
+    // Never fall back to the old Coinbase-only heuristic when the engine is stale or unconfirmed.
+    const forecast=state.trendForecast;
+    const forecastFresh=!!forecast&&now-(forecast.updatedAt||0)<1800&&forecast.elapsed>=0&&forecast.elapsed<300;
+    const finalScore=forecastFresh&&Number.isFinite(forecast.score)?Math.max(-1,Math.min(1,forecast.score)):0;
+    const confirmedSide=forecastFresh&&(forecast.side==="UP"||forecast.side==="DOWN")?forecast.side:"WAIT";
+    const leader=confirmedSide==="UP"?"bull":confirmedSide==="DOWN"?"bear":"balanced";
+    const absorption=forecastFresh&&forecast.hold?String(forecast.hold):leader==="balanced"?"WAITING FOR MULTI-SOURCE CONFIRMATION":"MULTI-SOURCE CONFLUENCE CONFIRMED";
     const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
     const bb=document.getElementById("breachBullBar"),rb=document.getElementById("breachBearBar");
     if(bb)bb.style.width=bullPct+"%";if(rb)rb.style.width=bearPct+"%";
@@ -4403,7 +4420,7 @@ body>.reader-shell{
     set("breachBuyDetail","bought · "+breachUsd(buy)+" · "+buyCount+" prints · "+breachUsd(bigBuy)+" in $1K+ prints");
     set("breachSellDetail","sold · "+breachUsd(sell)+" · "+sellCount+" prints · "+breachUsd(bigSell)+" in $1K+ prints");
     const push=document.getElementById("breachPush");
-    const pushText=leader==="bull"?"BULLS PUSHING":leader==="bear"?"BEARS PUSHING":"WAITING FOR VALID PRINTS";
+    const pushText=leader==="bull"?"UP · CONFLUENCE CONFIRMED":leader==="bear"?"DOWN · CONFLUENCE CONFIRMED":"WAIT · NO CONFIRMED EDGE";
     set("breachPush",pushText+" · "+absorption+" · "+trades.length+" TRADES");
     if(push){push.style.color=leader==="bull"?"#00efad":leader==="bear"?"#ff568d":"#bd91ff";push.style.textShadow=leader==="bull"?"0 0 12px #00efad66":leader==="bear"?"0 0 12px #ff397a66":"none";}
     set("breachPrice",price>0?breachUsd(price):"—");
@@ -4429,7 +4446,7 @@ body>.reader-shell{
     breachCtx.setTransform(dpr,0,0,dpr,0,0);breachCtx.clearRect(0,0,w,h);
     const mid=w/2,barY=Math.round(h*.66),barH=22,maxWidth=w*.42,barMax=Math.min(maxWidth,Math.max(80,w*.38));
     // One outcome-lean bar: green extends right for UP, red extends left for DOWN.
-    const edgeStrength=Math.min(1,Math.abs(finalScore)/.65);
+    const edgeStrength=forecastFresh?Math.min(1,Math.abs(finalScore)/.65):0;
     const fillWidth=leader==="balanced"?0:Math.max(7,edgeStrength*barMax);
     const trackX=mid-barMax,trackW=barMax*2;
     const bg=breachCtx.createLinearGradient(0,0,w,0);bg.addColorStop(0,"rgba(0,226,160,.10)");bg.addColorStop(.5,"rgba(255,255,255,.025)");bg.addColorStop(1,"rgba(255,48,116,.10)");breachCtx.fillStyle=bg;breachCtx.fillRect(0,0,w,h);

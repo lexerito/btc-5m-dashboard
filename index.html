@@ -933,7 +933,7 @@ body>.reader-shell{
       <div class="breach-round"><small>ROUND</small><b id="breachCountdown">05:00</b><div class="breach-ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><strong id="breachPush">COLLECTING TAPE</strong></div>
       <div class="breach-side bears-side"><div><b>Bears</b><strong id="breachBearPct">50%</strong></div><div class="breach-meter"><i id="breachBearBar"></i></div><small id="breachSellDetail">sold · last 60s</small></div>
     </div>
-    <div class="breach-chart-wrap"><canvas id="breachFlowCanvas"></canvas><div class="breach-profile-note">LONGER BARS = SIDE CURRENTLY AHEAD</div><div class="breach-strike-tag" id="breachStrikeTag">PRICE TO BEAT · SYNCING</div><div class="breach-price-tag" id="breachPriceTag">BTC · —</div><div class="breach-chart-foot"><span>−$150</span><span>−$50</span><span>PRICE TO BEAT</span><span>+$50</span><span>+$150</span></div></div>
+    <div class="breach-chart-wrap"><canvas id="breachFlowCanvas"></canvas><div class="breach-profile-note">LIVE OUTCOME EDGE · SINGLE BAR</div><div class="breach-strike-tag" id="breachStrikeTag">PRICE TO BEAT · SYNCING</div><div class="breach-price-tag" id="breachPriceTag">BTC · —</div><div class="breach-chart-foot"><span>−$150</span><span>−$50</span><span>PRICE TO BEAT</span><span>+$50</span><span>+$150</span></div></div>
     <div class="breach-verdict-row"><div><b>WHO WINS THIS ROUND?</b><small id="breachGrade">graded against Polymarket at the bell · live Coinbase tape</small></div><div class="breach-verdict-buttons"><span id="breachBullCall">BULLS · UP</span><span id="breachBearCall">BEARS · DOWN</span></div></div>
     <div class="breach-stats"><div><small>BTC PRICE · COINBASE</small><b id="breachPrice">—</b></div><div><small>VS PRICE TO BEAT</small><b id="breachDistance">—</b></div><div><small>1K+ SOLDIERS</small><b id="breachSoldiers">0</b></div><div><small>10K+ GIANTS</small><b id="breachGiants">0</b></div></div>
     <div class="breach-foot"><span id="breachTapeStatus">CONNECTING TO COINBASE BTC-USD TAPE</span><span id="breachTapeRate">TAPE —/SEC</span><span>1 soldier = $1K+ · giant = $10K+ trade</span></div>
@@ -4427,50 +4427,35 @@ body>.reader-shell{
     const w=Math.max(1,breachCanvas.clientWidth),h=Math.max(1,breachCanvas.clientHeight),dpr=Math.min(2,window.devicePixelRatio||1);
     if(breachCanvas.width!==Math.round(w*dpr)||breachCanvas.height!==Math.round(h*dpr)){breachCanvas.width=Math.round(w*dpr);breachCanvas.height=Math.round(h*dpr);}
     breachCtx.setTransform(dpr,0,0,dpr,0,0);breachCtx.clearRect(0,0,w,h);
-    // Outcome-weighted profile: long bars belong to the side currently favoured by Chainlink target position and BTC momentum.
-    // The opposite side is compressed; top meters continue to show actual aggressive BUY/SELL volume.
+    const mid=w/2,barY=Math.round(h*.66),barH=22,maxWidth=w*.42,barMax=Math.min(maxWidth,Math.max(80,w*.38));
+    // One outcome-lean bar: green extends right for UP, red extends left for DOWN.
     const edgeStrength=Math.min(1,Math.abs(finalScore)/.65);
-    const trailingScale=.16+(1-edgeStrength)*.22;
-    const visualBuckets=buckets.map(bucket=>{
-      const activity=bucket.buy+bucket.sell;
-      if(leader==="bull")return {buy:activity,sell:activity*trailingScale};
-      if(leader==="bear")return {buy:activity*trailingScale,sell:activity};
-      return {buy:bucket.buy,sell:bucket.sell};
-    });
-    const mid=w/2,top=20,bottom=h-28,rowH=(bottom-top)/buckets.length,max=Math.max(1,...visualBuckets.flatMap(x=>[x.buy,x.sell]));
-    const bg=breachCtx.createLinearGradient(0,0,w,0);bg.addColorStop(0,"rgba(0,226,160,.16)");bg.addColorStop(.43,"rgba(0,226,160,.025)");bg.addColorStop(.5,"rgba(255,255,255,.025)");bg.addColorStop(1,"rgba(255,48,116,.16)");breachCtx.fillStyle=bg;breachCtx.fillRect(0,0,w,h);
-    const aura=breachCtx.createRadialGradient(mid,h*.5,5,mid,h*.5,w*.48);aura.addColorStop(0,"rgba(255,206,105,.08)");aura.addColorStop(.42,"rgba(180,130,255,.025)");aura.addColorStop(1,"rgba(0,0,0,0)");breachCtx.fillStyle=aura;breachCtx.fillRect(0,0,w,h);
+    const fillWidth=leader==="balanced"?0:Math.max(7,edgeStrength*barMax);
+    const trackX=mid-barMax,trackW=barMax*2;
+    const bg=breachCtx.createLinearGradient(0,0,w,0);bg.addColorStop(0,"rgba(0,226,160,.10)");bg.addColorStop(.5,"rgba(255,255,255,.025)");bg.addColorStop(1,"rgba(255,48,116,.10)");breachCtx.fillStyle=bg;breachCtx.fillRect(0,0,w,h);
+    const aura=breachCtx.createRadialGradient(mid,h*.5,5,mid,h*.5,w*.48);aura.addColorStop(0,"rgba(255,206,105,.07)");aura.addColorStop(.45,"rgba(180,130,255,.025)");aura.addColorStop(1,"rgba(0,0,0,0)");breachCtx.fillStyle=aura;breachCtx.fillRect(0,0,w,h);
     breachCtx.strokeStyle="rgba(255,255,255,.045)";breachCtx.lineWidth=1;
-    for(let i=1;i<8;i++){const y=top+(bottom-top)*i/8;breachCtx.beginPath();breachCtx.moveTo(0,y);breachCtx.lineTo(w,y);breachCtx.stroke();}
-    for(let i=1;i<8;i++){const x=w*i/8;breachCtx.strokeStyle=i===4?"rgba(240,199,95,.16)":"rgba(255,255,255,.025)";breachCtx.beginPath();breachCtx.moveTo(x,0);breachCtx.lineTo(x,h);breachCtx.stroke();}
-    const maxWidth=w*.42,nowAnim=Date.now();
-    visualBuckets.forEach((bucket,i)=>{
-      const cy=top+i*rowH+rowH*.5,hh=Math.max(5,rowH*.76),bw=bucket.buy>0?Math.max(4,bucket.buy/max*maxWidth):0,sw=bucket.sell>0?Math.max(4,bucket.sell/max*maxWidth):0;
-      if(bucket.buy>0){
-        const grad=breachCtx.createLinearGradient(mid-bw,cy,mid,cy);
-        grad.addColorStop(0,"rgba(0,190,139,.88)");grad.addColorStop(1,"rgba(48,255,198,1)");
-        breachCtx.save();breachCtx.shadowColor="#00ffc2";breachCtx.shadowBlur=7+13*bucket.buy/max;
-        breachCtx.fillStyle=grad;breachCtx.fillRect(mid-bw,cy-hh/2,bw,hh);
-        breachCtx.shadowBlur=0;breachCtx.strokeStyle="rgba(190,255,239,.95)";breachCtx.lineWidth=1;
-        breachCtx.strokeRect(mid-bw+.5,cy-hh/2+.5,Math.max(0,bw-1),hh-1);
-        breachCtx.fillStyle="rgba(225,255,247,.85)";breachCtx.fillRect(mid-bw+2,cy-hh/2+1,Math.max(0,bw-4),1);
-        const spark=((nowAnim/520+i*17)%100)/100;
-        breachCtx.fillStyle="#eafff8";breachCtx.shadowColor="#00ffc2";breachCtx.shadowBlur=12;
-        breachCtx.beginPath();breachCtx.arc(mid-bw+spark*bw,cy,2.2,0,Math.PI*2);breachCtx.fill();breachCtx.restore();
-      }
-      if(bucket.sell>0){
-        const grad=breachCtx.createLinearGradient(mid,cy,mid+sw,cy);
-        grad.addColorStop(0,"rgba(255,95,145,1)");grad.addColorStop(1,"rgba(205,35,91,.88)");
-        breachCtx.save();breachCtx.shadowColor="#ff397a";breachCtx.shadowBlur=7+13*bucket.sell/max;
-        breachCtx.fillStyle=grad;breachCtx.fillRect(mid,cy-hh/2,sw,hh);
-        breachCtx.shadowBlur=0;breachCtx.strokeStyle="rgba(255,220,232,.96)";breachCtx.lineWidth=1;
-        breachCtx.strokeRect(mid+.5,cy-hh/2+.5,Math.max(0,sw-1),hh-1);
-        breachCtx.fillStyle="rgba(255,239,245,.9)";breachCtx.fillRect(mid+2,cy-hh/2+1,Math.max(0,sw-4),1);
-        const spark=((nowAnim/520+i*23)%100)/100;
-        breachCtx.fillStyle="#fff0f5";breachCtx.shadowColor="#ff397a";breachCtx.shadowBlur=12;
-        breachCtx.beginPath();breachCtx.arc(mid+spark*sw,cy,2.2,0,Math.PI*2);breachCtx.fill();breachCtx.restore();
-      }
-    });
+    for(let i=1;i<8;i++){const y=20+(h-48)*i/8;breachCtx.beginPath();breachCtx.moveTo(0,y);breachCtx.lineTo(w,y);breachCtx.stroke();}
+    // Single continuous neutral track.
+    breachCtx.save();breachCtx.fillStyle="rgba(12,16,25,.94)";breachCtx.shadowColor="#000";breachCtx.shadowBlur=12;
+    breachCtx.beginPath();breachCtx.roundRect(trackX,barY-barH/2,trackW,barH,barH/2);breachCtx.fill();breachCtx.restore();
+    breachCtx.strokeStyle="rgba(195,190,220,.32)";breachCtx.lineWidth=1;breachCtx.beginPath();breachCtx.roundRect(trackX+.5,barY-barH/2+.5,trackW-1,barH-1,barH/2);breachCtx.stroke();
+    if(fillWidth>0){
+      const bull=leader==="bull",color=bull?"#20ffc0":"#ff477f",x=bull?mid:mid-fillWidth;
+      const grad=breachCtx.createLinearGradient(x,barY,x+fillWidth,barY);
+      if(bull){grad.addColorStop(0,"rgba(0,170,125,.92)");grad.addColorStop(1,"#4dffd0");}
+      else{grad.addColorStop(0,"#ff477f");grad.addColorStop(1,"rgba(183,25,75,.95)");}
+      breachCtx.save();breachCtx.shadowColor=color;breachCtx.shadowBlur=14;
+      breachCtx.fillStyle=grad;breachCtx.beginPath();breachCtx.roundRect(x,barY-barH/2,fillWidth,barH,barH/2);breachCtx.fill();
+      breachCtx.strokeStyle=bull?"rgba(215,255,244,.95)":"rgba(255,225,235,.95)";breachCtx.lineWidth=1;breachCtx.stroke();breachCtx.restore();
+    }else{
+      breachCtx.fillStyle="#c5a5ff";breachCtx.shadowColor="#bd91ff";breachCtx.shadowBlur=10;breachCtx.beginPath();breachCtx.arc(mid,barY,4,0,Math.PI*2);breachCtx.fill();breachCtx.shadowBlur=0;
+    }
+    breachCtx.font="800 10px ui-monospace,monospace";breachCtx.textBaseline="middle";
+    breachCtx.textAlign="left";breachCtx.fillStyle="#65f5cb";breachCtx.fillText("UP",trackX,barY-barH-13);
+    breachCtx.textAlign="right";breachCtx.fillStyle="#ff82a8";breachCtx.fillText("DOWN",trackX+trackW,barY-barH-13);
+    breachCtx.textAlign="center";breachCtx.fillStyle=leader==="bull"?"#9affdf":leader==="bear"?"#ff9ab8":"#c8b5ef";
+    breachCtx.fillText(leader==="bull"?"UP LEADING":leader==="bear"?"DOWN LEADING":"NO CLEAR LEAD",mid,barY+barH+15);
     breachCtx.strokeStyle="rgba(255,215,117,.35)";breachCtx.lineWidth=6;breachCtx.shadowColor="#f0c75f";breachCtx.shadowBlur=18;breachCtx.beginPath();breachCtx.moveTo(mid,0);breachCtx.lineTo(mid,h);breachCtx.stroke();
     breachCtx.strokeStyle="#ffe18a";breachCtx.lineWidth=1.7;breachCtx.shadowBlur=7;breachCtx.beginPath();breachCtx.moveTo(mid,0);breachCtx.lineTo(mid,h);breachCtx.stroke();breachCtx.shadowBlur=0;
     if(dist!==null){

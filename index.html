@@ -13,7 +13,7 @@
 .breach-pressure-head{display:grid;grid-template-columns:1fr 128px 1fr;gap:22px;align-items:center;padding:17px 16px 13px;background:#0b0a12}.breach-side{min-width:0}.breach-side>div:first-child{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.breach-side b{font-size:15px}.breach-side strong{font-size:11px;color:#c3c6d4}.bulls-side b{color:#00e6a1}.bears-side b{color:#ff397a}.bears-side>div:first-child{flex-direction:row-reverse}
 .breach-meter{height:8px;border-radius:2px;background:#22212a;overflow:hidden}.breach-meter i{display:block;height:100%;width:50%;transition:width .25s}.bulls-side .breach-meter i{background:#00dfa0;box-shadow:0 0 12px #00dfa077}.bears-side .breach-meter i{background:#ff397a;float:right;box-shadow:0 0 12px #ff397a77}
 .breach-side small{display:block;font-size:9px;color:#69738e;margin-top:6px}.bears-side small{text-align:right}.breach-round{text-align:center}.breach-round>small{display:block;font-size:8px;letter-spacing:.24em;color:#77819b;font-weight:900}.breach-round>b{display:block;font-size:31px;line-height:1.05;font-variant-numeric:tabular-nums;color:#f6f4fa}.breach-ticks{display:flex;justify-content:center;gap:3px;margin:6px auto 4px}.breach-ticks i{height:4px;width:7px;background:#b78a36;opacity:.8}.breach-round>strong{display:block;font-size:8px;letter-spacing:.08em;color:#00e6a1}
-.breach-chart-wrap{height:280px;position:relative;overflow:hidden;background:#0b0a10;border-block:1px solid #24202d}#breachFlowCanvas{display:block;width:100%;height:100%}
+.breach-chart-wrap{height:280px;position:relative;overflow:hidden;background:#0b0a10;border-block:1px solid #24202d}#breachFlowCanvas{display:block;width:100%;height:100%}.breach-profile-note{position:absolute;top:9px;left:12px;z-index:2;padding:4px 7px;border:1px solid #45405b;border-radius:5px;background:#100e19dc;color:#cbb9ff;font-size:8px;font-weight:900;letter-spacing:.08em;pointer-events:none}
 .breach-strike-tag{position:absolute;top:7px;left:50%;transform:translateX(-50%);padding:3px 8px;background:#15111a;border:1px solid #8c692d;border-radius:5px;color:#e7c36c;font-size:9px;font-weight:900;white-space:nowrap}.breach-price-tag{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);padding:3px 7px;border-radius:4px;background:#00e6a1;color:#07130f;font-size:10px;font-weight:950;white-space:nowrap}
 .breach-chart-foot{position:absolute;bottom:7px;left:18%;right:18%;display:flex;justify-content:space-between;color:#4e5870;font-size:8px;pointer-events:none}
 .breach-verdict-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 16px;border-bottom:1px solid #2a2632;min-height:60px}.breach-verdict-row>div:first-child b{font-size:11px;letter-spacing:.1em}.breach-verdict-row small{display:block;color:#66718b;font-size:9px;margin-top:4px}
@@ -933,11 +933,11 @@ body>.reader-shell{
       <div class="breach-round"><small>ROUND</small><b id="breachCountdown">05:00</b><div class="breach-ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><strong id="breachPush">COLLECTING TAPE</strong></div>
       <div class="breach-side bears-side"><div><b>Bears</b><strong id="breachBearPct">50%</strong></div><div class="breach-meter"><i id="breachBearBar"></i></div><small id="breachSellDetail">sold · last 60s</small></div>
     </div>
-    <div class="breach-chart-wrap"><canvas id="breachFlowCanvas"></canvas><div class="breach-strike-tag" id="breachStrikeTag">PRICE TO BEAT · SYNCING</div><div class="breach-price-tag" id="breachPriceTag">BTC · —</div><div class="breach-chart-foot"><span>−$150</span><span>−$50</span><span>PRICE TO BEAT</span><span>+$50</span><span>+$150</span></div></div>
+    <div class="breach-chart-wrap"><canvas id="breachFlowCanvas"></canvas><div class="breach-profile-note">LONGER BARS = SIDE CURRENTLY AHEAD</div><div class="breach-strike-tag" id="breachStrikeTag">PRICE TO BEAT · SYNCING</div><div class="breach-price-tag" id="breachPriceTag">BTC · —</div><div class="breach-chart-foot"><span>−$150</span><span>−$50</span><span>PRICE TO BEAT</span><span>+$50</span><span>+$150</span></div></div>
     <div class="breach-verdict-row"><div><b>WHO WINS THIS ROUND?</b><small id="breachGrade">graded against Polymarket at the bell · live Coinbase tape</small></div><div class="breach-verdict-buttons"><span id="breachBullCall">BULLS · UP</span><span id="breachBearCall">BEARS · DOWN</span></div></div>
     <div class="breach-stats"><div><small>BTC PRICE · COINBASE</small><b id="breachPrice">—</b></div><div><small>VS PRICE TO BEAT</small><b id="breachDistance">—</b></div><div><small>1K+ SOLDIERS</small><b id="breachSoldiers">0</b></div><div><small>10K+ GIANTS</small><b id="breachGiants">0</b></div></div>
     <div class="breach-foot"><span id="breachTapeStatus">CONNECTING TO COINBASE BTC-USD TAPE</span><span id="breachTapeRate">TAPE —/SEC</span><span>1 soldier = $1K+ · giant = $10K+ trade</span></div>
-    <div class="breach-explainer">Green = aggressive buys; red = aggressive sells from Coinbase BTC-USD market trades. Gold = exact Chainlink TWAP60 price-to-beat for this Polymarket five-minute round. Pressure is live trade flow, not a guaranteed outcome or an order signal.</div>
+    <div class="breach-explainer">The top BUY/SELL meters show actual Coinbase aggressive trade flow. In the chart, the longer color is the side currently favoured by Chainlink price-to-beat position plus BTC momentum; the shorter side is the opposing side. Chart lengths are outcome-weighted, not raw trade volume. Gold = Chainlink TWAP60 price-to-beat. This is not a guaranteed outcome or an order signal.</div>
   </section>
   <section class="reference-grid" aria-label="Live Bitcoin price references">
     <div class="reference-card">
@@ -4383,10 +4383,16 @@ body>.reader-shell{
     const clamp=(v)=>Math.max(-1,Math.min(1,v));
     const slowPriceScore=clamp(slowMove/0.0008),fastPriceScore=clamp(fastMove/0.00035);
     const priceScore=slowPriceScore*.65+fastPriceScore*.35;
-    const targetScore=Number.isFinite(strike)&&strike>0&&Number(state.coinbasePrice)>0?clamp((Number(state.coinbasePrice)-strike)/100):0;
-    const finalScore=priceScore*.60+slowImbalance*.25+fastImbalance*.10+targetScore*.05;
-    const leader=Math.abs(finalScore)<.10?"balanced":finalScore>0?"bull":"bear";
-    const absorption=slowImbalance>.15&&priceScore<-.12?"BUYERS ABSORBED · PRICE FALLING":slowImbalance<-.15&&priceScore>.12?"SELLERS ABSORBED · PRICE RISING":Math.abs(slowImbalance)>.15&&Math.abs(priceScore)<.12?"FLOW NOT MOVING PRICE":"VOLUME + PRICE AGREE";
+    const price=Number(state.coinbasePrice)||Number(state.chainlink)||Number(state.binance);
+    // Use Chainlink spot against the round's Chainlink target for the current outcome edge.
+    const referencePrice=Number(state.chainlink)||price;
+    const dist=price>0&&strike>0?price-strike:null;
+    const targetGap=referencePrice>0&&strike>0?referencePrice-strike:0;
+    const targetScore=referencePrice>0&&strike>0?clamp(targetGap/75):0;
+    // Outcome edge is driven mainly by target position and momentum; trade imbalance is supporting evidence only.
+    const finalScore=targetScore*.60+priceScore*.28+slowImbalance*.08+fastImbalance*.04;
+    const leader=Math.abs(finalScore)<.075?"balanced":finalScore>0?"bull":"bear";
+    const absorption=slowImbalance>.12&&leader==="bear"?"BUYERS ABSORBED · DOWN SIDE AHEAD":slowImbalance<-.12&&leader==="bull"?"SELLERS ABSORBED · UP SIDE AHEAD":leader==="balanced"?"NO CLEAR OUTCOME EDGE":"PRICE + OUTCOME EDGE LEADING";
     const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
     const bb=document.getElementById("breachBullBar"),rb=document.getElementById("breachBearBar");
     if(bb)bb.style.width=bullPct+"%";if(rb)rb.style.width=bearPct+"%";
@@ -4400,7 +4406,6 @@ body>.reader-shell{
     const pushText=leader==="bull"?"BULLS PUSHING":leader==="bear"?"BEARS PUSHING":"WAITING FOR VALID PRINTS";
     set("breachPush",pushText+" · "+absorption+" · "+trades.length+" TRADES");
     if(push){push.style.color=leader==="bull"?"#00efad":leader==="bear"?"#ff568d":"#bd91ff";push.style.textShadow=leader==="bull"?"0 0 12px #00efad66":leader==="bear"?"0 0 12px #ff397a66":"none";}
-    const price=Number(state.coinbasePrice)||Number(state.chainlink)||Number(state.binance),dist=price>0&&strike>0?price-strike:null;
     set("breachPrice",price>0?breachUsd(price):"—");
     set("breachDistance",dist===null?"WAITING FOR STRIKE":(dist>=0?"+":"−")+breachUsd(dist)+(dist>=0?" ABOVE":" BELOW"));
     set("breachSoldiers",String(soldiers));set("breachGiants",String(giants));
@@ -4422,13 +4427,16 @@ body>.reader-shell{
     const w=Math.max(1,breachCanvas.clientWidth),h=Math.max(1,breachCanvas.clientHeight),dpr=Math.min(2,window.devicePixelRatio||1);
     if(breachCanvas.width!==Math.round(w*dpr)||breachCanvas.height!==Math.round(h*dpr)){breachCanvas.width=Math.round(w*dpr);breachCanvas.height=Math.round(h*dpr);}
     breachCtx.setTransform(dpr,0,0,dpr,0,0);breachCtx.clearRect(0,0,w,h);
-    // Visualize effective pressure, not raw aggressor volume: absorbed flow is shortened and the side holding price is emphasized.
-    const absorbedBuy=slowImbalance>.15&&priceScore<-.12;
-    const absorbedSell=slowImbalance<-.15&&priceScore>.12;
-    const visualBuckets=buckets.map(bucket=>({
-      buy:bucket.buy*(absorbedBuy?.24:absorbedSell?1.28:1),
-      sell:bucket.sell*(absorbedSell?.24:absorbedBuy?1.28:1)
-    }));
+    // Outcome-weighted profile: long bars belong to the side currently favoured by Chainlink target position and BTC momentum.
+    // The opposite side is compressed; top meters continue to show actual aggressive BUY/SELL volume.
+    const edgeStrength=Math.min(1,Math.abs(finalScore)/.65);
+    const trailingScale=.16+(1-edgeStrength)*.22;
+    const visualBuckets=buckets.map(bucket=>{
+      const activity=bucket.buy+bucket.sell;
+      if(leader==="bull")return {buy:activity,sell:activity*trailingScale};
+      if(leader==="bear")return {buy:activity*trailingScale,sell:activity};
+      return {buy:bucket.buy,sell:bucket.sell};
+    });
     const mid=w/2,top=20,bottom=h-28,rowH=(bottom-top)/buckets.length,max=Math.max(1,...visualBuckets.flatMap(x=>[x.buy,x.sell]));
     const bg=breachCtx.createLinearGradient(0,0,w,0);bg.addColorStop(0,"rgba(0,226,160,.16)");bg.addColorStop(.43,"rgba(0,226,160,.025)");bg.addColorStop(.5,"rgba(255,255,255,.025)");bg.addColorStop(1,"rgba(255,48,116,.16)");breachCtx.fillStyle=bg;breachCtx.fillRect(0,0,w,h);
     const aura=breachCtx.createRadialGradient(mid,h*.5,5,mid,h*.5,w*.48);aura.addColorStop(0,"rgba(255,206,105,.08)");aura.addColorStop(.42,"rgba(180,130,255,.025)");aura.addColorStop(1,"rgba(0,0,0,0)");breachCtx.fillStyle=aura;breachCtx.fillRect(0,0,w,h);

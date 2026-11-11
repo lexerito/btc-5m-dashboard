@@ -4422,14 +4422,21 @@ body>.reader-shell{
     const w=Math.max(1,breachCanvas.clientWidth),h=Math.max(1,breachCanvas.clientHeight),dpr=Math.min(2,window.devicePixelRatio||1);
     if(breachCanvas.width!==Math.round(w*dpr)||breachCanvas.height!==Math.round(h*dpr)){breachCanvas.width=Math.round(w*dpr);breachCanvas.height=Math.round(h*dpr);}
     breachCtx.setTransform(dpr,0,0,dpr,0,0);breachCtx.clearRect(0,0,w,h);
-    const mid=w/2,top=20,bottom=h-28,rowH=(bottom-top)/buckets.length,max=Math.max(1,...buckets.flatMap(x=>[x.buy,x.sell]));
+    // Visualize effective pressure, not raw aggressor volume: absorbed flow is shortened and the side holding price is emphasized.
+    const absorbedBuy=slowImbalance>.15&&priceScore<-.12;
+    const absorbedSell=slowImbalance<-.15&&priceScore>.12;
+    const visualBuckets=buckets.map(bucket=>({
+      buy:bucket.buy*(absorbedBuy?.24:absorbedSell?1.28:1),
+      sell:bucket.sell*(absorbedSell?.24:absorbedBuy?1.28:1)
+    }));
+    const mid=w/2,top=20,bottom=h-28,rowH=(bottom-top)/buckets.length,max=Math.max(1,...visualBuckets.flatMap(x=>[x.buy,x.sell]));
     const bg=breachCtx.createLinearGradient(0,0,w,0);bg.addColorStop(0,"rgba(0,226,160,.16)");bg.addColorStop(.43,"rgba(0,226,160,.025)");bg.addColorStop(.5,"rgba(255,255,255,.025)");bg.addColorStop(1,"rgba(255,48,116,.16)");breachCtx.fillStyle=bg;breachCtx.fillRect(0,0,w,h);
     const aura=breachCtx.createRadialGradient(mid,h*.5,5,mid,h*.5,w*.48);aura.addColorStop(0,"rgba(255,206,105,.08)");aura.addColorStop(.42,"rgba(180,130,255,.025)");aura.addColorStop(1,"rgba(0,0,0,0)");breachCtx.fillStyle=aura;breachCtx.fillRect(0,0,w,h);
     breachCtx.strokeStyle="rgba(255,255,255,.045)";breachCtx.lineWidth=1;
     for(let i=1;i<8;i++){const y=top+(bottom-top)*i/8;breachCtx.beginPath();breachCtx.moveTo(0,y);breachCtx.lineTo(w,y);breachCtx.stroke();}
     for(let i=1;i<8;i++){const x=w*i/8;breachCtx.strokeStyle=i===4?"rgba(240,199,95,.16)":"rgba(255,255,255,.025)";breachCtx.beginPath();breachCtx.moveTo(x,0);breachCtx.lineTo(x,h);breachCtx.stroke();}
     const maxWidth=w*.42,nowAnim=Date.now();
-    buckets.forEach((bucket,i)=>{
+    visualBuckets.forEach((bucket,i)=>{
       const cy=top+i*rowH+rowH*.5,hh=Math.max(5,rowH*.76),bw=bucket.buy>0?Math.max(4,bucket.buy/max*maxWidth):0,sw=bucket.sell>0?Math.max(4,bucket.sell/max*maxWidth):0;
       if(bucket.buy>0){
         const grad=breachCtx.createLinearGradient(mid-bw,cy,mid,cy);

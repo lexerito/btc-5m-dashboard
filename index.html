@@ -2707,7 +2707,6 @@ body>.reader-shell{
     return {ratio:recent.length?aligned/recent.length:0,count:recent.length,aligned,total:recent.length};
   }
   function updateConfluenceForecast(){
-    if(!$("confluenceCall"))return;
     const now=Date.now();
     if(state.lastConfluenceAt&&now-state.lastConfluenceAt<700)return;
     state.lastConfluenceAt=now;
@@ -3193,10 +3192,13 @@ body>.reader-shell{
     };
     state.trendForecast=forecast;
 
-    $("confluenceCall").textContent=side==="WAIT"
-      ?(!targetFresh?"WAIT · NEW PRICE TO BEAT SYNCING":!correctMarketBook?"WAIT · NEW POLYMARKET BOOK SYNCING":"WAIT · NO CONFIRMED EDGE")
-      :side+" · "+(rapidFlipConfirmed?"MAJOR FLIP CONFIRMED":fastTurn?"HIGH-VOLUME TURN CONFIRMED":"SUSTAINED EDGE");
-    $("confluenceCall").className="confluence-call "+(side==="UP"?"up":side==="DOWN"?"down":"");
+    const confluenceCallEl=$("confluenceCall");
+    if(confluenceCallEl){
+      confluenceCallEl.textContent=side==="WAIT"
+        ?(!targetFresh?"WAIT · NEW PRICE TO BEAT SYNCING":!correctMarketBook?"WAIT · NEW POLYMARKET BOOK SYNCING":"WAIT · NO CONFIRMED EDGE")
+        :side+" · "+(rapidFlipConfirmed?"MAJOR FLIP CONFIRMED":fastTurn?"HIGH-VOLUME TURN CONFIRMED":"SUSTAINED EDGE");
+      confluenceCallEl.className="confluence-call "+(side==="UP"?"up":side==="DOWN"?"down":"");
+    }
     const primaryCall=$("directionPill");
     if(primaryCall){
       let callText="WAIT · COLLECTING MARKET EDGE",callClass="wait";
@@ -3206,13 +3208,17 @@ body>.reader-shell{
       else if(memory.leader!=="WAIT"){callText=memory.leader+" LEAN · WAITING FOR FULL CONFIRMATION";callClass=memory.leader.toLowerCase();}
       primaryCall.textContent=callText;primaryCall.className="direction-pill engine-call "+callClass;
     }
-    $("confluenceScore").textContent=totalWeight?(score>=0?"UP ":"DOWN ")+Math.round(Math.abs(score)*100)+"/100":"—";
-    $("confluenceMeter").style.width=Math.round((score+1)*50)+"%";
-    $("confluenceStatus").textContent=!bookFresh?"POLY BOOK STALE":!targetFresh?"TARGET / TWAP STALE":!spotFresh?"CHAINLINK STALE":valid+" INPUTS · "+votes.length+" VOTES";
-    $("confluenceStatus").className="feature-status "+(side!=="WAIT"?"ok":valid>=4?"":"bad");
+    const confluenceScoreEl=$("confluenceScore");if(confluenceScoreEl)confluenceScoreEl.textContent=totalWeight?(score>=0?"UP ":"DOWN ")+Math.round(Math.abs(score)*100)+"/100":"—";
+    const confluenceMeterEl=$("confluenceMeter");if(confluenceMeterEl)confluenceMeterEl.style.width=Math.round((score+1)*50)+"%";
+    const confluenceStatusEl=$("confluenceStatus");
+    if(confluenceStatusEl){
+      confluenceStatusEl.textContent=!bookFresh?"POLY BOOK STALE":!targetFresh?"TARGET / TWAP STALE":!spotFresh?"CHAINLINK STALE":valid+" INPUTS · "+votes.length+" VOTES";
+      confluenceStatusEl.className="feature-status "+(side!=="WAIT"?"ok":valid>=4?"":"bad");
+    }
 
     const fmtVote=x=>x===null||!Number.isFinite(x)?"—":(x>0?"+":"")+Math.round(x*100);
-    $("confluenceDetail").textContent=
+    const confluenceDetailEl=$("confluenceDetail");
+    if(confluenceDetailEl)confluenceDetailEl.textContent=
       "CLOB "+fmtVote(filtered.clob)+" · spot CVD "+fmtVote(filtered.spotFlow)+
       " · perp CVD "+fmtVote(filtered.perpFlow)+" · footprint "+fmtVote(filtered.footprint)+" · Binance book "+fmtVote(filtered.book)+" · combined trend/momentum "+fmtVote(filtered.trendPulse)+
       " · OI "+fmtVote(filtered.oi)+
@@ -3235,14 +3241,18 @@ body>.reader-shell{
       memoryEl.className="confluence-memory "+(memory.leader==="UP"?"up":memory.leader==="DOWN"?"down":"wait");
     }
 
-    const chips=$("confluenceChips");chips.textContent="";
-    for(const v of inputs){
-      const el=document.createElement("span");
-      el.className=v.side>0?"up":v.side<0?"down":"";
-      el.textContent=v.name+" "+(v.side>0?"UP":v.side<0?"DOWN":"FLAT");
-      chips.appendChild(el);
+    const chips=$("confluenceChips");
+    if(chips){
+      chips.textContent="";
+      for(const v of inputs){
+        const el=document.createElement("span");
+        el.className=v.side>0?"up":v.side<0?"down":"";
+        el.textContent=v.name+" "+(v.side>0?"UP":v.side<0?"DOWN":"FLAT");
+        chips.appendChild(el);
+      }
     }
-    $("confluenceClock").textContent=
+    const confluenceClockEl=$("confluenceClock");
+    if(confluenceClockEl)confluenceClockEl.textContent=
       "New settlement target each 5m · continuous trend memory · "+Math.floor(elapsed)+"s elapsed / "+Math.ceil(remaining)+"s left · "+
       (targetGap===null?"price-to-beat gap syncing":(targetGap>=0?"+$":"−$")+fmt(Math.abs(targetGap)))+
       " · 5m backdrop "+(contextFresh?contextSide+" "+Math.round(Math.abs(contextScore)*100)+"/100":"collecting")+
@@ -4557,6 +4567,7 @@ body>.reader-shell{
     }
     if(!breachCtx||!breachCanvas)return;
     const w=Math.max(1,breachCanvas.clientWidth),h=Math.max(1,breachCanvas.clientHeight),dpr=Math.min(2,window.devicePixelRatio||1);
+    const top=12,bottom=Math.max(12,h-12);
     if(breachCanvas.width!==Math.round(w*dpr)||breachCanvas.height!==Math.round(h*dpr)){breachCanvas.width=Math.round(w*dpr);breachCanvas.height=Math.round(h*dpr);}
     breachCtx.setTransform(dpr,0,0,dpr,0,0);breachCtx.clearRect(0,0,w,h);
     const mid=w/2,barY=Math.round(h*.66),barH=22,maxWidth=w*.42,barMax=Math.min(maxWidth,Math.max(80,w*.38));

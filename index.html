@@ -3368,7 +3368,6 @@ body>.reader-shell{
       state.clobHistory=state.clobHistory.filter(x=>now-x.ts<=20000);
       if(state.clobHistory.length>500)state.clobHistory=state.clobHistory.slice(-400);
     }
-    renderMicroflowEdge(now);
     renderBasisClobMeter(score,polyFresh);
     const label=forecastLabel(score,.18);
     const side=!polyFresh?"WAIT":label.side;
@@ -4008,7 +4007,7 @@ body>.reader-shell{
       }
       if(m.channel==="market_trades")for(const ev of (m.events||[]))for(const t of (ev.trades||[])){
         const p=Number(t.price),size=Number(t.size),ts=Date.parse(t.time)||now;
-        const takerSide=String(t.side||"").toUpperCase();if(p>0&&size>0&&(takerSide==="BUY"||takerSide==="SELL")){const aggressiveBuy=takerSide==="BUY";state.coinbaseTrades.push({ts,price:p,size,buy:aggressiveBuy});pushFlowTrade("COINBASE",t.trade_id??(ts+"-"+p+"-"+size),ts,p,size,aggressiveBuy);if(!state.lastCoinbasePruneAt||now-state.lastCoinbasePruneAt>=1000){state.coinbaseTrades=state.coinbaseTrades.filter(x=>now-x.ts<65000);state.lastCoinbasePruneAt=now;}renderMicroflowEdge(now);state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,ts,p)}
+        const takerSide=String(t.side||"").toUpperCase();if(p>0&&size>0&&(takerSide==="BUY"||takerSide==="SELL")){const aggressiveBuy=takerSide==="BUY";state.coinbaseTrades.push({ts,price:p,size,buy:aggressiveBuy});pushFlowTrade("COINBASE",t.trade_id??(ts+"-"+p+"-"+size),ts,p,size,aggressiveBuy);if(!state.lastCoinbasePruneAt||now-state.lastCoinbasePruneAt>=1000){state.coinbaseTrades=state.coinbaseTrades.filter(x=>now-x.ts<65000);state.lastCoinbasePruneAt=now;}state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,ts,p)}
       }
     };
     ws.onerror=()=>crossStatus("COINBASE FEED ERROR","bad");
@@ -4036,12 +4035,11 @@ body>.reader-shell{
       const d=m.data||{},now=Date.now();state.hlLastAt=now;
       if(m.channel==="trades"&&Array.isArray(d)){
         for(const t of d){const p=Number(t.px),size=Number(t.sz),ts=Number(t.time)||now;if(p>0&&size>0){state.hlPrice=p;state.hlTs=now;state.hlTrades.push({ts,price:p,size,buy:String(t.side).toUpperCase()==="B"});pushFlowTrade("HYPERLIQUID",t.tid??(ts+"-"+p+"-"+size),ts,p,size,String(t.side).toUpperCase()==="B");addCrossPrice(state.hlPrices,ts,p)}}
-        if(!state.lastHlTradePruneAt||now-state.lastHlTradePruneAt>=1000){state.hlTrades=state.hlTrades.filter(x=>now-x.ts<65000);state.lastHlTradePruneAt=now;}renderMicroflowEdge(now);
+        if(!state.lastHlTradePruneAt||now-state.lastHlTradePruneAt>=1000){state.hlTrades=state.hlTrades.filter(x=>now-x.ts<65000);state.lastHlTradePruneAt=now;}
       }else if(m.channel==="l2Book"&&d.levels){
         const parse=xs=>(xs||[]).map(x=>({p:Number(x.px),s:Number(x.sz)})).filter(x=>x.p>0&&x.s>0);
         const bids=parse(d.levels[0]).sort((a,b)=>b.p-a.p),asks=parse(d.levels[1]).sort((a,b)=>a.p-b.p);
         state.hlBook={bids,asks,ts:now};
-        recordMicroflowHyperliquidBook(bids,asks,now);
       }else if(m.channel==="activeAssetCtx"&&d&&d.ctx){
         const oi=Number(d.ctx.openInterest),mark=Number(d.ctx.markPx),funding=Number(d.ctx.funding);
         if(Number.isFinite(oi)&&oi>0){
@@ -4058,7 +4056,6 @@ body>.reader-shell{
       state.depthBook=null;state.depthLastAt=0;state.depthSyncing=true;
       state.hlBook={bids:[],asks:[],ts:0};
       microDepthSetStatus("HYPERLIQUID L2 DISCONNECTED · RECONNECTING",true);
-      renderMicroflowEdge();
       state.hlReconnect=setTimeout(()=>{state.hlReconnect=null;if(state.hlWs===ws)connectHyperliquid()},3000)};
   }
   function renderCrossVenue(){
@@ -4106,7 +4103,6 @@ body>.reader-shell{
       }
       state.liquidations.push({ts,side:o.S,notional:price*qty,price,qty});
       state.liquidations=state.liquidations.filter(x=>Date.now()-x.ts<300000).slice(-1000);
-      renderFlowIntelligence();
     };
     ws.onerror=()=>{try{ws.close()}catch(_){}};
     ws.onclose=()=>{if(state.liqReconnect)clearTimeout(state.liqReconnect);state.liqReconnect=setTimeout(connectLiquidations,3000)};

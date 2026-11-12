@@ -20,6 +20,26 @@
 .breach-verdict-buttons{display:flex;gap:8px}.breach-verdict-buttons span{border:1px solid #008f67;border-radius:7px;padding:11px 14px;color:#00e6a1;font-size:10px;font-weight:950;letter-spacing:.08em;white-space:nowrap}.breach-verdict-buttons span:last-child{border-color:#a52b55;color:#ff397a}.breach-verdict-buttons .active-up{background:#06382b;box-shadow:0 0 18px #00e6a133}.breach-verdict-buttons .active-down{background:#3a1021;box-shadow:0 0 18px #ff397a33}
 .breach-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-bottom:1px solid #24212c}.breach-stats>div{padding:11px 16px;border-right:1px solid #24212c;min-width:0}.breach-stats>div:last-child{border:0}.breach-stats small{display:block;font-size:9px;color:#69748e}.breach-stats b{display:block;margin-top:6px;font-size:15px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.breach-stats .positive{color:#00e6a1}.breach-stats .negative{color:#ff397a}
 .breach-foot{display:flex;flex-wrap:wrap;gap:8px 16px;padding:9px 16px;color:#76819a;font-size:9px}.breach-foot span:first-child{color:#00d99a;font-weight:900}.breach-explainer{padding:0 16px 13px;color:#626e88;font-size:9px;line-height:1.6}
+.breach-position{padding:13px 16px 14px;border-top:1px solid #262230;background:linear-gradient(110deg,#0d0c15,#100d19)}
+.breach-position-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.breach-position-head b{font-size:10px;letter-spacing:.13em;color:#d9ccff}.breach-position-head small{display:block;color:#74708a;font-size:9px;margin-top:3px}
+.breach-position-state{font-size:8px;font-weight:900;letter-spacing:.1em;color:#a78bfa;border:1px solid #51416e;border-radius:20px;padding:5px 8px;white-space:nowrap}
+.breach-position-form{display:grid;grid-template-columns:1fr 1fr 1fr auto auto;gap:8px;align-items:end}
+.breach-position-field{display:grid;gap:5px;min-width:0}.breach-position-field label{font-size:8px;letter-spacing:.09em;color:#85809a;font-weight:850}
+.breach-position-field input,.breach-position-field select{width:100%;min-width:0;border:1px solid #39334d;border-radius:7px;background:#090811;color:#f0edfa;padding:9px 8px;font:700 11px Inter,system-ui,sans-serif;outline:none}
+.breach-position-field input:focus,.breach-position-field select:focus{border-color:#9b75ed;box-shadow:0 0 0 2px #9b75ed22}
+.breach-position button{border:1px solid #7651ba;border-radius:7px;background:#24163b;color:#e8dbff;padding:10px 11px;font-size:8px;font-weight:950;letter-spacing:.08em;cursor:pointer;white-space:nowrap}
+.breach-position button.secondary{border-color:#39334d;background:#12101a;color:#a5a0b4}
+.breach-position-readouts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+.breach-position-readouts>div{border:1px solid #292538;border-radius:8px;background:#090811;padding:8px 10px;min-width:0}
+.breach-position-readouts small{display:block;color:#706b83;font-size:8px;font-weight:850;letter-spacing:.1em}
+.breach-position-readouts b{display:block;margin-top:5px;color:#e9e5f3;font-size:15px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.breach-position-readouts b.up{color:#00e6a1}.breach-position-readouts b.down{color:#ff5c8b}
+.breach-position-action{margin-top:9px;padding:9px 10px;border:1px solid #3c3155;border-radius:8px;background:#12101b;color:#c8b7ee;font-size:10px;font-weight:950;letter-spacing:.06em}
+.breach-position-action.up{color:#00e6a1;border-color:#176b52;background:#071d17}.breach-position-action.down{color:#ff5c8b;border-color:#713049;background:#210d17}.breach-position-action.warn{color:#f3c875;border-color:#72582b;background:#1e180c}
+.breach-position-detail{margin-top:6px;color:#77728a;font-size:9px;line-height:1.5}
+@media(max-width:650px){.breach-position{padding:12px 10px}.breach-position-form{grid-template-columns:1fr 1fr}.breach-position-form button{width:100%}.breach-position-readouts b{font-size:13px}}
+
 .reference-grid,.perps-strip,.target-strip,#momentumReaderCard,.reader-note{display:none!important}
 @media(max-width:650px){#breachBoard{margin-top:35px;border-radius:16px}.breach-pressure-head{grid-template-columns:1fr 94px 1fr;gap:9px;padding:13px 10px}.breach-round>b{font-size:25px}.breach-side b{font-size:13px}.breach-chart-wrap{height:240px}.breach-verdict-row{align-items:flex-start;flex-direction:column;padding:11px}.breach-verdict-buttons{width:100%}.breach-verdict-buttons span{flex:1;text-align:center;padding:10px 5px;font-size:9px}.breach-stats{grid-template-columns:1fr 1fr}.breach-stats>div:nth-child(2){border-right:0}.breach-stats>div:nth-child(-n+2){border-bottom:1px solid #24212c}.breach-stats>div{padding:10px}.breach-brand small{display:none}.breach-foot{gap:7px 12px}}
 @media(max-width:360px){.breach-round>b{font-size:22px}.breach-pressure-head{gap:5px}.breach-stats b{font-size:13px}}
@@ -936,6 +956,18 @@ body>.reader-shell{
     <div class="breach-chart-wrap"><canvas id="breachFlowCanvas"></canvas><div class="breach-profile-note">LIVE OUTCOME EDGE · SINGLE BAR</div><div class="breach-strike-tag" id="breachStrikeTag">PRICE TO BEAT · SYNCING</div><div class="breach-price-tag" id="breachPriceTag">BTC · —</div><div class="breach-chart-foot"><span>−$150</span><span>−$50</span><span>PRICE TO BEAT</span><span>+$50</span><span>+$150</span></div></div>
     <div class="breach-verdict-row"><div><b>WHO WINS THIS ROUND?</b><small id="breachGrade">graded against Polymarket at the bell · live Coinbase tape</small></div><div class="breach-verdict-buttons"><span id="breachBullCall">BULLS · UP</span><span id="breachBearCall">BEARS · DOWN</span></div></div>
     <div class="breach-stats"><div><small>BTC PRICE · COINBASE</small><b id="breachPrice">—</b></div><div><small>VS PRICE TO BEAT</small><b id="breachDistance">—</b></div><div><small>1K+ SOLDIERS</small><b id="breachSoldiers">0</b></div><div><small>10K+ GIANTS</small><b id="breachGiants">0</b></div></div>
+    <div class="breach-position" id="breachPositionMonitor">
+      <div class="breach-position-head"><div><b>POSITION MONITOR · MANUAL CASH-OUT PLAN</b><small>Tracks your entry against live sellable bids · never places orders</small></div><span class="breach-position-state" id="breachPositionStatus">NO POSITION</span></div>
+      <div class="breach-position-form">
+        <div class="breach-position-field"><label for="breachPositionSide">POSITION</label><select id="breachPositionSide"><option value="UP">BOUGHT UP</option><option value="DOWN">BOUGHT DOWN</option></select></div>
+        <div class="breach-position-field"><label for="breachEntryCents">AVERAGE ENTRY · ¢</label><input id="breachEntryCents" type="number" min="1" max="99" step="0.1" placeholder="e.g. 54.5" inputmode="decimal"></div>
+        <div class="breach-position-field"><label for="breachStake">TOTAL SPENT · $</label><input id="breachStake" type="number" min="1" step="0.01" placeholder="e.g. 20.00" inputmode="decimal"></div>
+        <button id="breachTrackPosition" type="button">TRACK POSITION</button><button id="breachClearPosition" class="secondary" type="button">CLEAR</button>
+      </div>
+      <div class="breach-position-readouts"><div><small>LIVE EXIT BID</small><b id="breachExitBid">—</b></div><div><small>ESTIMATED NET P/L</small><b id="breachPositionPnl">—</b></div><div><small>NET RETURN</small><b id="breachPositionRoi">—</b></div></div>
+      <div class="breach-position-action" id="breachPositionAction">NO POSITION TRACKED</div>
+      <div class="breach-position-detail" id="breachPositionDetail">After you buy, enter your side, average fill price and total amount spent. The estimate uses visible bids and crypto taker fees; real fills can differ.</div>
+    </div>
     <div class="breach-foot"><span id="breachTapeStatus">CONNECTING TO COINBASE BTC-USD TAPE</span><span id="breachTapeRate">TAPE —/SEC</span><span>1 soldier = $1K+ · giant = $10K+ trade</span></div>
     <div class="breach-explainer">The top BUY/SELL meters show actual Coinbase aggressive trade flow. In the chart, the longer color is the side currently favoured by Chainlink price-to-beat position plus BTC momentum; the shorter side is the opposing side. Chart lengths are outcome-weighted, not raw trade volume. Gold = Chainlink TWAP60 price-to-beat. This is not a guaranteed outcome or an order signal.</div>
   </section>
@@ -1287,7 +1319,7 @@ body>.reader-shell{
 (() => {
   const $ = id => document.getElementById(id);
   const fmt = n => Number.isFinite(n) ? n.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}) : "—";
-  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,liveMomentumUpdatedAt:0,liveMomentumSide:"WAIT",liveMomentumCandidate:"WAIT",liveMomentumCandidateSince:0,liveMomentumWeakSince:0,liveMomentumHistory:[],flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,flipTimer:null,binanceFastHistory:[],fastSpotSeries:null,lastFastChartUpdate:0,binanceBbo:null,bboWs:null,bboReconnect:null,bboConnectAt:0,bboLastAt:0,basisFootprint:null,basisBarMemory:null,basisBarLastPersistAt:0,basisFootprintRenderTimer:null,depthLastAt:0,depthSyncing:true,depthBook:null,microDepthHistory:[],microflowLastAt:0,microflowScoreUpdatedAt:0,microflowEma:null,microflowSide:"WAIT",microflowCandidate:"WAIT",microflowCandidateSince:0,microflowVotes:[],microflowLastVoteDepthAt:0,microflowLastVoteKey:"",microflowMarketStart:0,microflowSideSince:0,clobLeadScore:null,clobLeadAt:0,clobOddsRaw:null,clobHistory:[],nextRoundForecast:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0,pressurePeakScore:0,pressurePeakSide:"WAIT",pressurePeakAt:0,pressurePeakMarketStart:0};
+  const state = {ws:null,tradeWs:null,twap:null,twapTs:null,chainlink:null,binance:null,target:null,targetTs:null,timer:null,prices:[],trades:[],lastCallout:"",momentumScore:0,momentumStrength:0,tradeFlow:0,crossScore:0,crossFresh:false,crossConfirmed:false,crossDirection:0,exhaustionRisk:0,coinbasePrice:null,coinbaseTs:0,coinbasePrices:[],coinbaseTrades:[],hlPrice:null,hlTs:0,hlPrices:[],hlTrades:[],hlBook:{bids:[],asks:[]},hlAssetCtx:null,hlOiHistory:[],hlWs:null,cbWs:null,hlReconnect:null,cbReconnect:null,liqWs:null,liqReconnect:null,liquidations:[],liquidationSeen:{},flowChart:null,flowSpotSeries:null,flowPerpSeries:null,volumeEdge:null,twapHistory:[],chainlinkHistory:[],liveChart:null,twapSeries:null,spotSeries:null,chartTargetLine:null,liveMomentumTimer:null,liveMomentumEma:null,liveMomentumUpdatedAt:0,liveMomentumSide:"WAIT",liveMomentumCandidate:"WAIT",liveMomentumCandidateSince:0,liveMomentumWeakSince:0,liveMomentumHistory:[],flowTrades:[],largePrints:[],alertFeed:[],flowSeen:{},futuresWs:null,futuresReconnect:null,futuresLastAt:0,futuresTradeLastAt:0,futuresConnectAt:0,spotTradeLastAt:0,spotTradeConnectAt:0,tradeReconnect:null,rtdsLastAt:0,rtdsConnectAt:0,rtdsReconnect:null,twapLastAt:0,chainlinkLastAt:0,coinbaseLastAt:0,coinbaseConnectAt:0,hlLastAt:0,hlConnectAt:0,flowWatchdog:null,lastFeedRecoveryAt:0,flowTimer:null,flipTimer:null,binanceFastHistory:[],fastSpotSeries:null,lastFastChartUpdate:0,binanceBbo:null,bboWs:null,bboReconnect:null,bboConnectAt:0,bboLastAt:0,basisFootprint:null,basisBarMemory:null,basisBarLastPersistAt:0,basisFootprintRenderTimer:null,depthLastAt:0,depthSyncing:true,depthBook:null,microDepthHistory:[],microflowLastAt:0,microflowScoreUpdatedAt:0,microflowEma:null,microflowSide:"WAIT",microflowCandidate:"WAIT",microflowCandidateSince:0,microflowVotes:[],microflowLastVoteDepthAt:0,microflowLastVoteKey:"",microflowMarketStart:0,microflowSideSince:0,clobLeadScore:null,clobLeadAt:0,clobOddsRaw:null,clobHistory:[],nextRoundForecast:null,alertsEnabled:false,alertAudio:null,lastAlertAt:0,lastBurstAt:0,swingInfo:null,trendForecast:null,roundMemory:null,journal:[],activeRecord:null,lastTwapPersist:0,pressurePeakScore:0,pressurePeakSide:"WAIT",pressurePeakAt:0,pressurePeakMarketStart:0,flowSeenCount:0,lastFlowPruneAt:0,lastPricePruneAt:0,lastFastHistoryPruneAt:0,lastCoinbasePruneAt:0,lastHlTradePruneAt:0,lastConfluenceAt:0};
   const endpoint = "wss://ws-live-data.polymarket.com";
   const boundaryAtOrBefore = ms => Math.floor(ms/300000)*300000;
   const nextBoundary = ms => boundaryAtOrBefore(ms)+300000;
@@ -4371,6 +4403,80 @@ body>.reader-shell{
   }
   const breachCanvas=document.getElementById("breachFlowCanvas"),breachCtx=breachCanvas?breachCanvas.getContext("2d"):null;
   const breachUsd=n=>"$"+Math.abs(n).toLocaleString("en-US",{maximumFractionDigits:0});
+
+  const BREACH_POSITION_KEY="btc5m-manual-position-v1",BREACH_TAKER_FEE=.07;
+  let breachTrackedPosition=null;
+  function loadBreachPosition(){
+    try{const saved=JSON.parse(localStorage.getItem(BREACH_POSITION_KEY)||"null"),start=boundaryAtOrBefore(Date.now());
+      if(saved&&saved.marketStart===start&&(saved.side==="UP"||saved.side==="DOWN")&&Number.isFinite(saved.entryCents)&&saved.entryCents>0&&saved.entryCents<100&&Number.isFinite(saved.stake)&&saved.stake>0){
+        breachTrackedPosition=saved;$("breachPositionSide").value=saved.side;$("breachEntryCents").value=String(saved.entryCents);$("breachStake").value=String(saved.stake);
+      }else if(saved)localStorage.removeItem(BREACH_POSITION_KEY);
+    }catch(_){breachTrackedPosition=null;}
+  }
+  function persistBreachPosition(){try{if(breachTrackedPosition)localStorage.setItem(BREACH_POSITION_KEY,JSON.stringify(breachTrackedPosition));else localStorage.removeItem(BREACH_POSITION_KEY)}catch(_){}}
+  function breachRoundedFee(shares,price){return Math.round(shares*BREACH_TAKER_FEE*price*(1-price)*100000)/100000}
+  function estimateBreachCashout(position,now){
+    const tokenId=position.side==="UP"?poly.upId:poly.downId,book=tokenId?poly.books[tokenId]:null;
+    if(!book)return {ready:false,reason:"Waiting for this market's live order book."};
+    const age=now-(book.updatedAt||0);if(age>15000)return {ready:false,reason:"No recent order-book update · waiting for a fresh sell bid."};
+    const entry=position.entryCents/100,spent=position.stake,shares=spent/(entry+BREACH_TAKER_FEE*entry*(1-entry));
+    const metrics=bookMetrics(book),bestBid=metrics?.bid??null;
+    const levels=(book.bids||[]).map(x=>({price:Number(x.p),size:Number(x.s)})).filter(x=>x.price>0&&x.price<1&&x.size>0).sort((a,b)=>b.price-a.price);
+    if(bestBid===null||!levels.length)return {ready:false,reason:"No visible sell bids for this outcome · cash-out value unavailable."};
+    let remaining=shares,filled=0,proceeds=0,exitFee=0;
+    for(const level of levels){if(remaining<=1e-8)break;const take=Math.min(remaining,level.size);if(take<=0)continue;filled+=take;remaining-=take;proceeds+=take*level.price;exitFee+=breachRoundedFee(take,level.price);}
+    if(filled<=0)return {ready:false,reason:"No visible bid depth · cannot estimate a cash-out."};
+    const costBasis=spent*(filled/shares),net=proceeds-exitFee-costBasis,roi=costBasis?net/costBasis*100:0;
+    return {ready:true,age,bestBid,avgExit:proceeds/filled,filled,shares,coverage:filled/shares,costBasis,net,roi,complete:remaining<=Math.max(1e-6,shares*.001)};
+  }
+  function initBreachPositionMonitor(){
+    loadBreachPosition();
+    $("breachTrackPosition").addEventListener("click",()=>{
+      const side=$("breachPositionSide").value,entryCents=Number($("breachEntryCents").value),stake=Number($("breachStake").value);
+      if(!["UP","DOWN"].includes(side)||!Number.isFinite(entryCents)||entryCents<=0||entryCents>=100||!Number.isFinite(stake)||stake<=0){
+        $("breachPositionStatus").textContent="CHECK ENTRY DETAILS";$("breachPositionAction").textContent="ENTER A VALID SIDE, ENTRY PRICE AND TOTAL SPEND";$("breachPositionAction").className="breach-position-action warn";return;
+      }
+      breachTrackedPosition={marketStart:boundaryAtOrBefore(Date.now()),side,entryCents,stake,createdAt:Date.now()};persistBreachPosition();$("breachPositionStatus").textContent="POSITION TRACKED";renderBreachPosition(Date.now());
+    });
+    $("breachClearPosition").addEventListener("click",()=>{
+      breachTrackedPosition=null;persistBreachPosition();$("breachPositionStatus").textContent="NO POSITION";
+      $("breachExitBid").textContent="—";$("breachPositionPnl").textContent="—";$("breachPositionRoi").textContent="—";
+      $("breachPositionAction").textContent="POSITION CLEARED";$("breachPositionAction").className="breach-position-action";
+      $("breachPositionDetail").textContent="No order was placed or cancelled. Enter another position above after your next manual purchase.";
+    });
+  }
+  function renderBreachPosition(now=Date.now()){
+    const status=$("breachPositionStatus"),bidEl=$("breachExitBid"),pnlEl=$("breachPositionPnl"),roiEl=$("breachPositionRoi"),action=$("breachPositionAction"),detail=$("breachPositionDetail");
+    if(!status||!bidEl||!pnlEl||!roiEl||!action||!detail)return;
+    const start=boundaryAtOrBefore(now),forecast=state.trendForecast,forecastFresh=!!forecast&&now-(forecast.updatedAt||0)<1800&&forecast.elapsed>=0&&forecast.elapsed<300;
+    if(breachTrackedPosition&&breachTrackedPosition.marketStart!==start){
+      breachTrackedPosition=null;persistBreachPosition();status.textContent="PREVIOUS ROUND CLOSED";bidEl.textContent="—";pnlEl.textContent="—";roiEl.textContent="—";
+      action.textContent="POSITION TRACK RESET FOR NEW MARKET";action.className="breach-position-action warn";
+      detail.textContent="The five-minute contract rolled over. Check the previous market's final position separately.";return;
+    }
+    if(!breachTrackedPosition){
+      status.textContent="NO POSITION";bidEl.textContent="—";pnlEl.textContent="—";roiEl.textContent="—";
+      const signal=forecastFresh?forecast.side:"WAIT";
+      action.textContent=signal==="WAIT"?"NO POSITION · WAIT FOR A CONFIRMED READ":"LIVE BIAS "+signal+" · ENTRY EDGE NOT PROVEN";
+      action.className="breach-position-action"+(signal==="WAIT"?" warn":"");
+      detail.textContent="Track after buying. The engine score is evidence strength, not calibrated win probability; the directional read alone is not a proven profitable entry.";return;
+    }
+    const p=breachTrackedPosition,est=estimateBreachCashout(p,now);status.textContent=p.side+" POSITION · "+p.entryCents.toFixed(1)+"¢ ENTRY";
+    if(!est.ready){bidEl.textContent="—";pnlEl.textContent="—";roiEl.textContent="—";action.textContent="EXIT PRICE UNAVAILABLE · CHECK POLYMARKET BOOK";action.className="breach-position-action warn";detail.textContent=est.reason+" This monitor never substitutes a midpoint for a sellable bid.";return;}
+    const money=n=>(n<0?"−":"+")+"$"+Math.abs(n).toFixed(2);
+    bidEl.textContent=(est.bestBid*100).toFixed(1)+"¢";pnlEl.textContent=money(est.net);pnlEl.className=est.net>0?"up":est.net<0?"down":"";
+    roiEl.textContent=(est.roi>=0?"+":"")+est.roi.toFixed(1)+"%";roiEl.className=est.roi>0?"up":est.roi<0?"down":"";
+    const opposite=p.side==="UP"?"DOWN":"UP",left=Math.max(0,300-(now-start)/1000);
+    let headline="HOLD · LIVE READ STILL SUPPORTS "+p.side,tone="",why="Visible bids estimate proceeds if you sell immediately across the displayed book levels.";
+    if(!est.complete){headline="THIN BID DEPTH · CASH-OUT MAY PARTIALLY FILL";tone="warn";why="Only "+(est.coverage*100).toFixed(0)+"% of shares are covered by visible bids. P/L applies only to that visible portion.";}
+    else if(est.roi>=15){headline="TAKE-PROFIT LEVEL REACHED · +"+est.roi.toFixed(1)+"% NET";tone="up";why="The default +15% net-return target has been reached after estimated taker fees.";}
+    else if(est.roi<=-12){headline="STOP-LOSS LEVEL REACHED · "+est.roi.toFixed(1)+"% NET";tone="down";why="The default -12% net-return guardrail has been crossed. Review the executable bid rather than waiting for recovery.";}
+    else if(forecastFresh&&forecast.side===opposite){headline="SIGNAL FLIPPED · "+opposite+" NOW CONFIRMED";tone="down";why="The multi-source engine now confirms the opposite outcome. This is an exit warning, not an automatic sale.";}
+    else if(!forecastFresh||forecast.side==="WAIT"){headline="SIGNAL LOST · DEFEND THE POSITION";tone="warn";why="The engine no longer has a fresh confirmed side. Recheck the live bid and consider reducing risk.";}
+    else if(left<=30){headline="LAST 30 SECONDS · RECHECK THE EXIT BID";tone="warn";why="Expiry is close. The settlement reference is a 60-second Chainlink TWAP, so exchange spot moves do not instantly equal the final outcome.";}
+    action.textContent=headline;action.className="breach-position-action "+tone;
+    detail.textContent="Net estimate "+money(est.net)+" on "+(est.filled/est.shares*100).toFixed(0)+"% of shares · avg visible exit "+(est.avgExit*100).toFixed(2)+"¢ · "+(est.complete?"FULL VISIBLE DEPTH":"VISIBLE DEPTH "+(est.coverage*100).toFixed(0)+"%")+" · book age "+(est.age/1000).toFixed(1)+"s · entry + exit taker fees estimated. Default -12% stop / +15% take-profit are untested guardrails.";
+  }
   function renderBreach(){
     const now=Date.now(),start=Math.floor(now/300000)*300000,left=Math.max(0,Math.ceil((start+300000-now)/1000));
     const timer=document.getElementById("breachCountdown");if(timer)timer.textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0");
@@ -4428,6 +4534,7 @@ body>.reader-shell{
     set("breachSoldiers",String(soldiers));set("breachGiants",String(giants));
     set("breachPriceTag",price>0?"BTC · "+breachUsd(price)+" · "+(dist===null?"LIVE":dist>=0?"ABOVE":"BELOW"):"BTC · —");
     set("breachStrikeTag",strike>0?"POLYMARKET PRICE TO BEAT · "+breachUsd(strike):"PRICE TO BEAT · CHAINLINK SYNCING");
+    renderBreachPosition(now);
     set("breachTapeRate","TAPE "+(trades.length/60).toFixed(1)+"/SEC");
     set("breachTapeStatus",state.coinbaseLastAt&&now-state.coinbaseLastAt<15000?"COINBASE TAPE LIVE":"COINBASE TAPE CONNECTING");
     const bc=document.getElementById("breachBullCall"),rc=document.getElementById("breachBearCall");

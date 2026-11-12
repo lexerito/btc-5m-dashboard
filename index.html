@@ -1362,7 +1362,7 @@ body>.reader-shell{
           state.chainlinkLastAt=Date.now();state.chainlink=value;$("chainlink").textContent="$"+fmt(value);addChainlinkObservation(ts,value);
         }else if(msg.topic==="crypto_prices"&&symbol==="btcusdt"){
           state.binance=value;$("binance").textContent="$"+fmt(value);
-          addPriceSample(ts,value);updateMomentum();
+          addPriceSample(ts,value);
           if(state.chainlink!==null){
             const diff=value-state.chainlink;
             $("binanceDiff").textContent="Binance vs Chainlink: "+(diff>=0?"+":"−")+"$"+fmt(Math.abs(diff));
@@ -1428,8 +1428,13 @@ body>.reader-shell{
     if(!last||ts>last.ts){
       if(!last||ts-last.ts>=100||Math.abs(price-last.value)>=.05)state.binanceFastHistory.push({ts,value:price});
     }
-    const cutoff=Date.now()-1800000;
-    state.binanceFastHistory=state.binanceFastHistory.filter(x=>x.ts>=cutoff).slice(-18000);
+    const pruneNow=Date.now();
+    if(!state.lastFastHistoryPruneAt||pruneNow-state.lastFastHistoryPruneAt>=1000){
+      const cutoff=pruneNow-1800000;
+      while(state.binanceFastHistory.length&&state.binanceFastHistory[0].ts<cutoff)state.binanceFastHistory.shift();
+      if(state.binanceFastHistory.length>18000)state.binanceFastHistory=state.binanceFastHistory.slice(-18000);
+      state.lastFastHistoryPruneAt=pruneNow;
+    }
     if(state.fastSpotSeries&&Date.now()-(state.lastFastChartUpdate||0)>=100){
       try{state.fastSpotSeries.update({time:Math.floor(ts/1000),value:price});state.lastFastChartUpdate=Date.now();}catch(_){}
     }
@@ -1450,14 +1455,16 @@ body>.reader-shell{
       if(!Number.isFinite(q)||!Number.isFinite(price)||q<=0||price<=0)return;
       state.spotTradeLastAt=Date.now();
       addFastExchangeObservation(ts,price);
-      addPriceSample(ts,price);state.trades.push({ts,q,buy:!t.m,price});pushFlowTrade("BINANCE SPOT",t.a,ts,price,q,!t.m);pruneHistory(ts);updateMomentum();renderMicroflowEdge(Date.now());
+      addPriceSample(ts,price);state.trades.push({ts,q,buy:!t.m,price});pushFlowTrade("BINANCE SPOT",t.a,ts,price,q,!t.m);pruneHistory(ts);renderMicroflowEdge(Date.now());
     };
     ws.onclose=()=>{if(state.tradeWs!==ws)return;state.tradeReconnect=setTimeout(()=>{state.tradeReconnect=null;if(state.tradeWs===ws)connectTrades()},2500)};
     ws.onerror=()=>{if(state.tradeWs===ws)try{ws.close()}catch(_){}};
   }
   function pruneHistory(now){
+    if(state.lastPricePruneAt&&now-state.lastPricePruneAt<1000)return;
     state.prices=state.prices.filter(x=>now-x.ts<=190000);
     state.trades=state.trades.filter(x=>now-x.ts<=65000);
+    state.lastPricePruneAt=now;
   }
   function addPriceSample(ts,price){
     state.prices.push({ts,price});pruneHistory(ts);
@@ -1542,10 +1549,13 @@ body>.reader-shell{
     if(!Number.isFinite(ts)||!Number.isFinite(price)||!Number.isFinite(size)||price<=0||size<=0)return;
     const key=venue+":"+String(id??(ts+"-"+price+"-"+size));
     if(state.flowSeen[key])return;
-    state.flowSeen[key]=ts;
-    const trade={key,venue,ts,price,size,buy:!!isBuy,notional:price*size};
-    const cutoff=Date.now()-900000;
-    state.flowTrades=state.flowTrades.filter(x=>x.ts>=cutoff&&x.ts<=Date.now());
+    state.flowSeen[key]=ts;state.flowSeenCount=(state.flowSeenCount||0)+1;
+    const trade={key,venue,ts,price,size,buy:!!isBuy,notional:price*size},now=Date.now();
+    if(!state.lastFlowPruneAt||now-state.lastFlowPruneAt>=1000){
+      const cutoff=now-900000;
+      state.flowTrades=state.flowTrades.filter(x=>x.ts>=cutoff&&x.ts<=now);
+      state.lastFlowPruneAt=now;
+    }
     state.flowTrades.push(trade);
     if(venue==="BINANCE PERP")recordBasisBarTrade(trade);
     if(state.flowTrades.length>60000)state.flowTrades=state.flowTrades.slice(-50000);
@@ -1554,8 +1564,9 @@ body>.reader-shell{
       state.largePrints=state.largePrints.slice(0,60);
       pushFlowAlert({ts,side:trade.buy?"BUY":"SELL",venue,notional:trade.notional,price,kind:trade.notional>=WHALE_PRINT_USD?"WHALE PRINT":"LARGE PRINT"});
     }
-    if(Object.keys(state.flowSeen).length>30000){
-      const keep={};for(const x of state.flowTrades)keep[x.key]=x.ts;state.flowSeen=keep;
+    if(state.flowSeenCount>30000){
+      const keep={};for(const x of state.flowTrades)keep[x.key]=x.ts;
+      state.flowSeen=keep;state.flowSeenCount=Object.keys(keep).length;
     }
   }
   function getFlowWindow(ms){
@@ -1659,7 +1670,7 @@ body>.reader-shell{
   }
 
   function buildBasisFootprint(now=Date.now()){
-    if(state.basisFootprint&&now-state.basisFootprint.updatedAt<450)return state.basisFootprint;
+    if(state.basisFootprint&&now-state.basisFootprint.updatedAt<850)return state.basisFootprint;
     const tape=state.flowTrades.filter(t=>t.venue==="BINANCE PERP"&&t.ts<=now&&now-t.ts<=60000&&t.notional>0&&t.price>0);
     const windowStats=ms=>{
       const rows=tape.filter(t=>now-t.ts<=ms);
@@ -2123,7 +2134,7 @@ body>.reader-shell{
   }
   function renderLargePrintFootprint(now=Date.now()){
     const canvas=$("largePrintCanvas"),host=$("largePrintChart");
-    if(!canvas||!host||host.closest(".flow-card")?.hidden)return;
+    if(!canvas||!host||host.closest(".legacy-runtime")?.hidden||host.closest(".flow-card")?.hidden)return;
     const prints=state.flowTrades.filter(t=>t.ts>=now-120000&&t.ts<=now&&t.notional>=LARGE_PRINT_USD);
     const p30=largePrintWindow(30000,now),p10=largePrintWindow(10000,now);
     const put=(id,value,cls)=>{const el=$(id);if(el){el.textContent=value;el.className=cls||"";}};
@@ -2206,7 +2217,7 @@ body>.reader-shell{
     if(foot)foot.textContent="Each 5s column is split by price level: green = aggressive buys lifting asks, pink = aggressive sells hitting bids. Cell values are $K · dashed gold = current price to beat · chart volumes are uncapped.";
   }
   function renderFlowTape(){
-    const list=$("flowTapeList");if(!list||list.closest(".flow-card")?.hidden)return;
+    const list=$("flowTapeList");if(!list||list.closest(".legacy-runtime")?.hidden||list.closest(".flow-card")?.hidden)return;
     list.textContent="";
     const items=state.alertFeed.slice(0,7);
     if(!items.length){
@@ -2330,7 +2341,7 @@ body>.reader-shell{
     return venueFlowStats(venues,ms,now);
   }
   function renderMicroflowEdge(now=Date.now()){
-    const panel=$("microflowPanel");if(!panel)return;
+    const panel=$("microflowPanel");if(!panel||panel.closest(".legacy-runtime")?.hidden)return;
     const status=$("microflowStatus"),signal=$("microflowSignal"),detail=$("microflowSignalDetail");
     const scoreEl=$("microflowScore"),fill=$("microflowMeterFill"),reason=$("microflowReason");
     const oneEl=$("microflowOfi1"),threeEl=$("microflowOfi3"),targetEl=$("microflowMicroprice");
@@ -2697,7 +2708,10 @@ body>.reader-shell{
   }
   function updateConfluenceForecast(){
     if(!$("confluenceCall"))return;
-    const now=Date.now(),start=boundaryAtOrBefore(now),elapsed=(now-start)/1000,remaining=Math.max(0,300-elapsed);
+    const now=Date.now();
+    if(state.lastConfluenceAt&&now-state.lastConfluenceAt<700)return;
+    state.lastConfluenceAt=now;
+    const start=boundaryAtOrBefore(now),elapsed=(now-start)/1000,remaining=Math.max(0,300-elapsed);
     if(!state.roundMemory){
       state.roundMemory={
         marketStart:start,lastSampleAt:0,inputs:{},score:0,history:[],
@@ -2716,7 +2730,7 @@ body>.reader-shell{
       memory.candidate="WAIT";memory.candidateSince=0;memory.weakSince=0;
     }
 
-    const edge=state.volumeEdge&&now-state.volumeEdge.updatedAt<450?state.volumeEdge:(state.volumeEdge=calculateRealVolumeEdge(now));
+    const edge=state.volumeEdge&&now-state.volumeEdge.updatedAt<850?state.volumeEdge:(state.volumeEdge=calculateRealVolumeEdge(now));
     const footprint=buildBasisFootprint(now);
     const bboFresh=!!state.binanceBbo&&now-state.binanceBbo.ts<1800;
     const bboRaw=bboFresh?Math.max(-1,Math.min(1,state.binanceBbo.imbalance*1.65+state.binanceBbo.microEdge*.42)):null;
@@ -3270,7 +3284,7 @@ body>.reader-shell{
     state.lastFeedRecoveryAt=now;state.volumeEdge=null;
     const statusEl=$("flowEdgeStatus");if(statusEl){statusEl.textContent="RESTARTING LIVE FEEDS…";statusEl.className="feature-status";}
     connect();connectTrades();connectFuturesTakerTape();connectCoinbase();connectHyperliquid();
-    setTimeout(()=>{state.volumeEdge=null;updateMomentum();renderFlowIntelligence();renderFlowPressure();updateConfluenceForecast()},1200);
+    setTimeout(()=>{state.volumeEdge=null;updateConfluenceForecast()},1200);
   }
   function feedSocketStale(ws,lastAt,connectAt,threshold,now){
     if(!ws||ws.readyState===WebSocket.CLOSED)return true;
@@ -3301,20 +3315,13 @@ body>.reader-shell{
     connectFuturesTakerTape();
     connectBinanceBookTicker();
     startMomentumFeedWatchdog();
-    initFlowChart();
     updateSwingEngine();
-    renderLargePrintFootprint();
-    renderFlowIntelligence();
     updateConfluenceForecast();
     if(state.flipTimer)clearInterval(state.flipTimer);
-    state.flipTimer=setInterval(()=>{if(document.visibilityState!=="hidden")updateConfluenceForecast();},350);
+    state.flipTimer=setInterval(()=>{if(document.visibilityState!=="hidden")updateConfluenceForecast();},700);
     state.flowTimer=setInterval(()=>{
-      updateMomentum();
-      if(!state.flowChart&&typeof LightweightCharts!=="undefined")initFlowChart();
+      if(document.visibilityState==="hidden")return;
       updateSwingEngine();
-      renderFlowIntelligence();
-      renderFlowPressure();
-      renderLargePrintFootprint();
     },1000);
   }
 
@@ -3997,11 +4004,11 @@ body>.reader-shell{
       let m;try{m=JSON.parse(e.data)}catch(_){return}
       const now=Date.now();state.coinbaseLastAt=now;
       if(m.channel==="ticker")for(const ev of (m.events||[]))for(const t of (ev.tickers||[])){
-        const p=Number(t.price);if(t.product_id==="BTC-USD"&&p>0){state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,now,p);crossText("coinbasePrice","$"+fmt(p));renderCrossVenue()}
+        const p=Number(t.price);if(t.product_id==="BTC-USD"&&p>0){state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,now,p);crossText("coinbasePrice","$"+fmt(p))}
       }
       if(m.channel==="market_trades")for(const ev of (m.events||[]))for(const t of (ev.trades||[])){
         const p=Number(t.price),size=Number(t.size),ts=Date.parse(t.time)||now;
-        const takerSide=String(t.side||"").toUpperCase();if(p>0&&size>0&&(takerSide==="BUY"||takerSide==="SELL")){const aggressiveBuy=takerSide==="BUY";state.coinbaseTrades.push({ts,price:p,size,buy:aggressiveBuy});pushFlowTrade("COINBASE",t.trade_id??(ts+"-"+p+"-"+size),ts,p,size,aggressiveBuy);state.coinbaseTrades=state.coinbaseTrades.filter(x=>now-x.ts<65000);renderMicroflowEdge(now);state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,ts,p);renderCrossVenue()}
+        const takerSide=String(t.side||"").toUpperCase();if(p>0&&size>0&&(takerSide==="BUY"||takerSide==="SELL")){const aggressiveBuy=takerSide==="BUY";state.coinbaseTrades.push({ts,price:p,size,buy:aggressiveBuy});pushFlowTrade("COINBASE",t.trade_id??(ts+"-"+p+"-"+size),ts,p,size,aggressiveBuy);if(!state.lastCoinbasePruneAt||now-state.lastCoinbasePruneAt>=1000){state.coinbaseTrades=state.coinbaseTrades.filter(x=>now-x.ts<65000);state.lastCoinbasePruneAt=now;}renderMicroflowEdge(now);state.coinbasePrice=p;state.coinbaseTs=now;addCrossPrice(state.coinbasePrices,ts,p)}
       }
     };
     ws.onerror=()=>crossStatus("COINBASE FEED ERROR","bad");
@@ -4029,23 +4036,21 @@ body>.reader-shell{
       const d=m.data||{},now=Date.now();state.hlLastAt=now;
       if(m.channel==="trades"&&Array.isArray(d)){
         for(const t of d){const p=Number(t.px),size=Number(t.sz),ts=Number(t.time)||now;if(p>0&&size>0){state.hlPrice=p;state.hlTs=now;state.hlTrades.push({ts,price:p,size,buy:String(t.side).toUpperCase()==="B"});pushFlowTrade("HYPERLIQUID",t.tid??(ts+"-"+p+"-"+size),ts,p,size,String(t.side).toUpperCase()==="B");addCrossPrice(state.hlPrices,ts,p)}}
-        state.hlTrades=state.hlTrades.filter(x=>now-x.ts<65000);renderMicroflowEdge(now);renderCrossVenue();
+        if(!state.lastHlTradePruneAt||now-state.lastHlTradePruneAt>=1000){state.hlTrades=state.hlTrades.filter(x=>now-x.ts<65000);state.lastHlTradePruneAt=now;}renderMicroflowEdge(now);
       }else if(m.channel==="l2Book"&&d.levels){
         const parse=xs=>(xs||[]).map(x=>({p:Number(x.px),s:Number(x.sz)})).filter(x=>x.p>0&&x.s>0);
         const bids=parse(d.levels[0]).sort((a,b)=>b.p-a.p),asks=parse(d.levels[1]).sort((a,b)=>a.p-b.p);
         state.hlBook={bids,asks,ts:now};
         recordMicroflowHyperliquidBook(bids,asks,now);
-        renderCrossVenue();
       }else if(m.channel==="activeAssetCtx"&&d&&d.ctx){
         const oi=Number(d.ctx.openInterest),mark=Number(d.ctx.markPx),funding=Number(d.ctx.funding);
         if(Number.isFinite(oi)&&oi>0){
           state.hlAssetCtx={oi,mark,funding,ts:now};
           state.hlOiHistory.push({oi,mark,funding,ts:now});
           state.hlOiHistory=state.hlOiHistory.filter(x=>now-x.ts<1800000).slice(-3000);
-          renderFlowIntelligence();
         }
       }else if(m.channel==="allMids"&&d&&d.mids&&Number(d.mids.BTC)>0){
-        state.hlPrice=Number(d.mids.BTC);state.hlTs=now;addCrossPrice(state.hlPrices,now,state.hlPrice);renderCrossVenue();
+        state.hlPrice=Number(d.mids.BTC);state.hlTs=now;addCrossPrice(state.hlPrices,now,state.hlPrice);
       }
     };
     ws.onerror=()=>crossStatus("HYPERLIQUID FEED ERROR","bad");
@@ -4106,7 +4111,7 @@ body>.reader-shell{
     ws.onerror=()=>{try{ws.close()}catch(_){}};
     ws.onclose=()=>{if(state.liqReconnect)clearTimeout(state.liqReconnect);state.liqReconnect=setTimeout(connectLiquidations,3000)};
   }
-  function startCrossVenue(){connectCoinbase();connectHyperliquid();connectLiquidations();setInterval(renderCrossVenue,1000)}
+  function startCrossVenue(){connectCoinbase();connectHyperliquid();connectLiquidations()}
 
   // Polymarket live data: exact current 5m slug + CLOB WebSocket + REST book fallback.
   const poly={event:null,market:null,upId:null,downId:null,ws:null,books:{},lastTrade:null,lastMsg:0,lastDataAt:0,ping:null,wsReconnect:null,refresh:null,poll:null,watchdog:null,imbalance:0,upMid:null,downMid:null,wsConnected:false,wsBookSeen:false,restAt:0,restBusy:false,discovering:false,retry:0};
@@ -4301,7 +4306,7 @@ body>.reader-shell{
   $("reconnect").addEventListener("click",connect);
   const flowRestartBtn=$("flowRestartBtn");if(flowRestartBtn)flowRestartBtn.addEventListener("click",restartMomentumFeeds);
   $("exportLab").addEventListener("click",exportMarketLab);
-  loadMarketLab();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();updateMomentum();startLiveMomentum();renderMomentumDashboard();setInterval(renderMomentumDashboard,1000);state.timer=setInterval(tick,1000);const readerReconnect=$("readerReconnect");if(readerReconnect)readerReconnect.addEventListener("click",restartMomentumFeeds);
+  loadMarketLab();initBreachPositionMonitor();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();startLiveMomentum();state.timer=setInterval(tick,1000);const readerReconnect=$("readerReconnect");if(readerReconnect)readerReconnect.addEventListener("click",restartMomentumFeeds);
 
   // Polymarket BTC perpetuals: public mark ticker + official 24H statistics.
   // Each five-minute round inherits the previous round's last observed 24H percentage.
@@ -4414,20 +4419,27 @@ body>.reader-shell{
     }catch(_){breachTrackedPosition=null;}
   }
   function persistBreachPosition(){try{if(breachTrackedPosition)localStorage.setItem(BREACH_POSITION_KEY,JSON.stringify(breachTrackedPosition));else localStorage.removeItem(BREACH_POSITION_KEY)}catch(_){}}
-  function breachRoundedFee(shares,price){return Math.round(shares*BREACH_TAKER_FEE*price*(1-price)*100000)/100000}
+  function breachFeeRate(){
+    const market=poly.market||{};
+    if(market.feesEnabled===false||market.fees_enabled===false)return 0;
+    const raw=Number(market.takerBaseFee??market.feeRateBps??market.fee_rate_bps);
+    return Number.isFinite(raw)&&raw>0?(raw>1?raw/10000:raw):BREACH_TAKER_FEE;
+  }
+  function breachRoundedFee(shares,price,rate){return Math.round(shares*rate*price*(1-price)*100000)/100000}
   function estimateBreachCashout(position,now){
     const tokenId=position.side==="UP"?poly.upId:poly.downId,book=tokenId?poly.books[tokenId]:null;
     if(!book)return {ready:false,reason:"Waiting for this market's live order book."};
-    const age=now-(book.updatedAt||0);if(age>15000)return {ready:false,reason:"No recent order-book update · waiting for a fresh sell bid."};
-    const entry=position.entryCents/100,spent=position.stake,shares=spent/(entry+BREACH_TAKER_FEE*entry*(1-entry));
+    const age=now-(book.updatedAt||0);if(age>5000)return {ready:false,reason:"Exit book older than 5 seconds · waiting for a fresh sell bid."};
+    const entry=position.entryCents/100,spent=position.stake,rate=breachFeeRate();
+    const shares=(spent/entry)*Math.max(0,1-rate*(1-entry));
     const metrics=bookMetrics(book),bestBid=metrics?.bid??null;
     const levels=(book.bids||[]).map(x=>({price:Number(x.p),size:Number(x.s)})).filter(x=>x.price>0&&x.price<1&&x.size>0).sort((a,b)=>b.price-a.price);
     if(bestBid===null||!levels.length)return {ready:false,reason:"No visible sell bids for this outcome · cash-out value unavailable."};
     let remaining=shares,filled=0,proceeds=0,exitFee=0;
-    for(const level of levels){if(remaining<=1e-8)break;const take=Math.min(remaining,level.size);if(take<=0)continue;filled+=take;remaining-=take;proceeds+=take*level.price;exitFee+=breachRoundedFee(take,level.price);}
+    for(const level of levels){if(remaining<=1e-8)break;const take=Math.min(remaining,level.size);if(take<=0)continue;filled+=take;remaining-=take;proceeds+=take*level.price;exitFee+=breachRoundedFee(take,level.price,rate);}
     if(filled<=0)return {ready:false,reason:"No visible bid depth · cannot estimate a cash-out."};
     const costBasis=spent*(filled/shares),net=proceeds-exitFee-costBasis,roi=costBasis?net/costBasis*100:0;
-    return {ready:true,age,bestBid,avgExit:proceeds/filled,filled,shares,coverage:filled/shares,costBasis,net,roi,complete:remaining<=Math.max(1e-6,shares*.001)};
+    return {ready:true,age,bestBid,avgExit:proceeds/filled,filled,shares,coverage:filled/shares,costBasis,net,roi,rate,complete:remaining<=Math.max(1e-6,shares*.001)};
   }
   function initBreachPositionMonitor(){
     loadBreachPosition();
@@ -4475,7 +4487,7 @@ body>.reader-shell{
     else if(!forecastFresh||forecast.side==="WAIT"){headline="SIGNAL LOST · DEFEND THE POSITION";tone="warn";why="The engine no longer has a fresh confirmed side. Recheck the live bid and consider reducing risk.";}
     else if(left<=30){headline="LAST 30 SECONDS · RECHECK THE EXIT BID";tone="warn";why="Expiry is close. The settlement reference is a 60-second Chainlink TWAP, so exchange spot moves do not instantly equal the final outcome.";}
     action.textContent=headline;action.className="breach-position-action "+tone;
-    detail.textContent="Net estimate "+money(est.net)+" on "+(est.filled/est.shares*100).toFixed(0)+"% of shares · avg visible exit "+(est.avgExit*100).toFixed(2)+"¢ · "+(est.complete?"FULL VISIBLE DEPTH":"VISIBLE DEPTH "+(est.coverage*100).toFixed(0)+"%")+" · book age "+(est.age/1000).toFixed(1)+"s · entry + exit taker fees estimated. Default -12% stop / +15% take-profit are untested guardrails.";
+    detail.textContent="Net estimate "+money(est.net)+" on "+(est.filled/est.shares*100).toFixed(0)+"% of shares · avg visible exit "+(est.avgExit*100).toFixed(2)+"¢ · "+(est.complete?"FULL VISIBLE DEPTH":"VISIBLE DEPTH "+(est.coverage*100).toFixed(0)+"%")+" · book age "+(est.age/1000).toFixed(1)+"s · estimated fee rate "+(est.rate*100).toFixed(1)+"%. Default -12% stop / +15% take-profit are untested guardrails.";
   }
   function renderBreach(){
     const now=Date.now(),start=Math.floor(now/300000)*300000,left=Math.max(0,Math.ceil((start+300000-now)/1000));

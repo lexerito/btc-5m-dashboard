@@ -4312,7 +4312,7 @@ body>.reader-shell{
   $("reconnect").addEventListener("click",connect);
   const flowRestartBtn=$("flowRestartBtn");if(flowRestartBtn)flowRestartBtn.addEventListener("click",restartMomentumFeeds);
   $("exportLab").addEventListener("click",exportMarketLab);
-  loadMarketLab();initBreachPositionMonitor();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();startLiveMomentum();state.timer=setInterval(tick,1000);const readerReconnect=$("readerReconnect");if(readerReconnect)readerReconnect.addEventListener("click",restartMomentumFeeds);
+  loadMarketLab();connect();connectTrades();startCrossVenue();startPolymarketMarketData();$("flowAlertToggle").addEventListener("click",toggleFlowAlerts);startFlowAndSwingSystems();tick();startLiveMomentum();state.timer=setInterval(tick,1000);const readerReconnect=$("readerReconnect");if(readerReconnect)readerReconnect.addEventListener("click",restartMomentumFeeds);
 
   // Polymarket BTC perpetuals: public mark ticker + official 24H statistics.
   // Each five-minute round inherits the previous round's last observed 24H percentage.
@@ -4417,6 +4417,7 @@ body>.reader-shell{
 
   const BREACH_POSITION_KEY="btc5m-manual-position-v1",BREACH_TAKER_FEE=.07;
   let breachTrackedPosition=null;
+  initBreachPositionMonitor();
   function loadBreachPosition(){
     try{const saved=JSON.parse(localStorage.getItem(BREACH_POSITION_KEY)||"null"),start=boundaryAtOrBefore(Date.now());
       if(saved&&saved.marketStart===start&&(saved.side==="UP"||saved.side==="DOWN")&&Number.isFinite(saved.entryCents)&&saved.entryCents>0&&saved.entryCents<100&&Number.isFinite(saved.stake)&&saved.stake>0){

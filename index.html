@@ -476,9 +476,9 @@ button{font:inherit}
   }
 
   function acceptRows(rows, source, isSnapshot) {
-    clearCoinbaseForBinance();
     const clean = normalizeRows(rows);
     if (!clean.length) throw new Error("Binance returned no valid BTCUSDT candles.");
+    clearCoinbaseForBinance();
     if (isSnapshot) {
       const merged = new Map(clean.map(x => [x.time, x.price]));
       prices.forEach(x => merged.set(x.time, x.price));
@@ -536,9 +536,9 @@ button{font:inherit}
       const base = REST_BASES[index];
       try {
         const rows = await fetchKlines(base, 420, 6500);
+        const count = acceptRows(rows, "BINANCE REST SNAPSHOT", true);
         restBase = base;
         restBaseIndex = index;
-        const count = acceptRows(rows, "BINANCE REST SNAPSHOT", true);
         const latest = prices[prices.length - 1];
         log("Loaded " + count + " recent one-second BTCUSDT candles from Binance.");
         setConnection(ws && ws.readyState === WebSocket.OPEN ? "LIVE" : "REST BACKUP", ws && ws.readyState === WebSocket.OPEN ? "live" : "stale");

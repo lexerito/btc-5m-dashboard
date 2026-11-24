@@ -25,7 +25,7 @@ button{font:inherit}
 .card{border:1px solid var(--line);border-radius:18px;background:linear-gradient(155deg,#141321,#0d0d17 74%);box-shadow:0 18px 48px #0008,0 0 38px #7b42c31c;overflow:hidden}
 .card-top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line);background:#0b0a13}
 .eyebrow{font-size:9px;font-weight:950;letter-spacing:.16em;color:#a994ca}
-.round-state{font-size:9px;font-weight:900;letter-spacing:.09em;color:#8d89a5;text-align:right}
+.round-meta{text-align:right;min-width:0}.round-state{font-size:9px;font-weight:900;letter-spacing:.09em;color:#8d89a5}.round-meta small{display:block;margin-top:5px;color:#706c83;font-size:8px;line-height:1.35;max-width:320px;overflow-wrap:anywhere}
 .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:14px}
 .metric{min-width:0;padding:13px 14px;border:1px solid #302d41;border-radius:12px;background:linear-gradient(145deg,#141321,#0c0c15)}
 .metric small{display:block;color:#9290aa;font-size:9px;font-weight:900;letter-spacing:.12em}
@@ -93,7 +93,7 @@ button{font:inherit}
   <main class="card">
     <div class="card-top">
       <div class="eyebrow">BINANCE BTCUSDT · LIVE SPOT</div>
-      <div class="round-state" id="roundState">WAITING FOR DATA</div>
+      <div class="round-meta"><div class="round-state" id="roundState">WAITING FOR DATA</div><small id="dataDetail">Trying Binance market-data connections…</small></div>
     </div>
 
     <section class="metrics">
@@ -167,40 +167,68 @@ button{font:inherit}
 (() => {
   "use strict";
 
-  const WS_URL = "wss://stream.binance.com:9443/ws/btcusdt@kline_1s";
+  const STREAM_NAME = "btcusdt@kline_1s";
+  const WS_URLS = [
+    "wss://data-stream.binance.vision:443/ws/" + STREAM_NAME,
+    "wss://stream.binance.com:443/ws/" + STREAM_NAME,
+    "wss://stream.binance.com:9443/ws/" + STREAM_NAME
+  ];
+  const REST_BASES = [
+    "https://data-api.binance.vision",
+    "https://api.binance.com"
+  ];
   const $ = id => document.getElementById(id);
-  const WINDOW = 60;
+  const WINDOW_SECONDS = 60;
   const MARKET_MS = 5 * 60 * 1000;
+  const HISTORY_LIMIT = 240;
   const prices = [];
   let ws = null;
+  let wsIndex = 0;
+  let wsOpenedAt = 0;
+  let lastWsMessageAt = 0;
+  let lastDataReceivedAt = 0;
+  let lastDataSource = "";
+  let lastSocketError = "";
+  let lastRestError = "";
+  let restBase = null;
+  let restBaseIndex = 0;
+  let restBusy = false;
+  let restTimer = null;
+  let reconnectTimer = null;
+  let connectTimer = null;
+  let paused = false;
   let spot = null;
   let twap = null;
   let opening = null;
   let marketStart = null;
   let lastMarket = null;
   let lastSignal = "";
-  let paused = false;
-  let reconnectTimer = null;
   let chartValues = [];
   let events = [];
-  let lastTick = 0;
-  let connectedOnce = false;
-  let roundReferenceUnavailable = false;
+  let lastCandleTime = null;
+  let notificationPermission = "default";
 
   const money = n => Number.isFinite(n)
     ? "$" + n.toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2})
     : "--";
 
-  function setConnection(text, mode) {
+  function setConnection(label, mode) {
     const el = $("connection");
-    el.textContent = text;
+    if (!el) return;
+    el.textContent = label;
     el.className = "connection" + (mode ? " " + mode : "");
+  }
+
+  function setDataDetail(message) {
+    const el = $("dataDetail");
+    if (el) el.textContent = message;
   }
 
   function log(message) {
     events.unshift({time:new Date().toLocaleTimeString(), message});
-    events = events.slice(0,12);
+    events = events.slice(0, 12);
     const host = $("events");
+    if (!host) return;
     host.textContent = "";
     events.forEach(item => {
       const row = document.createElement("div");
@@ -216,136 +244,50 @@ button{font:inherit}
   }
 
   function notify(message) {
-    if ("Notification" in window && Notification.permission === "granted") {
-      try { new Notification("BTC 5M TWAP Tracker", {body:message}); } catch (_) {}
-    }
-  }
-
-  function connect() {
-    if (reconnectTimer) {
-      clearTimeout(reconnectTimer);
-      reconnectTimer = null;
-    }
-    if (ws) {
-      try { ws.close(); } catch (_) {}
-    }
-
-    setConnection("CONNECTING", "");
-    let socket;
+    if (notificationPermission !== "granted") return;
     try {
-      socket = new WebSocket(WS_URL);
-    } catch (error) {
-      setConnection("CONNECTION ERROR", "error");
-      reconnectTimer = setTimeout(connect, 2000);
-      return;
+      if (window.Notification) new window.Notification("BTC 5M TWAP Tracker", {body:message});
+    } catch (_) {}
+  }
+
+  function exactWindowEndingAt(endTime) {
+    const firstTime = endTime - (WINDOW_SECONDS - 1) * 1000;
+    const byTime = new Map(prices.map(item => [item.time, item.price]));
+    let sum = 0;
+    for (let i = 0; i < WINDOW_SECONDS; i++) {
+      const value = byTime.get(firstTime + i * 1000);
+      if (!Number.isFinite(value)) return null;
+      sum += value;
     }
-    ws = socket;
-
-    socket.onopen = () => {
-      if (ws !== socket) return;
-      connectedOnce = true;
-      setConnection("LIVE · WAITING FOR CANDLES", "live");
-      log("Connected to Binance BTCUSDT 1-second candles.");
-    };
-
-    socket.onmessage = event => {
-      if (ws !== socket) return;
-      let message;
-      try { message = JSON.parse(event.data); } catch (_) { return; }
-      const k = message && message.k;
-      if (!k) return;
-
-      const price = Number(k.c);
-      const candleTime = Number(k.t);
-      if (!Number.isFinite(price) || price <= 0 || !Number.isFinite(candleTime)) return;
-      lastTick = Date.now();
-
-      if (paused) return;
-      if (prices.length && candleTime < prices[prices.length - 1].time) return;
-
-      spot = price;
-      if (prices.length && prices[prices.length - 1].time === candleTime) {
-        prices[prices.length - 1].price = price;
-      } else {
-        prices.push({time:candleTime, price});
-      }
-
-      const cutoff = candleTime - WINDOW * 1000;
-      while (prices.length && prices[0].time < cutoff) prices.shift();
-      if (prices.length > WINDOW) prices.splice(0, prices.length - WINDOW);
-
-      const currentMarket = Math.floor(candleTime / MARKET_MS) * MARKET_MS;
-      let newMarket = false;
-
-      if (lastMarket === null) {
-        lastMarket = currentMarket;
-        marketStart = currentMarket;
-        opening = null;
-        roundReferenceUnavailable = true;
-        log("Connected during an active round. Waiting for the next five-minute boundary to lock a clean opening TWAP.");
-      } else if (currentMarket > lastMarket) {
-        lastMarket = currentMarket;
-        marketStart = currentMarket;
-        newMarket = true;
-        lastSignal = "";
-        opening = null;
-        roundReferenceUnavailable = !hasFullWindow();
-        if (hasFullWindow()) {
-          opening = calculateTwap();
-          roundReferenceUnavailable = false;
-          log("NEW 5-MINUTE MARKET · Opening TWAP: " + money(opening));
-        } else {
-          log("NEW 5-MINUTE MARKET · Waiting for a complete 60-second sample window before the next opening lock.");
-        }
-        notify("New 5-minute BTC market started.");
-      }
-
-      twap = hasFullWindow() ? calculateTwap() : null;
-      addChartValue(candleTime);
-      update(newMarket);
-    };
-
-    socket.onerror = () => {
-      if (ws === socket) setConnection("CONNECTION ERROR", "error");
-    };
-
-    socket.onclose = () => {
-      if (ws !== socket) return;
-      setConnection("RECONNECTING", "stale");
-      if (!reconnectTimer) reconnectTimer = setTimeout(connect, 2000);
-    };
+    return sum / WINDOW_SECONDS;
   }
 
-  function hasFullWindow() {
-    if (prices.length < WINDOW) return false;
-    const first = prices[0].time;
-    const last = prices[prices.length - 1].time;
-    if (last - first < (WINDOW - 1) * 1000) return false;
-    for (let i = 1; i < prices.length; i++) {
-      if (prices[i].time - prices[i - 1].time > 2000) return false;
+  function rebuildChart() {
+    chartValues = [];
+    const first = Math.max(0, prices.length - 120);
+    for (let i = first; i < prices.length; i++) {
+      const item = prices[i];
+      chartValues.push({
+        time:item.time,
+        spot:item.price,
+        twap:exactWindowEndingAt(item.time),
+        opening:opening !== null && marketStart !== null && item.time >= marketStart ? opening : null
+      });
     }
-    return true;
   }
 
-  function calculateTwap() {
-    if (!prices.length) return null;
-    return prices.reduce((sum, item) => sum + item.price, 0) / prices.length;
-  }
-
-  function addChartValue(candleTime) {
-    const item = {time:candleTime, spot:spot, twap:twap, opening:opening};
-    if (chartValues.length && chartValues[chartValues.length - 1].time === candleTime) {
-      chartValues[chartValues.length - 1] = item;
-    } else {
-      chartValues.push(item);
+  function update(isNewMarket, source) {
+    const latest = prices.length ? prices[prices.length - 1] : null;
+    if (latest) {
+      spot = latest.price;
+      lastCandleTime = latest.time;
     }
-    if (chartValues.length > 120) chartValues.splice(0, chartValues.length - 120);
-  }
+    twap = latest ? exactWindowEndingAt(latest.time) : null;
 
-  function update(isNewMarket) {
     if (spot !== null) $("spot").textContent = money(spot);
     $("twap").textContent = twap === null ? "COLLECTING" : money(twap);
-    $("twapDetail").textContent = prices.length + " / 60 one-second candles · " + (hasFullWindow() ? "window ready" : "warming up");
+    $("twapDetail").textContent = prices.length + " stored candles · " +
+      (twap === null ? "need 60 consecutive seconds" : "60/60 one-second candles ready");
     $("opening").textContent = opening === null ? "WAITING" : money(opening);
 
     const diff = twap !== null && opening !== null ? twap - opening : null;
@@ -358,10 +300,11 @@ button{font:inherit}
       difference.textContent = "--";
       difference.className = "difference";
       percentage.textContent = opening === null
-        ? (roundReferenceUnavailable ? "Opening reference unavailable this round · next round will reset" : "Waiting for next five-minute opening")
-        : "Collecting a full 60-second sample";
+        ? "Opening reference not recovered for this round"
+        : "Collecting a complete 60-second sample";
       direction.textContent = "WAITING";
       direction.className = "direction";
+      lastSignal = "";
     } else {
       difference.textContent = (diff >= 0 ? "+" : "−") + money(Math.abs(diff));
       difference.className = "difference " + (diff >= 0 ? "up" : "down");
@@ -377,37 +320,280 @@ button{font:inherit}
       lastSignal = signal;
     }
 
-    const stateText = opening !== null
-      ? "ROUND ACTIVE · OPENING LOCKED"
-      : "WAITING FOR NEXT ELIGIBLE OPEN";
-    $("roundState").textContent = stateText;
+    $("roundState").textContent = opening !== null
+      ? "ROUND OPENING RECOVERED · 60/60"
+      : "WAITING FOR A VALID OPENING WINDOW";
     $("chartFoot").textContent = opening !== null
-      ? "Opening reference is fixed for this five-minute round. Spot and rolling TWAP update as Binance sends new one-second candles."
-      : "The tracker joined mid-round or lacks a complete 60-second sample. It will lock the opening reference at the next eligible five-minute boundary.";
+      ? "Opening reference recovered from the exact one-second candle window ending at this round's UTC boundary. Live spot and rolling TWAP update as data arrives."
+      : "The tracker needs 60 continuous one-second candles ending at the round boundary. It will keep trying REST and WebSocket sources.";
+    if (source) {
+      const age = lastDataReceivedAt ? Math.max(0, (Date.now() - lastDataReceivedAt) / 1000).toFixed(1) : "--";
+      setDataDetail(source + " · last update " + age + "s ago");
+    }
+    rebuildChart();
     drawChart();
+  }
+
+  function refreshMarketReference(isInitial) {
+    if (!prices.length) return false;
+    const latest = prices[prices.length - 1];
+    const currentMarket = Math.floor(latest.time / MARKET_MS) * MARKET_MS;
+    const changed = lastMarket === null || currentMarket > lastMarket;
+    if (changed) {
+      lastMarket = currentMarket;
+      marketStart = currentMarket;
+      lastSignal = "";
+      opening = exactWindowEndingAt(marketStart);
+      if (!isInitial) {
+        if (opening !== null) log("NEW 5-MINUTE MARKET · Opening TWAP: " + money(opening));
+        else log("NEW 5-MINUTE MARKET · Waiting for the exact 60-second opening window.");
+        notify("New five-minute BTC market started.");
+      }
+    } else if (opening === null && marketStart !== null) {
+      opening = exactWindowEndingAt(marketStart);
+    }
+    return changed;
+  }
+
+  function normalizeRows(rows) {
+    if (!Array.isArray(rows)) return [];
+    return rows.map(row => ({
+      time:Number(Array.isArray(row) ? row[0] : row.time),
+      price:Number(Array.isArray(row) ? row[4] : row.price)
+    })).filter(x => Number.isFinite(x.time) && Number.isFinite(x.price) && x.price > 0);
+  }
+
+  function acceptRows(rows, source, isSnapshot) {
+    const clean = normalizeRows(rows);
+    if (!clean.length) throw new Error("Binance returned no valid BTCUSDT candles.");
+    if (isSnapshot) {
+      const merged = new Map(prices.map(x => [x.time, x.price]));
+      clean.forEach(x => merged.set(x.time, x.price));
+      prices.splice(0, prices.length, ...Array.from(merged, ([time, price]) => ({time, price}))
+        .sort((a, b) => a.time - b.time).slice(-HISTORY_LIMIT));
+    } else {
+      clean.forEach(x => {
+        const index = prices.findIndex(p => p.time === x.time);
+        if (index >= 0) prices[index].price = x.price;
+        else prices.push(x);
+      });
+      prices.sort((a, b) => a.time - b.time);
+      if (prices.length > HISTORY_LIMIT) prices.splice(0, prices.length - HISTORY_LIMIT);
+    }
+
+    const changed = refreshMarketReference(isSnapshot);
+    lastDataReceivedAt = Date.now();
+    lastDataSource = source;
+    lastRestError = "";
+    update(changed, source);
+    return clean.length;
+  }
+
+  async function fetchKlines(base, limit, timeoutMs) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs || 5000);
+    const url = base + "/api/v3/klines?symbol=BTCUSDT&interval=1s&limit=" + limit;
+    try {
+      const response = await fetch(url, {
+        method:"GET",
+        cache:"no-store",
+        mode:"cors",
+        headers:{Accept:"application/json"},
+        signal:controller.signal
+      });
+      if (!response.ok) throw new Error("HTTP " + response.status + " from " + new URL(url).hostname);
+      const data = await response.json();
+      if (!Array.isArray(data)) throw new Error("Unexpected Binance response format.");
+      return data;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  async function bootstrapHistory() {
+    setConnection("LOADING RECENT CANDLES", "stale");
+    setDataDetail("Loading a recent 1-second candle history before enabling the live feed…");
+    const errors = [];
+    for (let i = 0; i < REST_BASES.length; i++) {
+      const index = (restBaseIndex + i) % REST_BASES.length;
+      const base = REST_BASES[index];
+      try {
+        const rows = await fetchKlines(base, 180, 6500);
+        restBase = base;
+        restBaseIndex = index;
+        const count = acceptRows(rows, "BINANCE REST SNAPSHOT", true);
+        const latest = prices[prices.length - 1];
+        log("Loaded " + count + " recent one-second BTCUSDT candles from Binance.");
+        setConnection(ws && ws.readyState === WebSocket.OPEN ? "LIVE" : "REST BACKUP", ws && ws.readyState === WebSocket.OPEN ? "live" : "stale");
+        setDataDetail("REST snapshot loaded · " + new URL(base).hostname + " · " + prices.length + " candles buffered");
+        if (latest && opening === null) {
+          log("Current round opening was not fully present in the downloaded history. The next boundary will be locked live.");
+        }
+        return true;
+      } catch (error) {
+        errors.push(base + ": " + (error && error.message ? error.message : String(error)));
+      }
+    }
+    lastRestError = errors.join(" | ");
+    setConnection("DATA SOURCE ERROR", "error");
+    setDataDetail("REST history failed: " + lastRestError);
+    log("Could not load Binance REST history. The WebSocket feeds will still be tried.");
+    return false;
+  }
+
+  function scheduleReconnect(delay) {
+    if (paused || reconnectTimer) return;
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      connect();
+    }, delay || 1800);
+  }
+
+  function connect() {
+    if (paused) return;
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
+    if (connectTimer) {
+      clearTimeout(connectTimer);
+      connectTimer = null;
+    }
+
+    const url = WS_URLS[wsIndex % WS_URLS.length];
+    wsIndex = (wsIndex + 1) % WS_URLS.length;
+    let socket;
+    try {
+      socket = new WebSocket(url);
+    } catch (error) {
+      lastSocketError = error && error.message ? error.message : "WebSocket construction failed";
+      setConnection("TRYING BACKUP FEED", "stale");
+      setDataDetail("Could not open " + new URL(url).hostname + " · " + lastSocketError);
+      scheduleReconnect(700);
+      return;
+    }
+
+    ws = socket;
+    setConnection("CONNECTING TO BINANCE", "stale");
+    setDataDetail("Trying " + new URL(url).hostname + " · endpoint " + (wsIndex) + "/" + WS_URLS.length);
+
+    connectTimer = setTimeout(() => {
+      if (ws === socket && socket.readyState === WebSocket.CONNECTING) {
+        lastSocketError = "Connection timed out";
+        try { socket.close(); } catch (_) {}
+      }
+    }, 7000);
+
+    socket.onopen = () => {
+      if (ws !== socket) return;
+      if (connectTimer) clearTimeout(connectTimer);
+      connectTimer = null;
+      wsOpenedAt = Date.now();
+      lastSocketError = "";
+      setConnection("WEBSOCKET CONNECTED", "live");
+      setDataDetail(new URL(url).hostname + " · waiting for first one-second candle");
+    };
+
+    socket.onmessage = event => {
+      if (ws !== socket) return;
+      let message;
+      try { message = JSON.parse(event.data); } catch (_) { return; }
+      const payload = message && message.data ? message.data : message;
+      const k = payload && payload.k;
+      if (!k) return;
+
+      const time = Number(k.t);
+      const price = Number(k.c);
+      if (!Number.isFinite(time) || !Number.isFinite(price) || price <= 0) return;
+      lastWsMessageAt = Date.now();
+      lastDataReceivedAt = lastWsMessageAt;
+
+      if (paused) return;
+      if (prices.length && time < prices[prices.length - 1].time - 5000) return;
+
+      const index = prices.findIndex(x => x.time === time);
+      if (index >= 0) prices[index].price = price;
+      else prices.push({time, price});
+      prices.sort((a, b) => a.time - b.time);
+      if (prices.length > HISTORY_LIMIT) prices.splice(0, prices.length - HISTORY_LIMIT);
+
+      const newMarket = refreshMarketReference(false);
+      lastDataSource = "BINANCE WEBSOCKET · " + new URL(url).hostname;
+      update(newMarket, lastDataSource);
+      setConnection("LIVE · BINANCE", "live");
+    };
+
+    socket.onerror = () => {
+      if (ws !== socket) return;
+      lastSocketError = "WebSocket connection failed";
+      setConnection("SWITCHING FEED", "stale");
+      try { socket.close(); } catch (_) {}
+    };
+
+    socket.onclose = () => {
+      if (ws !== socket) return;
+      if (connectTimer) clearTimeout(connectTimer);
+      connectTimer = null;
+      if (!paused) {
+        setConnection("RECONNECTING", "stale");
+        setDataDetail("WebSocket unavailable · trying another Binance endpoint; REST backup remains active");
+        scheduleReconnect(900);
+      }
+    };
+  }
+
+  async function pollRestBackup() {
+    if (paused || restBusy || !restBase) return;
+    if (lastWsMessageAt && Date.now() - lastWsMessageAt < 4500) return;
+    restBusy = true;
+    try {
+      let rows;
+      try {
+        rows = await fetchKlines(restBase, 3, 4500);
+      } catch (firstError) {
+        const otherIndex = restBaseIndex === 0 ? 1 : 0;
+        const otherBase = REST_BASES[otherIndex];
+        rows = await fetchKlines(otherBase, 3, 4500);
+        restBase = otherBase;
+        restBaseIndex = otherIndex;
+      }
+      acceptRows(rows, "BINANCE REST LIVE BACKUP", false);
+      if (!lastWsMessageAt || Date.now() - lastWsMessageAt > 4500) {
+        setConnection("REST BACKUP · UPDATING", "stale");
+        setDataDetail("WebSocket not delivering candles · REST polling " + new URL(restBase).hostname + " every 1 second");
+      }
+    } catch (error) {
+      lastRestError = error && error.message ? error.message : String(error);
+      if (!lastDataReceivedAt || Date.now() - lastDataReceivedAt > 6000) {
+        setConnection("NO LIVE DATA", "error");
+        setDataDetail("Binance WebSocket and REST backup unavailable · " + lastRestError);
+      }
+    } finally {
+      restBusy = false;
+    }
   }
 
   function timer() {
     const now = Date.now();
     const currentBoundary = Math.floor(now / MARKET_MS) * MARKET_MS;
-    const next = currentBoundary + MARKET_MS;
-    const remaining = Math.max(0, next - now);
+    const remaining = Math.max(0, currentBoundary + MARKET_MS - now);
     const seconds = Math.ceil(remaining / 1000);
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
 
     $("countdown").textContent =
       String(minutes).padStart(2, "0") + ":" + String(secs).padStart(2, "0");
-
     const elapsed = Math.floor((now - currentBoundary) / 1000);
-    $("marketNumber").textContent = elapsed + " sec elapsed · round starts " +
+    $("marketNumber").textContent = elapsed + " sec elapsed · round started " +
       new Date(currentBoundary).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit"});
     $("marketClock").textContent = "UTC " + new Date(now).toISOString().slice(11, 19);
   }
 
   function drawChart() {
     const canvas = $("chart");
+    if (!canvas) return;
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;
     const rect = canvas.getBoundingClientRect();
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     if (!rect.width || !rect.height) return;
@@ -418,11 +604,9 @@ button{font:inherit}
       canvas.width = width;
       canvas.height = height;
     }
-
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const w = rect.width, h = rect.height;
     ctx.clearRect(0, 0, w, h);
-
     ctx.strokeStyle = "rgba(170,155,205,.10)";
     ctx.lineWidth = 1;
     for (let i = 1; i <= 4; i++) {
@@ -432,7 +616,6 @@ button{font:inherit}
       ctx.lineTo(w, y);
       ctx.stroke();
     }
-
     if (chartValues.length < 2) {
       ctx.fillStyle = "#77718d";
       ctx.font = "11px system-ui";
@@ -448,7 +631,6 @@ button{font:inherit}
       if (Number.isFinite(v.opening)) values.push(v.opening);
     });
     if (!values.length) return;
-
     let min = Math.min.apply(null, values);
     let max = Math.max.apply(null, values);
     let range = max - min;
@@ -460,10 +642,10 @@ button{font:inherit}
     const x = i => 9 + i / Math.max(1, chartValues.length - 1) * (w - 18);
     const y = value => h - 12 - (value - min) / range * (h - 24);
 
-    function drawLine(key, color, width) {
+    function drawLine(key, color, lineWidth) {
       ctx.beginPath();
       ctx.strokeStyle = color;
-      ctx.lineWidth = width;
+      ctx.lineWidth = lineWidth;
       ctx.lineJoin = "round";
       ctx.lineCap = "round";
       let drawing = false;
@@ -474,7 +656,6 @@ button{font:inherit}
       });
       ctx.stroke();
     }
-
     drawLine("opening", "#e8edf7", 1.5);
     drawLine("twap", "#ffad42", 2.2);
     drawLine("spot", "#42a5ff", 1.8);
@@ -486,9 +667,11 @@ button{font:inherit}
       return;
     }
     try {
-      const result = await Notification.requestPermission();
-      $("alerts").textContent = result === "granted" ? "ALERTS ENABLED" : "ALERTS " + result.toUpperCase();
-      if (result === "granted") log("Browser notifications enabled.");
+      notificationPermission = await window.Notification.requestPermission();
+      $("alerts").textContent = notificationPermission === "granted"
+        ? "ALERTS ENABLED"
+        : "ALERTS " + notificationPermission.toUpperCase();
+      if (notificationPermission === "granted") log("Browser notifications enabled.");
     } catch (_) {
       alert("Could not request notification permission.");
     }
@@ -498,56 +681,68 @@ button{font:inherit}
     paused = !paused;
     $("pause").textContent = paused ? "RESUME TRACKING" : "PAUSE TRACKING";
     if (paused) {
-      log("Tracking paused. Incoming candles are not being recorded.");
+      log("Tracking paused.");
+      setConnection("PAUSED", "stale");
       $("roundState").textContent = "TRACKING PAUSED";
     } else {
-      prices.length = 0;
-      twap = null;
-      lastSignal = "";
-      roundReferenceUnavailable = true;
-      log("Tracking resumed. Rebuilding the 60-second window; opening will lock on the next eligible round.");
-      $("roundState").textContent = "REBUILDING 60S WINDOW";
-      update(false);
+      log("Tracking resumed. Syncing a fresh Binance snapshot…");
+      setConnection("RESYNCING", "stale");
+      bootstrapHistory();
     }
   });
 
   $("reset").addEventListener("click", () => {
     prices.length = 0;
     chartValues = [];
+    spot = null;
     twap = null;
     opening = null;
-    lastMarket = Math.floor(Date.now() / MARKET_MS) * MARKET_MS;
-    marketStart = lastMarket;
+    lastMarket = null;
+    marketStart = null;
     lastSignal = "";
-    roundReferenceUnavailable = true;
+    lastCandleTime = null;
     events = [];
     $("events").textContent = "";
-    log("Tracker reset. Waiting for the next five-minute boundary to establish an opening reference.");
+    $("spot").textContent = "--";
+    $("twap").textContent = "LOADING";
     $("opening").textContent = "WAITING";
     $("difference").textContent = "--";
     $("difference").className = "difference";
-    $("percentage").textContent = "Waiting for next five-minute opening";
+    $("percentage").textContent = "Rebuilding candle history";
     $("direction").textContent = "WAITING";
     $("direction").className = "direction";
+    log("Tracker reset. Downloading a fresh candle history.");
     drawChart();
+    bootstrapHistory();
   });
 
   setInterval(timer, 250);
   setInterval(() => {
-    if (paused) {
-      setConnection("PAUSED", "stale");
-      return;
+    if (paused) return;
+    const now = Date.now();
+    if (ws && ws.readyState === WebSocket.OPEN &&
+        now - Math.max(lastWsMessageAt, wsOpenedAt) > 8000) {
+      lastSocketError = "Connected but no candle messages arrived";
+      try { ws.close(); } catch (_) {}
     }
-    if (lastTick && Date.now() - lastTick > 5000) {
-      setConnection("STALE DATA", "stale");
-    } else if (!lastTick && connectedOnce && ws && ws.readyState === WebSocket.OPEN) {
-      setConnection("LIVE · WAITING FOR CANDLES", "live");
+    if (!lastWsMessageAt || now - lastWsMessageAt > 4500) pollRestBackup();
+    if (lastWsMessageAt && now - lastWsMessageAt <= 4500) {
+      setConnection("LIVE · BINANCE", "live");
+    } else if (lastDataReceivedAt && now - lastDataReceivedAt <= 6000) {
+      setConnection("REST BACKUP · LIVE", "stale");
+    } else if ((!lastDataReceivedAt || now - lastDataReceivedAt > 6000) && lastRestError) {
+      setConnection("NO LIVE DATA", "error");
+      setDataDetail("Last REST error: " + lastRestError + " · WS: " + (lastSocketError || "reconnecting"));
     }
   }, 1000);
 
   window.addEventListener("resize", drawChart);
-  connect();
+  setConnection("LOADING DATA", "stale");
+  setDataDetail("Starting REST history download and WebSocket connection…");
   timer();
+  connect();
+  bootstrapHistory();
+  restTimer = setInterval(pollRestBackup, 1000);
 })();
 </script>
 </body>

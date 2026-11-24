@@ -199,6 +199,7 @@ button{font:inherit}
   let restBase = null;
   let restBaseIndex = 0;
   let restBusy = false;
+  let lastBootstrapAttemptAt = 0;
   let restTimer = null;
   let reconnectTimer = null;
   let connectTimer = null;
@@ -523,8 +524,10 @@ button{font:inherit}
   }
 
   async function bootstrapHistory() {
-    if (restBusy) return false;
+    const attemptAt = Date.now();
+    if (restBusy || attemptAt - lastBootstrapAttemptAt < 10000) return false;
     restBusy = true;
+    lastBootstrapAttemptAt = attemptAt;
     setConnection("LOADING RECENT CANDLES", "stale");
     setDataDetail("Loading a recent 1-second candle history before enabling the live feed…");
     const errors = [];
@@ -550,6 +553,12 @@ button{font:inherit}
       }
     }
     lastRestError = errors.join(" | ");
+    if (coinbaseActive && Date.now() - coinbaseLastAt < 10000) {
+      setConnection("COINBASE BACKUP · LIVE", "stale");
+      setDataDetail("Binance REST unavailable · Coinbase BTC-USD backup is updating the tracker.");
+      restBusy = false;
+      return false;
+    }
     setConnection("DATA SOURCE ERROR", "error");
     setDataDetail("REST history failed: " + lastRestError);
     log("Could not load Binance REST history. The WebSocket feeds will still be tried.");
@@ -808,6 +817,7 @@ button{font:inherit}
     } else {
       log("Tracking resumed. Syncing a fresh Binance snapshot…");
       setConnection("RESYNCING", "stale");
+      lastBootstrapAttemptAt = 0;
       bootstrapHistory();
     }
   });
@@ -834,6 +844,7 @@ button{font:inherit}
     $("direction").className = "direction";
     log("Tracker reset. Downloading a fresh candle history.");
     drawChart();
+    lastBootstrapAttemptAt = 0;
     bootstrapHistory();
   });
 

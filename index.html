@@ -431,6 +431,7 @@ button{font:inherit}
         if (latest && opening === null) {
           log("Current round opening was not fully present in the downloaded history. The next boundary will be locked live.");
         }
+        restBusy = false;
         return true;
       } catch (error) {
         errors.push(base + ": " + (error && error.message ? error.message : String(error)));

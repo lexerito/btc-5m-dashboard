@@ -180,7 +180,7 @@ button{font:inherit}
   const $ = id => document.getElementById(id);
   const WINDOW_SECONDS = 60;
   const MARKET_MS = 5 * 60 * 1000;
-  const HISTORY_LIMIT = 240;
+  const HISTORY_LIMIT = 420;
   const prices = [];
   let ws = null;
   let wsIndex = 0;
@@ -418,7 +418,7 @@ button{font:inherit}
       const index = (restBaseIndex + i) % REST_BASES.length;
       const base = REST_BASES[index];
       try {
-        const rows = await fetchKlines(base, 180, 6500);
+        const rows = await fetchKlines(base, 420, 6500);
         restBase = base;
         restBaseIndex = index;
         const count = acceptRows(rows, "BINANCE REST SNAPSHOT", true);

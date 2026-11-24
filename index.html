@@ -26,13 +26,13 @@ button{font:inherit}
 .card-top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 18px;border-bottom:1px solid var(--line);background:#0b0a13}
 .eyebrow{font-size:9px;font-weight:950;letter-spacing:.16em;color:#a994ca}
 .round-meta{text-align:right;min-width:0}.round-state{font-size:9px;font-weight:900;letter-spacing:.09em;color:#8d89a5}.round-meta small{display:block;margin-top:5px;color:#706c83;font-size:8px;line-height:1.35;max-width:320px;overflow-wrap:anywhere}
-.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;padding:14px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;padding:14px}
 .metric{min-width:0;padding:13px 14px;border:1px solid #302d41;border-radius:12px;background:linear-gradient(145deg,#141321,#0c0c15)}
 .metric small{display:block;color:#9290aa;font-size:9px;font-weight:900;letter-spacing:.12em}
 .metric strong{display:block;margin-top:9px;font-size:clamp(19px,3.3vw,28px);font-weight:950;letter-spacing:-.04em;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .metric.spot strong{color:var(--blue)}
 .metric.twap strong{color:var(--orange)}
-.metric.open strong{color:#e7e4f2}
+.metric.open strong{color:#e7e4f2}.metric.weighted strong{color:#c59aff}
 .metric span{display:block;margin-top:5px;color:#6f6c84;font-size:9px}
 .hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;padding:16px 18px 18px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:linear-gradient(100deg,#100f1c,#171025 52%,#0d111b)}
 .hero-label{color:#9d94b3;font-size:9px;font-weight:950;letter-spacing:.16em}
@@ -112,6 +112,11 @@ button{font:inherit}
         <strong id="opening">WAITING</strong>
         <span>Locked at the five-minute boundary</span>
       </div>
+      <div class="metric weighted">
+        <small>WEIGHTED CLOSE PRICE</small>
+        <strong id="weightedClose">--</strong>
+        <span id="weightedDetail">H + L + 2×C ÷ 4</span>
+      </div>
     </section>
 
     <section class="hero">
@@ -140,6 +145,7 @@ button{font:inherit}
         <span><i style="background:#42a5ff"></i>SPOT</span>
         <span><i style="background:#ffad42"></i>60S TWAP</span>
         <span><i style="background:#e8edf7"></i>OPENING</span>
+        <span><i style="background:#c59aff"></i>WEIGHTED CLOSE</span>
       </div>
     </div>
     <canvas id="chart" aria-label="BTC spot, rolling 60-second TWAP and opening TWAP chart"></canvas>
@@ -158,7 +164,8 @@ button{font:inherit}
   </section>
 
   <div class="note">
-    <b>How this tracker works:</b> it averages the latest 60 unique one-second Binance BTCUSDT candle closes. At a five-minute UTC boundary, it locks that rolling average as the round's opening reference. UP means the current rolling average is at or above that opening reference; DOWN means it is below it.
+    <b>Weighted Close Price:</b> each one-second candle is calculated as (high + low + 2 × close) ÷ 4. The purple line shows the value; its status compares it with a five-candle average to highlight short-term changes. This is the standard public Weighted Close formula, not copied BasisCharts code.
+    <br><b>How this tracker works:</b> it averages the latest 60 unique one-second Binance BTCUSDT candle closes. At a five-minute UTC boundary, it locks that rolling average as the round's opening reference. UP means the current rolling average is at or above that opening reference; DOWN means it is below it.
     <b>Data sources:</b> Binance BTCUSDT is primary. If Binance cannot be reached, Coinbase BTC-USD is sampled once per second as a backup and is clearly labelled. Switching sources resets the sample buffer; the opening reference is established at the next eligible five-minute boundary.<br><b>Important:</b> neither spot feed is Polymarket's Chainlink settlement TWAP. This tracker does not guarantee the market outcome.
   </div>
 </div>
@@ -349,8 +356,8 @@ button{font:inherit}
 
     const candleTime = Math.floor(now / 1000) * 1000;
     const existing = prices.findIndex(item => item.time === candleTime);
-    if (existing >= 0) prices[existing].price = coinbasePrice;
-    else prices.push({time:candleTime, price:coinbasePrice});
+    if (existing >= 0) Object.assign(prices[existing], {price:coinbasePrice, high:coinbasePrice, low:coinbasePrice, weighted:coinbasePrice});
+    else prices.push({time:candleTime, price:coinbasePrice, high:coinbasePrice, low:coinbasePrice, weighted:coinbasePrice});
     prices.sort((a, b) => a.time - b.time);
     if (prices.length > HISTORY_LIMIT) prices.splice(0, prices.length - HISTORY_LIMIT);
 
@@ -383,6 +390,7 @@ button{font:inherit}
         time:item.time,
         spot:item.price,
         twap:exactWindowEndingAt(item.time),
+        weighted:Number.isFinite(item.weighted) ? item.weighted : item.price,
         opening:opening !== null && marketStart !== null && item.time >= marketStart ? opening : null
       });
     }
@@ -397,6 +405,13 @@ button{font:inherit}
     twap = latest ? exactWindowEndingAt(latest.time) : null;
 
     if (spot !== null) $("spot").textContent = money(spot);
+    const latestWeighted = latest && Number.isFinite(latest.weighted) ? latest.weighted : spot;
+    const weightedWindow = prices.slice(-5).map(item => Number.isFinite(item.weighted) ? item.weighted : item.price);
+    const weightedSmooth = weightedWindow.length ? weightedWindow.reduce((sum, value) => sum + value, 0) / weightedWindow.length : latestWeighted;
+    $("weightedClose").textContent = money(latestWeighted);
+    const weightedUp = latestWeighted >= weightedSmooth;
+    $("weightedDetail").textContent = (weightedUp ? "▲ ABOVE" : "▼ BELOW") + " 5S WEIGHTED BASE";
+    $("weightedDetail").style.color = weightedUp ? "var(--green)" : "var(--red)";
     $("twap").textContent = twap === null ? "COLLECTING" : money(twap);
     $("twapDetail").textContent = prices.length + " stored candles · " +
       (twap === null ? "need 60 consecutive seconds" : "60/60 one-second candles ready");
@@ -471,8 +486,12 @@ button{font:inherit}
     if (!Array.isArray(rows)) return [];
     return rows.map(row => ({
       time:Number(Array.isArray(row) ? row[0] : row.time),
+      open:Number(Array.isArray(row) ? row[1] : row.open),
+      high:Number(Array.isArray(row) ? row[2] : row.high),
+      low:Number(Array.isArray(row) ? row[3] : row.low),
       price:Number(Array.isArray(row) ? row[4] : row.price)
-    })).filter(x => Number.isFinite(x.time) && Number.isFinite(x.price) && x.price > 0);
+    })).filter(x => Number.isFinite(x.time) && Number.isFinite(x.price) && x.price > 0)
+      .map(x => ({...x, weighted:(Number.isFinite(x.high) && Number.isFinite(x.low) ? (x.high + x.low + 2*x.price)/4 : x.price)}));
   }
 
   function acceptRows(rows, source, isSnapshot) {
@@ -629,7 +648,10 @@ button{font:inherit}
 
       const time = Number(k.t);
       const price = Number(k.c);
+      const high = Number(k.h);
+      const low = Number(k.l);
       if (!Number.isFinite(time) || !Number.isFinite(price) || price <= 0) return;
+      const weighted = Number.isFinite(high) && Number.isFinite(low) ? (high + low + 2*price)/4 : price;
       lastWsMessageAt = Date.now();
       lastDataReceivedAt = lastWsMessageAt;
 
@@ -638,8 +660,8 @@ button{font:inherit}
       if (prices.length && time < prices[prices.length - 1].time - 5000) return;
 
       const index = prices.findIndex(x => x.time === time);
-      if (index >= 0) prices[index].price = price;
-      else prices.push({time, price});
+      if (index >= 0) Object.assign(prices[index], {price, high, low, weighted});
+      else prices.push({time, price, high, low, weighted});
       prices.sort((a, b) => a.time - b.time);
       if (prices.length > HISTORY_LIMIT) prices.splice(0, prices.length - HISTORY_LIMIT);
 
@@ -789,6 +811,7 @@ button{font:inherit}
     drawLine("opening", "#e8edf7", 1.5);
     drawLine("twap", "#ffad42", 2.2);
     drawLine("spot", "#42a5ff", 1.8);
+    drawLine("weighted", "#c59aff", 2.1);
   }
 
   $("alerts").addEventListener("click", async () => {

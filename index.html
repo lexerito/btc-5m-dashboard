@@ -92,7 +92,7 @@ button{font:inherit}
 
   <main class="card">
     <div class="card-top">
-      <div class="eyebrow">BINANCE BTCUSDT · LIVE SPOT</div>
+      <div class="eyebrow">BTC SPOT · BINANCE PRIMARY / COINBASE BACKUP</div>
       <div class="round-meta"><div class="round-state" id="roundState">WAITING FOR DATA</div><small id="dataDetail">Trying Binance market-data connections…</small></div>
     </div>
 
@@ -159,7 +159,7 @@ button{font:inherit}
 
   <div class="note">
     <b>How this tracker works:</b> it averages the latest 60 unique one-second Binance BTCUSDT candle closes. At a five-minute UTC boundary, it locks that rolling average as the round's opening reference. UP means the current rolling average is at or above that opening reference; DOWN means it is below it.
-    <br><b>Important:</b> this is a Binance spot indicator based on your supplied logic. It is not Polymarket's Chainlink settlement TWAP and does not guarantee the market outcome.
+    <b>Data sources:</b> Binance BTCUSDT is primary. If Binance cannot be reached, Coinbase BTC-USD is sampled once per second as a backup and is clearly labelled. Switching sources resets the sample buffer; the opening reference is established at the next eligible five-minute boundary.<br><b>Important:</b> neither spot feed is Polymarket's Chainlink settlement TWAP. This tracker does not guarantee the market outcome.
   </div>
 </div>
 
@@ -183,6 +183,11 @@ button{font:inherit}
   const HISTORY_LIMIT = 420;
   const prices = [];
   let ws = null;
+  let coinbaseWs = null;
+  let coinbasePrice = null;
+  let coinbaseLastAt = 0;
+  let coinbaseActive = false;
+  let coinbaseReconnectTimer = null;
   let wsIndex = 0;
   let wsOpenedAt = 0;
   let lastWsMessageAt = 0;
@@ -249,6 +254,101 @@ button{font:inherit}
       if (window.Notification) new window.Notification("BTC 5M TWAP Tracker", {body:message});
     } catch (_) {}
   }
+
+  function clearCoinbaseForBinance() {
+    if (!coinbaseActive) return;
+    coinbaseActive = false;
+    prices.length = 0;
+    chartValues = [];
+    spot = null;
+    twap = null;
+    opening = null;
+    marketStart = null;
+    lastMarket = null;
+    lastSignal = "";
+    log("Binance data restored · switching back from the Coinbase backup feed.");
+  }
+
+  function connectCoinbaseBackup() {
+    if (paused || (coinbaseWs && (coinbaseWs.readyState === WebSocket.OPEN ||
+        coinbaseWs.readyState === WebSocket.CONNECTING))) return;
+    let socket;
+    try {
+      socket = new WebSocket("wss://advanced-trade-ws.coinbase.com");
+    } catch (_) {
+      return;
+    }
+    coinbaseWs = socket;
+    socket.onopen = () => {
+      if (coinbaseWs !== socket) return;
+      try {
+        socket.send(JSON.stringify({type:"subscribe", product_ids:["BTC-USD"], channel:"ticker"}));
+        socket.send(JSON.stringify({type:"subscribe", channel:"heartbeats"}));
+      } catch (_) {}
+      setDataDetail("Binance unavailable · waiting for public Coinbase BTC-USD backup ticker");
+    };
+    socket.onmessage = event => {
+      if (coinbaseWs !== socket) return;
+      let message;
+      try { message = JSON.parse(event.data); } catch (_) { return; }
+      if (message.channel !== "ticker" || !Array.isArray(message.events)) return;
+      for (const item of message.events) {
+        for (const ticker of (item.tickers || [])) {
+          if (ticker.product_id !== "BTC-USD") continue;
+          const price = Number(ticker.price);
+          if (Number.isFinite(price) && price > 0) {
+            coinbasePrice = price;
+            coinbaseLastAt = Date.now();
+          }
+        }
+      }
+    };
+    socket.onerror = () => {
+      try { socket.close(); } catch (_) {}
+    };
+    socket.onclose = () => {
+      if (coinbaseWs !== socket) return;
+      if (!paused && !coinbaseReconnectTimer) {
+        coinbaseReconnectTimer = setTimeout(() => {
+          coinbaseReconnectTimer = null;
+          connectCoinbaseBackup();
+        }, 3000);
+      }
+    };
+  }
+
+  function sampleCoinbaseBackup() {
+    if (paused || !Number.isFinite(coinbasePrice) || Date.now() - coinbaseLastAt > 10000) return;
+    const now = Date.now();
+    if (lastDataSource.indexOf("BINANCE") === 0 && now - lastDataReceivedAt < 7000) return;
+
+    if (!coinbaseActive) {
+      coinbaseActive = true;
+      prices.length = 0;
+      chartValues = [];
+      spot = null;
+      twap = null;
+      opening = null;
+      marketStart = null;
+      lastMarket = null;
+      lastSignal = "";
+      log("Binance feeds unavailable · using Coinbase BTC-USD, sampled once per second as a backup.");
+    }
+
+    const candleTime = Math.floor(now / 1000) * 1000;
+    const existing = prices.findIndex(item => item.time === candleTime);
+    if (existing >= 0) prices[existing].price = coinbasePrice;
+    else prices.push({time:candleTime, price:coinbasePrice});
+    prices.sort((a, b) => a.time - b.time);
+    if (prices.length > HISTORY_LIMIT) prices.splice(0, prices.length - HISTORY_LIMIT);
+
+    const newMarket = refreshMarketReference(false);
+    lastDataReceivedAt = now;
+    lastDataSource = "COINBASE BACKUP · BTC-USD · 1S SAMPLES";
+    update(newMarket, lastDataSource);
+    setConnection("COINBASE BACKUP · LIVE", "stale");
+  }
+
 
   function exactWindowEndingAt(endTime) {
     const firstTime = endTime - (WINDOW_SECONDS - 1) * 1000;
@@ -364,6 +464,7 @@ button{font:inherit}
   }
 
   function acceptRows(rows, source, isSnapshot) {
+    clearCoinbaseForBinance();
     const clean = normalizeRows(rows);
     if (!clean.length) throw new Error("Binance returned no valid BTCUSDT candles.");
     if (isSnapshot) {
@@ -513,6 +614,7 @@ button{font:inherit}
       lastDataReceivedAt = lastWsMessageAt;
 
       if (paused) return;
+      clearCoinbaseForBinance();
       if (prices.length && time < prices[prices.length - 1].time - 5000) return;
 
       const index = prices.findIndex(x => x.time === time);
@@ -734,6 +836,8 @@ button{font:inherit}
       try { ws.close(); } catch (_) {}
     }
     if (!lastWsMessageAt || now - lastWsMessageAt > 4500) pollRestBackup();
+    if (!lastDataReceivedAt || now - lastDataReceivedAt > 8000) connectCoinbaseBackup();
+    sampleCoinbaseBackup();
     if (lastWsMessageAt && now - lastWsMessageAt <= 4500) {
       setConnection("LIVE · BINANCE", "live");
     } else if (lastDataReceivedAt && now - lastDataReceivedAt <= 6000) {

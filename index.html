@@ -863,7 +863,7 @@ button{font:inherit}
     if (lastWsMessageAt && now - lastWsMessageAt <= 4500) {
       setConnection("LIVE · BINANCE", "live");
     } else if (lastDataReceivedAt && now - lastDataReceivedAt <= 6000) {
-      setConnection("REST BACKUP · LIVE", "stale");
+      setConnection(lastDataSource.indexOf("COINBASE BACKUP") === 0 ? "COINBASE BACKUP · LIVE" : "REST BACKUP · LIVE", "stale");
     } else if ((!lastDataReceivedAt || now - lastDataReceivedAt > 6000) && lastRestError) {
       setConnection("NO LIVE DATA", "error");
       setDataDetail("Last REST error: " + lastRestError + " · WS: " + (lastSocketError || "reconnecting"));

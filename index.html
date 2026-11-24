@@ -188,6 +188,7 @@ button{font:inherit}
   let coinbaseLastAt = 0;
   let coinbaseActive = false;
   let coinbaseReconnectTimer = null;
+  let coinbaseConnectTimer = null;
   let wsIndex = 0;
   let wsOpenedAt = 0;
   let lastWsMessageAt = 0;
@@ -279,8 +280,16 @@ button{font:inherit}
       return;
     }
     coinbaseWs = socket;
+    if (coinbaseConnectTimer) clearTimeout(coinbaseConnectTimer);
+    coinbaseConnectTimer = setTimeout(() => {
+      if (coinbaseWs === socket && socket.readyState === WebSocket.CONNECTING) {
+        try { socket.close(); } catch (_) {}
+      }
+    }, 7000);
     socket.onopen = () => {
       if (coinbaseWs !== socket) return;
+      if (coinbaseConnectTimer) clearTimeout(coinbaseConnectTimer);
+      coinbaseConnectTimer = null;
       try {
         socket.send(JSON.stringify({type:"subscribe", product_ids:["BTC-USD"], channel:"ticker"}));
         socket.send(JSON.stringify({type:"subscribe", channel:"heartbeats"}));
@@ -308,6 +317,8 @@ button{font:inherit}
     };
     socket.onclose = () => {
       if (coinbaseWs !== socket) return;
+      if (coinbaseConnectTimer) clearTimeout(coinbaseConnectTimer);
+      coinbaseConnectTimer = null;
       if (!paused && !coinbaseReconnectTimer) {
         coinbaseReconnectTimer = setTimeout(() => {
           coinbaseReconnectTimer = null;

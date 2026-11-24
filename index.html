@@ -317,12 +317,12 @@ button{font:inherit}
   }
 
   function hasFullWindow() {
-    if (prices.length < 55) return false;
+    if (prices.length < WINDOW) return false;
     const first = prices[0].time;
     const last = prices[prices.length - 1].time;
-    if (last - first < 54000) return false;
+    if (last - first < (WINDOW - 1) * 1000) return false;
     for (let i = 1; i < prices.length; i++) {
-      if (prices[i].time - prices[i - 1].time > 2500) return false;
+      if (prices[i].time - prices[i - 1].time > 2000) return false;
     }
     return true;
   }

@@ -367,8 +367,8 @@ button{font:inherit}
     const clean = normalizeRows(rows);
     if (!clean.length) throw new Error("Binance returned no valid BTCUSDT candles.");
     if (isSnapshot) {
-      const merged = new Map(prices.map(x => [x.time, x.price]));
-      clean.forEach(x => merged.set(x.time, x.price));
+      const merged = new Map(clean.map(x => [x.time, x.price]));
+      prices.forEach(x => merged.set(x.time, x.price));
       prices.splice(0, prices.length, ...Array.from(merged, ([time, price]) => ({time, price}))
         .sort((a, b) => a.time - b.time).slice(-HISTORY_LIMIT));
     } else {
@@ -411,6 +411,8 @@ button{font:inherit}
   }
 
   async function bootstrapHistory() {
+    if (restBusy) return false;
+    restBusy = true;
     setConnection("LOADING RECENT CANDLES", "stale");
     setDataDetail("Loading a recent 1-second candle history before enabling the live feed…");
     const errors = [];
@@ -438,6 +440,7 @@ button{font:inherit}
     setConnection("DATA SOURCE ERROR", "error");
     setDataDetail("REST history failed: " + lastRestError);
     log("Could not load Binance REST history. The WebSocket feeds will still be tried.");
+    restBusy = false;
     return false;
   }
 
@@ -543,7 +546,11 @@ button{font:inherit}
   }
 
   async function pollRestBackup() {
-    if (paused || restBusy || !restBase) return;
+    if (paused || restBusy) return;
+    if (!restBase) {
+      bootstrapHistory();
+      return;
+    }
     if (lastWsMessageAt && Date.now() - lastWsMessageAt < 4500) return;
     restBusy = true;
     try {

@@ -946,7 +946,7 @@ button{font:inherit}
     try {
       if(flowSockets.binance && (flowSockets.binance.readyState===0||flowSockets.binance.readyState===1))return;
       flowState.binance="connecting";flowPaintStatus();
-      const ws=new WebSocket("wss://fstream.binance.com/ws/btcusdt@aggTrade");
+      const ws=new WebSocket("wss://fstream.binance.com/market/ws/btcusdt@aggTrade");
       flowSockets.binance=ws;
       ws.onopen=()=>{flowState.binance="live";flowPaintStatus();};
       ws.onmessage=(ev)=>{

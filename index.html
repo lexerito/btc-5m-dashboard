@@ -869,7 +869,7 @@ button{font:inherit}
   const flowStates = {binance:"connecting",bybit:"connecting",hyper:"connecting"};
   const flowPrices = {binance:null,bybit:null,hyper:null};
   const flowPriceAt = {binance:0,bybit:0,hyper:0};
-  let flowSavedAt = 0, flowRenderedAt = 0;
+  let flowSavedAt = 0, flowRenderedAt = 0, flowLastPingAt = 0, flowBackfillCount = 0;
 
   function flowFmt(n) {
     if (!Number.isFinite(n)) return "--";
@@ -1003,14 +1003,44 @@ button{font:inherit}
     ws.onerror=()=>{try{ws.close();}catch(_){}};
     ws.onclose=()=>{if(flowSockets.hyper!==ws)return;flowSockets.hyper=null;flowSetState("hyper","offline");flowRetry("hyper",flowConnectHyper);};
   }
+  async function flowBackfill() {
+    const jobs = [
+      (async () => {
+        const response = await fetch("https://fapi.binance.com/fapi/v1/aggTrades?symbol=BTCUSDT&limit=1000",{cache:"no-store"});
+        if(!response.ok) throw new Error("Binance recent trades HTTP "+response.status);
+        const rows = await response.json();
+        if(!Array.isArray(rows)) throw new Error("Unexpected Binance recent trades response");
+        rows.forEach(t=>flowIngest("binance",t.a,t.T,t.p,t.q,t.m===true?"sell":"buy"));
+        return rows.length;
+      })(),
+      (async () => {
+        const response = await fetch("https://api.bybit.com/v5/market/recent-trade?category=linear&symbol=BTCUSDT&limit=1000",{cache:"no-store"});
+        if(!response.ok) throw new Error("Bybit recent trades HTTP "+response.status);
+        const body = await response.json();
+        const rows = body && body.result && body.result.list;
+        if(!Array.isArray(rows)) throw new Error("Unexpected Bybit recent trades response");
+        rows.forEach(t=>flowIngest("bybit",t.execId,t.time,t.price,t.size,String(t.side).toLowerCase()));
+        return rows.length;
+      })()
+    ];
+    const results = await Promise.allSettled(jobs);
+    results.forEach(result=>{if(result.status==="fulfilled")flowBackfillCount+=result.value;});
+    if(flowBackfillCount){
+      $("flowChartFoot").textContent="Loaded "+flowBackfillCount.toLocaleString()+" recent public futures trades, then continuing live updates. This browser saves the flow history it collects.";
+      flowDraw();
+    }
+  }
   $("flowInterval").addEventListener("change",flowDraw);
   $("flowNetToggle").addEventListener("change",flowDraw);
-  flowRestore();flowDraw();flowConnectBinance();flowConnectBybit();flowConnectHyper();
+  flowRestore();flowDraw();flowConnectBinance();flowConnectBybit();flowConnectHyper();flowBackfill();
   setInterval(()=>{
     const now=Date.now();
     ["binance","bybit","hyper"].forEach(n=>{if(flowLastMessage[n]&&now-flowLastMessage[n]>12000&&flowStates[n]==="live"){flowSetState(n,"stale");const ws=flowSockets[n];if(ws&&ws.readyState===1){try{ws.close();}catch(_){}}}});
-    if(flowSockets.bybit&&flowSockets.bybit.readyState===1){try{flowSockets.bybit.send(JSON.stringify({op:"ping"}));}catch(_){}}
-    if(flowSockets.hyper&&flowSockets.hyper.readyState===1){try{flowSockets.hyper.send(JSON.stringify({method:"ping"}));}catch(_){}}
+    if(now-flowLastPingAt>=20000){
+      if(flowSockets.bybit&&flowSockets.bybit.readyState===1){try{flowSockets.bybit.send(JSON.stringify({op:"ping"}));}catch(_){}}
+      if(flowSockets.hyper&&flowSockets.hyper.readyState===1){try{flowSockets.hyper.send(JSON.stringify({method:"ping"}));}catch(_){}}
+      flowLastPingAt=now;
+    }
     flowSave();if(now-flowRenderedAt>350){flowRenderedAt=now;flowDraw();}
   },500);
   window.addEventListener("resize",flowDraw);

@@ -25,7 +25,7 @@ export default {
         return Response.json({ ok: false, error: "Not found" }, { status: 404, headers });
       }
       // Serve the existing dashboard and its static files from the same Worker.
-      return env.ASSETS.fetch(request);
+      return Response.json({ ok: false, error: "Not found" }, { status: 404, headers });
     }
     if (request.method !== "GET") {
       return Response.json({ ok: false, error: "Method not allowed" }, { status: 405, headers });

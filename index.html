@@ -226,7 +226,7 @@ button{font:inherit}
     <div class="flow-card-head">
       <div>
         <div class="flow-title">BTC FUTURES INFLOW / OUTFLOW</div>
-        <div class="flow-subtitle">LIVE TAKER BUY / SELL VOLUME · MULTI-EXCHANGE PUBLIC TRADE FEEDS</div>
+        <div class="flow-subtitle">COINGLASS AGGREGATED FUTURES TAKER BUY / SELL · BINANCE / BYBIT / OKX</div>
       </div>
       <div class="flow-status" id="flowStatus">CONNECTING FEEDS…</div>
     </div>
@@ -235,31 +235,31 @@ button{font:inherit}
       <span class="flow-control-label">ASSET</span><span class="flow-control-label" style="color:#e0dbea">BTC</span>
       <span class="flow-control-label">INTERVAL</span>
       <select class="flow-select" id="flowInterval" aria-label="Flow chart interval">
-        <option value="1m">1 minute</option><option value="5m" selected>5 minute</option><option value="15m">15 minute</option>
+        <option value="5m" selected>5 minute rolling</option><option value="15m">15 minute rolling</option><option value="1h">1 hour rolling</option>
       </select>
-      <label class="flow-toggle"><input type="checkbox" id="flowNetToggle"> Netflow</label>
+      <label class="flow-toggle"><input type="checkbox" id="flowNetToggle"> Netflow focus</label>
     </div>
     <div class="flow-stats">
-      <div class="flow-stat in"><small>TAKER BUY · INFLOW</small><strong id="flowIn">$0</strong></div>
-      <div class="flow-stat out"><small>TAKER SELL · OUTFLOW</small><strong id="flowOut">$0</strong></div>
+      <div class="flow-stat in"><small>COINGLASS TAKER BUY · INFLOW</small><strong id="flowIn">$0</strong></div>
+      <div class="flow-stat out"><small>COINGLASS TAKER SELL · OUTFLOW</small><strong id="flowOut">$0</strong></div>
       <div class="flow-stat net"><small>NET FLOW</small><strong id="flowNet">$0</strong></div>
-      <div class="flow-stat price"><small>BTC PERP PRICE</small><strong id="flowPrice">--</strong></div>
+      <div class="flow-stat price"><small>DATA SOURCE</small><strong id="flowPrice">COINGLASS</strong></div>
     </div>
     <div class="flow-chart-head">
-      <div class="chart-title" id="flowChartTitle">BTC FUTURES FLOW · LAST 5 HOURS</div>
-      <div class="flow-legend"><span><i style="background:#1bb99b"></i>INFLOW</span><span><i style="background:#ff425e"></i>OUTFLOW</span><span><i style="background:#f2c64b;height:2px"></i>BTC PRICE</span></div>
+      <div class="chart-title" id="flowChartTitle">COINGLASS BTC FUTURES FLOW · ROLLING 5M</div>
+      <div class="flow-legend"><span><i style="background:#1bb99b"></i>INFLOW</span><span><i style="background:#ff425e"></i>OUTFLOW</span></div>
     </div>
     <div class="flow-chart-wrap">
       <canvas id="flowChart" aria-label="Live Bitcoin futures inflow and outflow bars with BTC price line"></canvas>
       <div class="flow-tooltip" id="flowTooltip"></div>
     </div>
-    <div class="flow-chart-foot" id="flowChartFoot">Waiting for live futures trades. Current five-minute bar updates continuously as trades arrive.</div>
+    <div class="flow-chart-foot" id="flowChartFoot">Waiting for CoinGlass rolling-window snapshots.</div>
     <div class="flow-sources">
-      <span class="flow-source" id="flowBinance">BINANCE · CONNECTING</span>
-      <span class="flow-source" id="flowBybit">BYBIT · CONNECTING</span>
-      <span class="flow-source" id="flowHyper">HYPERLIQUID · CONNECTING</span>
+      <span class="flow-source" id="flowBinance">SOURCE · COINGLASS</span>
+      <span class="flow-source" id="flowBybit">EXCHANGES · BINANCE / BYBIT / OKX</span>
+      <span class="flow-source" id="flowHyper">WAITING FOR FIRST UPDATE</span>
     </div>
-    <div class="flow-chart-foot">Flow is calculated from taker trade notional (price × size): buyer-initiated trades count as inflow and seller-initiated trades count as outflow. This is a live three-venue estimate, not CoinGlass's complete proprietary exchange aggregation. The latest trade sample is backfilled on startup; earlier bars build while this dashboard remains open and are saved in this browser.</div>
+    <div class="flow-chart-foot">Source: CoinGlass futures netflow API aggregated across Binance, Bybit and OKX. Each plotted observation is a rolling-window snapshot, not a historical candle. The endpoint reports trailing 5m, 15m and 1h values; snapshots are polled every 15 seconds.</div>
   </section>
 
   <section class="events">
@@ -902,20 +902,11 @@ button{font:inherit}
   }
 
 
-  // Live BTC futures taker-flow estimate from public exchange WebSockets.
-  const FLOW_INTERVALS = {"1m":60000,"5m":300000,"15m":900000};
-  const FLOW_KEY = "btc5m-live-futures-flow-v1";
-  const FLOW_BARS = 60;
-  const flowSeries = {"1m":[],"5m":[],"15m":[]};
-  const flowMaps = {"1m":new Map(),"5m":new Map(),"15m":new Map()};
-  const flowSeen = new Set(), flowSeenOrder = [];
-  const flowSockets = {binance:null,bybit:null,hyper:null};
-  const flowReconnect = {binance:null,bybit:null,hyper:null};
-  const flowLastMessage = {binance:0,bybit:0,hyper:0};
-  const flowStates = {binance:"connecting",bybit:"connecting",hyper:"connecting"};
-  const flowPrices = {binance:null,bybit:null,hyper:null};
-  const flowPriceAt = {binance:0,bybit:0,hyper:0};
-  let flowSavedAt = 0, flowRenderedAt = 0, flowLastPingAt = 0, flowBackfillCount = 0;
+  // CoinGlass rolling futures netflow snapshots via the private Cloudflare Worker.
+  const COINGLASS_URL = "https://btc-5m-dashboard.barcodeuserlll.workers.dev/api/flow";
+  const FLOW_WINDOWS = ["5m","15m","1h"];
+  const flowHistory = [];
+  let flowSnapshot = null, flowBusy = false, flowLastSuccess = 0;
 
   function flowFmt(n) {
     if (!Number.isFinite(n)) return "--";
@@ -923,238 +914,85 @@ button{font:inherit}
     const v=a>=1e9?(a/1e9).toFixed(2)+"B":a>=1e6?(a/1e6).toFixed(2)+"M":a>=1e3?(a/1e3).toFixed(1)+"K":a.toFixed(0);
     return (n<0?"-$":"$")+v;
   }
-  function flowSetState(name,state) {
-    flowStates[name]=state;
-    const ids={binance:"flowBinance",bybit:"flowBybit",hyper:"flowHyper"};
-    const labels={binance:"BINANCE",bybit:"BYBIT",hyper:"HYPERLIQUID"};
-    const el=$(ids[name]);
-    if(el){el.className="flow-source"+(state==="live"?" live":state==="stale"?" stale":"");el.textContent=labels[name]+" · "+state.toUpperCase();}
-    const count=Object.keys(flowStates).filter(k=>flowStates[k]==="live").length;
-    const status=$("flowStatus");
-    if(status){status.className="flow-status "+(count===3?"live":count?"partial":"");status.textContent=count===3?"3 FEEDS LIVE":count+" / 3 FEEDS LIVE";}
+  function flowStatus(text,state) {
+    const el=$("flowStatus");
+    if(el){el.className="flow-status "+(state||"");el.textContent=text;}
   }
-  function flowDedup(id) {
-    if(!id)return true;
-    if(flowSeen.has(id))return false;
-    flowSeen.add(id);flowSeenOrder.push(id);
-    if(flowSeenOrder.length>15000){flowSeen.delete(flowSeenOrder.shift());}
-    return true;
-  }
-  function flowBucket(interval,time) {
-    const t=Math.floor(time/FLOW_INTERVALS[interval])*FLOW_INTERVALS[interval];
-    let b=flowMaps[interval].get(t);
-    if(!b){
-      b={t,inflow:0,outflow:0,price:null,priceRank:0,priceAt:0,trades:0};
-      flowMaps[interval].set(t,b);flowSeries[interval].push(b);flowSeries[interval].sort((a,c)=>a.t-c.t);
-      if(flowSeries[interval].length>260){flowSeries[interval].splice(0,flowSeries[interval].length-260).forEach(old=>flowMaps[interval].delete(old.t));}
-    }
-    return b;
-  }
-  function flowIngest(source,id,time,price,size,side) {
-    const t=Number(time),p=Number(price),q=Number(size);
-    if(!Number.isFinite(t)||!Number.isFinite(p)||!Number.isFinite(q)||p<=0||q<=0||(side!=="buy"&&side!=="sell"))return;
-    if(!flowDedup(source+":"+(id||[t,p,q,side].join(":"))))return;
-    const usd=p*q,rank=source==="binance"?3:source==="bybit"?2:1;
-    Object.keys(FLOW_INTERVALS).forEach(interval=>{
-      const b=flowBucket(interval,t);
-      if(side==="buy")b.inflow+=usd;else b.outflow+=usd;
-      b.trades++;
-      if(!Number.isFinite(b.price)||rank>=b.priceRank||t-b.priceAt>6000){b.price=p;b.priceRank=rank;b.priceAt=t;}
-    });
-    flowPrices[source]=p;flowPriceAt[source]=Date.now();flowLastMessage[source]=Date.now();flowSetState(source,"live");
-  }
-  function flowRestore() {
-    try{
-      const saved=JSON.parse(localStorage.getItem(FLOW_KEY)||"{}");
-      Object.keys(FLOW_INTERVALS).forEach(interval=>(Array.isArray(saved[interval])?saved[interval]:[]).slice(-260).forEach(x=>{
-        const t=Number(x.t),inflow=Number(x.inflow),outflow=Number(x.outflow),price=Number(x.price);
-        if(!Number.isFinite(t)||!Number.isFinite(inflow)||!Number.isFinite(outflow))return;
-        const b={t,inflow:Math.max(0,inflow),outflow:Math.max(0,outflow),price:Number.isFinite(price)&&price>0?price:null,priceRank:Number(x.priceRank)||0,priceAt:Number(x.priceAt)||0,trades:Number(x.trades)||0};
-        flowSeries[interval].push(b);flowMaps[interval].set(t,b);
-      }));
-    }catch(_){}
-  }
-  function flowSave() {
-    try{
-      if(Date.now()-flowSavedAt<5000)return;
-      flowSavedAt=Date.now();const data={};
-      Object.keys(FLOW_INTERVALS).forEach(k=>data[k]=flowSeries[k].slice(-240));
-      localStorage.setItem(FLOW_KEY,JSON.stringify(data));
-    }catch(_){}
-  }
-  function flowAxisMoney(value) {
-    const abs=Math.abs(value);
-    const n=abs>=1e9?(abs/1e9).toFixed(2)+"B":abs>=1e6?(abs/1e6).toFixed(0)+"M":abs>=1e3?(abs/1e3).toFixed(0)+"K":abs.toFixed(0);
-    return (value<0?"-$":"$")+n;
+  function flowWindow() {
+    const v=$("flowInterval").value;
+    return FLOW_WINDOWS.includes(v)?v:"5m";
   }
   function flowNiceCeil(value) {
     const v=Math.max(1,value),power=Math.pow(10,Math.floor(Math.log10(v))),scaled=v/power;
     const nice=scaled<=1?1:scaled<=2?2:scaled<=5?5:10;
     return nice*power;
   }
-  function flowRows(interval) {
-    const duration=FLOW_INTERVALS[interval],current=Math.floor(Date.now()/duration)*duration,rows=[];
-    for(let i=FLOW_BARS-1;i>=0;i--){const t=current-i*duration;rows.push(flowMaps[interval].get(t)||{t,inflow:0,outflow:0,price:null,trades:0});}
-    return {rows,current};
-  }
   function flowDraw() {
     const canvas=$("flowChart");if(!canvas)return;
     const ctx=canvas.getContext("2d");if(!ctx)return;
     const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return;
-    const dpr=Math.min(2,window.devicePixelRatio||1),pixelW=Math.round(rect.width*dpr),pixelH=Math.round(rect.height*dpr);
-    if(canvas.width!==pixelW||canvas.height!==pixelH){canvas.width=pixelW;canvas.height=pixelH;}
+    const dpr=Math.min(2,window.devicePixelRatio||1),pw=Math.round(rect.width*dpr),ph=Math.round(rect.height*dpr);
+    if(canvas.width!==pw||canvas.height!==ph){canvas.width=pw;canvas.height=ph;}
     ctx.setTransform(dpr,0,0,dpr,0,0);
     const w=rect.width,h=rect.height;ctx.clearRect(0,0,w,h);ctx.fillStyle="#050609";ctx.fillRect(0,0,w,h);
-    const interval=$("flowInterval").value;
-    const pack=flowRows(interval),rows=pack.rows,current=pack.current,netMode=$("flowNetToggle").checked;
-    const left=w<520?48:62,right=w-58,top=23,bottom=h-32;
-    const zero=top+(bottom-top)*.58,upper=zero-top,lower=bottom-zero;
-    const maxFlow=flowNiceCeil(Math.max(1,...rows.map(x=>Math.max(x.inflow,x.outflow,netMode?Math.abs(x.inflow-x.outflow):0))));
-    const step=(right-left)/rows.length,bw=Math.max(2,step*.68);
-    const yPos=value=>value>=0?zero-(value/maxFlow)*upper:zero+(-value/maxFlow)*lower;
-    const priceRows=rows.filter(x=>Number.isFinite(x.price)&&x.price>0);
-    let minP=priceRows.length?Math.min(...priceRows.map(x=>x.price)):0;
-    let maxP=priceRows.length?Math.max(...priceRows.map(x=>x.price)):0;
-    if(minP===maxP&&maxP>0){const pad=maxP*.001;minP-=pad;maxP+=pad;}
-    const priceY=value=>top+5+(maxP-value)/(maxP-minP||1)*(bottom-top-10);
-
-    // Subtle horizontal grid and left/right scales, similar to the reference terminal.
+    const interval=flowWindow(),rows=flowHistory.slice(-60),left=w<520?48:62,right=w-14,top=22,bottom=h-32;
+    const values=rows.map(x=>x.windows&&x.windows[interval]).filter(Boolean);
+    const max=Math.max(1,...values.map(x=>Math.max(Number(x.buyUsd)||0,Number(x.sellUsd)||0)));
+    const nice=flowNiceCeil(max),step=(right-left)/60,bw=Math.max(2,step*.68);
     ctx.font="10px system-ui";ctx.textBaseline="middle";
-    const tickYs=[top,top+(zero-top)*.5,zero,zero+(bottom-zero)*.5,bottom];
-    const tickValues=[maxFlow,maxFlow*.5,0,-maxFlow*.5,-maxFlow];
-    tickYs.forEach((y,i)=>{
-      ctx.strokeStyle=i===2?"#3a424c":"#1c232b";ctx.lineWidth=i===2?1:0.8;
-      ctx.setLineDash(i===2?[]:[3,4]);ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();ctx.setLineDash([]);
-      ctx.fillStyle="#89939e";ctx.textAlign="right";ctx.fillText(flowAxisMoney(tickValues[i]),left-8,y);
-      if(maxP>0){const ratio=(y-top)/(bottom-top),priceTick=maxP-(maxP-minP)*ratio;ctx.fillStyle="#89939e";ctx.textAlign="left";ctx.fillText("$"+priceTick.toLocaleString("en-US",{maximumFractionDigits:0}),right+8,y);}
+    [0,.25,.5,.75,1].forEach(f=>{
+      const y=bottom-f*(bottom-top);
+      ctx.strokeStyle="#202832";ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle="#89939e";ctx.textAlign="right";ctx.fillText(flowFmt(nice*f),left-8,y);
     });
-
-    // Positive taker-buy bars and negative taker-sell bars share a zero line.
-    rows.forEach((item,index)=>{
+    rows.forEach((snap,index)=>{
+      const d=snap.windows&&snap.windows[interval];if(!d)return;
       const x=left+index*step+(step-bw)/2;
-      if(netMode){
-        const net=item.inflow-item.outflow,yy=yPos(net);
-        ctx.fillStyle=net>=0?"#20b79a":"#f0445e";
-        ctx.fillRect(x,net>=0?yy:zero,bw,Math.max(1,Math.abs(zero-yy)));
-      }else{
-        const buyHeight=item.inflow/maxFlow*upper,sellHeight=item.outflow/maxFlow*lower;
-        ctx.fillStyle="#20b79a";ctx.fillRect(x,zero-buyHeight,bw,Math.max(0,buyHeight));
-        ctx.fillStyle="#f0445e";ctx.fillRect(x,zero,bw,Math.max(0,sellHeight));
-      }
+      const buy=Math.max(0,Number(d.buyUsd)||0),sell=Math.max(0,Number(d.sellUsd)||0);
+      ctx.fillStyle="#20b79a";ctx.fillRect(x,bottom-buy/nice*(bottom-top),bw,buy/nice*(bottom-top));
+      ctx.fillStyle="#f0445e";ctx.fillRect(x,bottom-sell/nice*(bottom-top),bw,sell/nice*(bottom-top));
     });
-
-    // Thin BTC price line uses the independent right-hand price scale.
-    if(priceRows.length>1){
-      ctx.beginPath();ctx.strokeStyle="#f0c43e";ctx.lineWidth=1.65;ctx.lineJoin="round";ctx.lineCap="round";
-      let drawing=false;
-      rows.forEach((item,index)=>{
-        if(!Number.isFinite(item.price)||item.price<=0){drawing=false;return;}
-        const x=left+index*step+step/2,y=priceY(item.price);
-        if(!drawing){ctx.moveTo(x,y);drawing=true;}else ctx.lineTo(x,y);
-      });
-      ctx.stroke();
-      const last=priceRows[priceRows.length-1];
-      ctx.fillStyle="#f0c43e";ctx.beginPath();ctx.arc(left+(rows.length-1)*step+step/2,priceY(last.price),2.6,0,Math.PI*2);ctx.fill();
-    }
-
-    // Time labels.
     ctx.font="9px system-ui";ctx.textAlign="center";ctx.textBaseline="alphabetic";ctx.fillStyle="#8a939e";
     const every=Math.max(1,Math.floor(rows.length/6));
-    rows.forEach((item,index)=>{if(index%every&&index!==rows.length-1)return;const label=new Date(item.t).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});ctx.fillText(label,left+index*step+step/2,h-10);});
-
-    const live=flowMaps[interval].get(current),buy=live?live.inflow:0,sell=live?live.outflow:0,net=buy-sell;
-    $("flowIn").textContent=flowFmt(buy);$("flowOut").textContent=flowFmt(sell);$("flowNet").textContent=flowFmt(net);
-    $("flowNet").style.color=net>0?"#20b79a":net<0?"#f0445e":"#dbe0e7";
-    const price=flowPrices.binance&&Date.now()-flowPriceAt.binance<10000?flowPrices.binance:flowPrices.bybit&&Date.now()-flowPriceAt.bybit<10000?flowPrices.bybit:flowPrices.hyper&&Date.now()-flowPriceAt.hyper<10000?flowPrices.hyper:null;
-    $("flowPrice").textContent=price?"$"+price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}):"--";
-    $("flowChartTitle").textContent="BTC FUTURES FLOW · LAST "+(interval==="1m"?"60 MINUTES":interval==="5m"?"5 HOURS":"15 HOURS");
-    $("flowChartFoot").textContent=live&&live.trades?"Current "+interval+" candle is live · "+live.trades.toLocaleString()+" trade prints in this bar. Hover over the chart for bar details.":"Waiting for trades in the current "+interval+" candle. The chart updates automatically without refreshing.";
+    rows.forEach((x,i)=>{if(i%every&&i!==rows.length-1)return;ctx.fillText(new Date(x.at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"}),left+i*step+step/2,h-10);});
+    const d=flowSnapshot&&flowSnapshot.windows&&flowSnapshot.windows[interval];
+    if(d){
+      $("flowIn").textContent=flowFmt(d.buyUsd);$("flowOut").textContent=flowFmt(d.sellUsd);$("flowNet").textContent=flowFmt(d.netUsd);
+      $("flowNet").style.color=d.netUsd>0?"#20b79a":d.netUsd<0?"#f0445e":"#dbe0e7";
+    }else{$("flowIn").textContent="--";$("flowOut").textContent="--";$("flowNet").textContent="--";}
+    $("flowPrice").textContent="LIVE API";
+    $("flowChartTitle").textContent="COINGLASS BTC FUTURES FLOW · "+interval.toUpperCase()+" ROLLING WINDOW SNAPSHOTS";
+    $("flowChartFoot").textContent=rows.length>1?"Each bar is a timestamped CoinGlass snapshot of the trailing "+interval+" window. Snapshots are sampled every 15 seconds; these are not exchange-native historical candles.":"Waiting for CoinGlass snapshots. New observations are collected every 15 seconds.";
   }
-  function flowHover(event){
-    const canvas=$("flowChart"),tooltip=$("flowTooltip"),wrap=canvas&&canvas.parentElement;
-    if(!canvas||!tooltip||!wrap)return;
-    const rect=canvas.getBoundingClientRect(),x=event.clientX-rect.left,y=event.clientY-rect.top,w=rect.width,h=rect.height;
-    const left=w<520?48:62,right=w-58;
-    if(x<left||x>right||y<12||y>h-25){tooltip.style.display="none";return;}
-    const interval=$("flowInterval").value,pack=flowRows(interval),rows=pack.rows;
-    const index=Math.max(0,Math.min(rows.length-1,Math.floor((x-left)/(right-left)*rows.length)));
-    const item=rows[index],price=Number.isFinite(item.price)?"$"+item.price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}):"—";
-    tooltip.innerHTML="<b>"+new Date(item.t).toLocaleString()+"</b><span class='tip-in'>Inflow: "+flowFmt(item.inflow)+"</span><br><span class='tip-out'>Outflow: -"+flowFmt(item.outflow).replace("-$","$")+"</span><br>Net: "+flowFmt(item.inflow-item.outflow)+"<br><span class='tip-price'>BTC Price: "+price+"</span>";
-    tooltip.style.display="block";
-    const tipW=tooltip.offsetWidth,tipH=tooltip.offsetHeight;
-    tooltip.style.left=Math.max(5,Math.min(w-tipW-5,x+14))+"px";
-    tooltip.style.top=Math.max(5,Math.min(h-tipH-5,y-tipH/2))+"px";
-  }
-  function flowRetry(name,fn,delay){if(flowReconnect[name])return;flowReconnect[name]=setTimeout(()=>{flowReconnect[name]=null;fn();},delay||2500);}
-  function flowConnectBinance(){
-    if(flowSockets.binance&&(flowSockets.binance.readyState===1||flowSockets.binance.readyState===0))return;
-    flowSetState("binance","connecting");let ws;
-    try{ws=new WebSocket("wss://fstream.binance.com/market/ws/btcusdt@aggTrade");}catch(_){flowSetState("binance","offline");flowRetry("binance",flowConnectBinance);return;}
-    flowSockets.binance=ws;ws.onopen=()=>{if(flowSockets.binance===ws)flowSetState("binance","live");};
-    ws.onmessage=e=>{if(flowSockets.binance!==ws)return;let m;try{m=JSON.parse(e.data);}catch(_){return;}if(m.e!=="aggTrade")return;flowIngest("binance",m.a,m.T||m.E,m.p,m.q,m.m===true?"sell":"buy");};
-    ws.onerror=()=>{try{ws.close();}catch(_){}};
-    ws.onclose=()=>{if(flowSockets.binance!==ws)return;flowSockets.binance=null;flowSetState("binance","offline");flowRetry("binance",flowConnectBinance,2200);};
-  }
-  function flowConnectBybit(){
-    if(flowSockets.bybit&&(flowSockets.bybit.readyState===1||flowSockets.bybit.readyState===0))return;
-    flowSetState("bybit","connecting");let ws;
-    try{ws=new WebSocket("wss://stream.bybit.com/v5/public/linear");}catch(_){flowSetState("bybit","offline");flowRetry("bybit",flowConnectBybit);return;}
-    flowSockets.bybit=ws;ws.onopen=()=>{if(flowSockets.bybit!==ws)return;try{ws.send(JSON.stringify({op:"subscribe",args:["publicTrade.BTCUSDT"]}));}catch(_){}flowSetState("bybit","live");};
-    ws.onmessage=e=>{if(flowSockets.bybit!==ws)return;let m;try{m=JSON.parse(e.data);}catch(_){return;}if(!Array.isArray(m.data))return;m.data.forEach(t=>flowIngest("bybit",t.i,t.T,t.p,t.v,String(t.S).toLowerCase()));};
-    ws.onerror=()=>{try{ws.close();}catch(_){}};
-    ws.onclose=()=>{if(flowSockets.bybit!==ws)return;flowSockets.bybit=null;flowSetState("bybit","offline");flowRetry("bybit",flowConnectBybit);};
-  }
-  function flowConnectHyper(){
-    if(flowSockets.hyper&&(flowSockets.hyper.readyState===1||flowSockets.hyper.readyState===0))return;
-    flowSetState("hyper","connecting");let ws;
-    try{ws=new WebSocket("wss://api.hyperliquid.xyz/ws");}catch(_){flowSetState("hyper","offline");flowRetry("hyper",flowConnectHyper);return;}
-    flowSockets.hyper=ws;ws.onopen=()=>{if(flowSockets.hyper!==ws)return;try{ws.send(JSON.stringify({method:"subscribe",subscription:{type:"trades",coin:"BTC"}}));}catch(_){}flowSetState("hyper","live");};
-    ws.onmessage=e=>{if(flowSockets.hyper!==ws)return;let m;try{m=JSON.parse(e.data);}catch(_){return;}if(m.channel!=="trades"||!Array.isArray(m.data))return;m.data.forEach(t=>flowIngest("hyper",t.tid||t.hash,t.time,t.px,t.sz,t.side==="B"?"buy":t.side==="A"?"sell":null));};
-    ws.onerror=()=>{try{ws.close();}catch(_){}};
-    ws.onclose=()=>{if(flowSockets.hyper!==ws)return;flowSockets.hyper=null;flowSetState("hyper","offline");flowRetry("hyper",flowConnectHyper);};
-  }
-  async function flowBackfill() {
-    const jobs = [
-      (async () => {
-        const response = await fetch("https://fapi.binance.com/fapi/v1/aggTrades?symbol=BTCUSDT&limit=1000",{cache:"no-store"});
-        if(!response.ok) throw new Error("Binance recent trades HTTP "+response.status);
-        const rows = await response.json();
-        if(!Array.isArray(rows)) throw new Error("Unexpected Binance recent trades response");
-        rows.forEach(t=>flowIngest("binance",t.a,t.T,t.p,t.q,t.m===true?"sell":"buy"));
-        return rows.length;
-      })(),
-      (async () => {
-        const response = await fetch("https://api.bybit.com/v5/market/recent-trade?category=linear&symbol=BTCUSDT&limit=1000",{cache:"no-store"});
-        if(!response.ok) throw new Error("Bybit recent trades HTTP "+response.status);
-        const body = await response.json();
-        const rows = body && body.result && body.result.list;
-        if(!Array.isArray(rows)) throw new Error("Unexpected Bybit recent trades response");
-        rows.forEach(t=>flowIngest("bybit",t.execId,t.time,t.price,t.size,String(t.side).toLowerCase()));
-        return rows.length;
-      })()
-    ];
-    const results = await Promise.allSettled(jobs);
-    results.forEach(result=>{if(result.status==="fulfilled")flowBackfillCount+=result.value;});
-    if(flowBackfillCount){
-      $("flowChartFoot").textContent="Loaded "+flowBackfillCount.toLocaleString()+" recent public futures trades, then continuing live updates. This browser saves the flow history it collects.";
+  async function flowFetch() {
+    if(flowBusy)return;
+    flowBusy=true;
+    try{
+      const response=await fetch(COINGLASS_URL,{cache:"no-store"});
+      const body=await response.json();
+      if(!response.ok||!body||body.ok!==true||!body.windows)throw new Error(body&&body.error?body.error:"Worker HTTP "+response.status);
+      const clean={at:Number(body.fetchedAt)||Date.now(),windows:{}};
+      FLOW_WINDOWS.forEach(k=>{
+        const d=body.windows[k]||{};
+        clean.windows[k]={buyUsd:Number.isFinite(Number(d.buyUsd))?Number(d.buyUsd):0,sellUsd:Number.isFinite(Number(d.sellUsd))?Number(d.sellUsd):0,netUsd:Number.isFinite(Number(d.netUsd))?Number(d.netUsd):0,changePct:Number.isFinite(Number(d.changePct))?Number(d.changePct):null};
+      });
+      flowSnapshot=clean;flowHistory.push(clean);
+      if(flowHistory.length>240)flowHistory.splice(0,flowHistory.length-240);
+      flowLastSuccess=Date.now();flowStatus("COINGLASS · LIVE","live");
+      $("flowBinance").textContent="SOURCE · COINGLASS";
+      $("flowBybit").textContent="EXCHANGES · BINANCE / BYBIT / OKX";
+      $("flowHyper").textContent="UPDATED · "+new Date(clean.at).toLocaleTimeString();
+      ["flowBinance","flowBybit","flowHyper"].forEach(id=>$(id).className="flow-source live");
       flowDraw();
-    }
+    }catch(error){
+      flowStatus(flowLastSuccess?"COINGLASS · STALE":"COINGLASS · ERROR",flowLastSuccess?"partial":"");
+      $("flowChartFoot").textContent="CoinGlass feed unavailable: "+String(error.message||error)+". Check Worker deployment, API key permissions and CoinGlass plan.";
+    }finally{flowBusy=false;}
   }
   $("flowInterval").addEventListener("change",flowDraw);
   $("flowNetToggle").addEventListener("change",flowDraw);
-  $("flowChart").addEventListener("mousemove",flowHover);
-  $("flowChart").addEventListener("mouseleave",()=>{$("flowTooltip").style.display="none";});
-  flowRestore();flowDraw();flowConnectBinance();flowConnectBybit();flowConnectHyper();flowBackfill();
-  setInterval(()=>{
-    const now=Date.now();
-    ["binance","bybit","hyper"].forEach(n=>{if(flowLastMessage[n]&&now-flowLastMessage[n]>12000&&flowStates[n]==="live"){flowSetState(n,"stale");const ws=flowSockets[n];if(ws&&ws.readyState===1){try{ws.close();}catch(_){}}}});
-    if(now-flowLastPingAt>=20000){
-      if(flowSockets.bybit&&flowSockets.bybit.readyState===1){try{flowSockets.bybit.send(JSON.stringify({op:"ping"}));}catch(_){}}
-      if(flowSockets.hyper&&flowSockets.hyper.readyState===1){try{flowSockets.hyper.send(JSON.stringify({method:"ping"}));}catch(_){}}
-      flowLastPingAt=now;
-    }
-    flowSave();if(now-flowRenderedAt>350){flowRenderedAt=now;flowDraw();}
-  },500);
+  flowFetch();
+  setInterval(flowFetch,15000);
   window.addEventListener("resize",flowDraw);
 
   $("alerts").addEventListener("click", async () => {

@@ -96,7 +96,7 @@ button{font:inherit}
 .flow-source.live{color:var(--green);border-color:#255b47;background:#0d1e18}
 .flow-source.stale{color:var(--orange);border-color:#654b2b;background:#1d170f}
 
-/* CoinGlass-inspired terminal styling for the live futures flow chart */
+/* Dark terminal styling for live futures taker flow */
 .flow-card{margin-top:18px;border:0;border-top:1px solid #20252c;border-bottom:1px solid #20252c;border-radius:0;background:#050609;box-shadow:none;overflow:hidden}
 .flow-card-head{padding:17px 6px 12px;border:0;background:#050609}
 .flow-title{font-size:17px;font-weight:800;letter-spacing:-.025em;color:#e7eaf0;text-transform:none}
@@ -226,7 +226,7 @@ button{font:inherit}
     <div class="flow-card-head">
       <div>
         <div class="flow-title">BTC FUTURES TAKER BUY / SELL RATIO</div>
-        <div class="flow-subtitle">LIVE AGGRESSOR FLOW · BINANCE USDⓈ-M + BYBIT LINEAR · BTCUSDT</div>
+        <div class="flow-subtitle">LIVE FUTURES AGGRESSOR FLOW · BINANCE USDⓈ-M + BYBIT LINEAR + OKX SWAP</div>
       </div>
       <div class="flow-status" id="flowStatus">CONNECTING EXCHANGES…</div>
     </div>
@@ -256,9 +256,10 @@ button{font:inherit}
     <div class="flow-sources">
       <span class="flow-source" id="flowBinance">BINANCE · CONNECTING</span>
       <span class="flow-source" id="flowBybit">BYBIT · CONNECTING</span>
+      <span class="flow-source" id="flowOKX">OKX · CONNECTING</span>
       <span class="flow-source" id="flowHyper">LIVE WINDOW · WARMING UP</span>
     </div>
-    <div class="flow-chart-foot">Method: sums executed USD value of aggressive buyer-initiated and seller-initiated futures trades over the selected rolling window. Binance aggTrade and Bybit publicTrade are counted once per received trade. This is a transparent two-exchange live estimate, not CoinGlass's 30-exchange aggregate; no historical trades are backfilled, so the reading becomes fully warmed after the selected window has elapsed. Missing/disconnected feeds are excluded and shown above.</div>
+    <div class="flow-chart-foot">Method: sums executed USD value of aggressive buyer-initiated and seller-initiated futures trades over the selected rolling window. Binance aggTrade and Bybit publicTrade are counted once per received trade. This is a transparent three-venue live sample, not CoinGlass's full 30-exchange aggregate. Binance and Bybit quantities are converted from BTC to USD; OKX swap contract sizes are converted using live instrument metadata. No historical trades are backfilled, so the reading becomes fully warmed after the selected window has elapsed. Disconnected feeds are excluded and shown above.</div>
   </section>
 
   <section class="events">
@@ -901,15 +902,15 @@ button{font:inherit}
   }
 
 
-  // Direct public futures trade streams: Binance USD-M + Bybit Linear.
-  // Aggressor side is used: Binance m=true means buyer was maker => taker sell.
+  // Direct public futures trade streams: Binance USD-M, Bybit Linear and OKX BTC-USDT swap.
+  // Aggressor side is used. OKX contract size is converted using its live instrument metadata.
   const FLOW_WINDOWS = { "5m":300, "15m":900, "1h":3600 };
   const flowBuckets = new Map();
   const flowHistory = [];
-  const flowSockets = { binance:null, bybit:null };
-  const flowState = { binance:"connecting", bybit:"connecting" };
+  const flowSockets = { binance:null, bybit:null, okx:null };
+  const flowState = { binance:"connecting", bybit:"connecting", okx:"connecting" };
   let flowLastDraw = 0;
-  let flowReconnect = { binance:null, bybit:null };
+  let flowReconnect = { binance:null, bybit:null, okx:null };
   let flowPingTimer = null;
 
   function flowFmt(n) {
@@ -982,14 +983,45 @@ button{font:inherit}
       ws.onclose=()=>{flowState.bybit="reconnecting";flowPaintStatus();clearTimeout(flowReconnect.bybit);flowReconnect.bybit=setTimeout(flowConnectBybit,2500);};
     }catch(_){flowState.bybit="error";flowPaintStatus();setTimeout(flowConnectBybit,4000);}
   }
+  async function flowConnectOKX() {
+    try {
+      if(flowSockets.okx && (flowSockets.okx.readyState===0||flowSockets.okx.readyState===1))return;
+      flowState.okx="connecting";flowPaintStatus();
+      const metaRes=await fetch("https://www.okx.com/api/v5/public/instruments?instType=SWAP&instId=BTC-USDT-SWAP",{cache:"no-store"});
+      if(!metaRes.ok)throw new Error("instrument metadata HTTP "+metaRes.status);
+      const meta=await metaRes.json();
+      const instrument=meta&&meta.data&&meta.data[0];
+      const ctVal=Number(instrument&&instrument.ctVal),ctMult=Number(instrument&&instrument.ctMult||1);
+      if(String(meta.code)!=="0"||!Number.isFinite(ctVal)||ctVal<=0||!Number.isFinite(ctMult)||ctMult<=0||instrument.ctValCcy!=="BTC")throw new Error("could not verify BTC contract value");
+      if(flowSockets.okx && (flowSockets.okx.readyState===0||flowSockets.okx.readyState===1))return;
+      const ws=new WebSocket("wss://ws.okx.com:8443/ws/v5/public");
+      flowSockets.okx=ws;
+      ws.onopen=()=>{flowState.okx="live";flowPaintStatus();ws.send(JSON.stringify({op:"subscribe",args:[{channel:"trades",instId:"BTC-USDT-SWAP"}]}));};
+      ws.onmessage=(ev)=>{
+        try{
+          if(ev.data==="ping"){ws.send("pong");return;}
+          const d=JSON.parse(ev.data);
+          if(d.event==="error"){flowState.okx="error";flowPaintStatus();return;}
+          if(d.arg&&d.arg.channel==="trades"&&Array.isArray(d.data))d.data.forEach(t=>{
+            const btc=Number(t.sz)*ctVal*ctMult;
+            flowTrade(String(t.side).toLowerCase(),t.px,btc,"OKX",Number(t.ts));
+          });
+        }catch(_){}
+      };
+      ws.onerror=()=>{flowState.okx="error";flowPaintStatus();};
+      ws.onclose=()=>{flowState.okx="reconnecting";flowPaintStatus();clearTimeout(flowReconnect.okx);flowReconnect.okx=setTimeout(flowConnectOKX,4000);};
+    }catch(_){flowState.okx="error";flowPaintStatus();clearTimeout(flowReconnect.okx);flowReconnect.okx=setTimeout(flowConnectOKX,8000);}
+  }
   function flowPaintStatus() {
     const live=Object.values(flowState).filter(x=>x==="live").length;
     const bad=Object.values(flowState).filter(x=>x==="error").length;
-    flowStatus(live===2?"2 EXCHANGES · LIVE":live===1?"1 EXCHANGE · PARTIAL":bad?"FEED ERROR":"CONNECTING…",live===2?"live":live===1?"partial":"");
+    flowStatus(live===3?"3 VENUES · LIVE":live>0?live+" VENUE"+(live===1?"":"S")+" · PARTIAL":bad?"FEED ERROR":"CONNECTING…",live===3?"live":live>0?"partial":"");
     $("flowBinance").textContent="BINANCE · "+flowState.binance.toUpperCase();
     $("flowBybit").textContent="BYBIT · "+flowState.bybit.toUpperCase();
+    $("flowOKX").textContent="OKX · "+flowState.okx.toUpperCase();
     $("flowBinance").className="flow-source "+(flowState.binance==="live"?"live":"stale");
     $("flowBybit").className="flow-source "+(flowState.bybit==="live"?"live":"stale");
+    $("flowOKX").className="flow-source "+(flowState.okx==="live"?"live":"stale");
   }
   function flowGetTotals(seconds) {
     const now=Math.floor(Date.now()/1000),from=now-seconds+1;
@@ -1063,6 +1095,7 @@ button{font:inherit}
   flowStartedAt=Math.floor(Date.now()/1000);
   flowConnectBinance();
   flowConnectBybit();
+  flowConnectOKX();
   flowPingTimer=setInterval(()=>{const ws=flowSockets.bybit;if(ws&&ws.readyState===WebSocket.OPEN)try{ws.send(JSON.stringify({op:"ping"}));}catch(_){}},20000);
   setInterval(flowDraw,1000);
   window.addEventListener("resize",flowDraw);

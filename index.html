@@ -937,8 +937,10 @@ button{font:inherit}
     const w=rect.width,h=rect.height;ctx.clearRect(0,0,w,h);ctx.fillStyle="#050609";ctx.fillRect(0,0,w,h);
     const interval=flowWindow(),rows=flowHistory.slice(-60),left=w<520?48:62,right=w-14,top=22,bottom=h-32;
     const values=rows.map(x=>x.windows&&x.windows[interval]).filter(Boolean);
-    const max=Math.max(1,...values.map(x=>Math.max(Number(x.buyUsd)||0,Number(x.sellUsd)||0)));
+    const netMode=$("flowNetToggle").checked;
+    const max=Math.max(1,...values.map(x=>netMode?Math.abs(Number(x.netUsd)||0):Math.max(Number(x.buyUsd)||0,Number(x.sellUsd)||0)));
     const nice=flowNiceCeil(max),step=(right-left)/60,bw=Math.max(2,step*.68);
+    const zero=netMode?(top+bottom)/2:bottom;
     ctx.font="10px system-ui";ctx.textBaseline="middle";
     [0,.25,.5,.75,1].forEach(f=>{
       const y=bottom-f*(bottom-top);
@@ -949,8 +951,14 @@ button{font:inherit}
       const d=snap.windows&&snap.windows[interval];if(!d)return;
       const x=left+index*step+(step-bw)/2;
       const buy=Math.max(0,Number(d.buyUsd)||0),sell=Math.max(0,Number(d.sellUsd)||0);
-      ctx.fillStyle="#20b79a";ctx.fillRect(x,bottom-buy/nice*(bottom-top),bw,buy/nice*(bottom-top));
-      ctx.fillStyle="#f0445e";ctx.fillRect(x,bottom-sell/nice*(bottom-top),bw,sell/nice*(bottom-top));
+      if(netMode){
+        const net=Number(d.netUsd)||0,barH=Math.abs(net)/nice*((bottom-top)/2);
+        ctx.fillStyle=net>=0?"#20b79a":"#f0445e";
+        ctx.fillRect(x,net>=0?zero-barH:zero,bw,Math.max(1,barH));
+      }else{
+        ctx.fillStyle="#20b79a";ctx.fillRect(x,bottom-buy/nice*(bottom-top),bw,buy/nice*(bottom-top));
+        ctx.fillStyle="#f0445e";ctx.fillRect(x,bottom-sell/nice*(bottom-top),bw,sell/nice*(bottom-top));
+      }
     });
     ctx.font="9px system-ui";ctx.textAlign="center";ctx.textBaseline="alphabetic";ctx.fillStyle="#8a939e";
     const every=Math.max(1,Math.floor(rows.length/6));

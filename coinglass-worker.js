@@ -20,8 +20,15 @@ export default {
       "Access-Control-Allow-Headers": "Content-Type"
     };
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
-    if (request.method !== "GET" || url.pathname !== "/api/flow") {
-      return Response.json({ ok: false, error: "Not found" }, { status: 404, headers });
+    if (url.pathname !== "/api/flow") {
+      if (url.pathname.startsWith("/api/")) {
+        return Response.json({ ok: false, error: "Not found" }, { status: 404, headers });
+      }
+      // Serve the existing dashboard and its static files from the same Worker.
+      return env.ASSETS.fetch(request);
+    }
+    if (request.method !== "GET") {
+      return Response.json({ ok: false, error: "Method not allowed" }, { status: 405, headers });
     }
     if (!env.COINGLASS_API_KEY) {
       return Response.json({ ok: false, error: "Worker secret COINGLASS_API_KEY is not configured." }, { status: 503, headers });

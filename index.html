@@ -145,6 +145,27 @@ button{font:inherit}
  .hero{grid-template-columns:1fr auto;gap:8px}.direction{min-width:112px;padding:12px 10px;font-size:14px}
  #chart{height:220px}.countdown{font-size:20px}
 }
+/* Live BTC futures table (added section) */
+.ft-wrap{overflow-x:auto;padding:0 6px 4px}
+.ft-table{width:100%;min-width:780px;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.ft-table th{padding:10px 12px;text-align:right;color:#858198;font-size:9px;font-weight:950;letter-spacing:.1em;border-bottom:1px solid var(--line);white-space:nowrap}
+.ft-table td{padding:13px 12px;text-align:right;font-size:13px;font-weight:700;color:#e7eaf0;border-bottom:1px solid #161922;white-space:nowrap;transition:background .6s}
+.ft-table th:first-child,.ft-table td:first-child{text-align:left}
+.ft-table tfoot td{border-top:1px solid var(--line);border-bottom:0;font-weight:900}
+.ft-ex{font-weight:900;color:#f2f0fa}
+.ft-note{display:block;margin-top:3px;color:#77728b;font-size:9px;font-weight:600;white-space:normal;max-width:190px}
+.ft-table td.ft-pos,.ft-table .ft-pos{color:var(--green)}
+.ft-table td.ft-neg,.ft-table .ft-neg{color:var(--red)}
+.ft-table td.ft-up{background:#35d69a33}
+.ft-table td.ft-down{background:#ff557d33}
+.ft-meter{height:4px;width:84px;margin:6px 0 0 auto;border-radius:2px;background:#ff425e;overflow:hidden}
+.ft-meter i{display:block;height:100%;width:0;background:#1bb99b;transition:width .4s}
+.ft-st{font-size:9px;font-weight:900;letter-spacing:.06em;color:#817c92}
+.ft-st.live{color:var(--green)}
+.ft-st.partial,.ft-st.stale{color:var(--orange)}
+.ft-st.err{color:var(--red)}
+.ft-btn{appearance:none;background:#141320;color:#e5e0ef;border:1px solid #383447;border-radius:8px;padding:8px 12px;font:800 10px system-ui;letter-spacing:.06em;cursor:pointer}
+.ft-btn:hover{border-color:#5a5470}
 </style>
 </head>
 <body>
@@ -260,6 +281,40 @@ button{font:inherit}
       <span class="flow-source" id="flowHyper">LIVE WINDOW · WARMING UP</span>
     </div>
     <div class="flow-chart-foot">Method: sums executed USD value of aggressive buyer-initiated and seller-initiated futures trades over the selected rolling window. Binance aggTrade and Bybit publicTrade are counted once per received trade. This is a transparent three-venue live sample, not CoinGlass's full 30-exchange aggregate. Binance and Bybit quantities are converted from BTC to USD; OKX swap contract sizes are converted using live instrument metadata. No historical trades are backfilled, so the reading becomes fully warmed after the selected window has elapsed. Disconnected feeds are excluded and shown above.</div>
+  </section>
+
+  <section class="flow-card" id="ftPanel">
+    <div class="flow-card-head">
+      <div>
+        <div class="flow-title">BTC FUTURES TABLE</div>
+        <div class="flow-subtitle">BY EXCHANGE · PRICE · VOLUME · OPEN INTEREST · FUNDING · TAKER BUY / SELL · UPDATES IN PLACE, NO PAGE REFRESH</div>
+      </div>
+      <div class="flow-status" id="ftStatus">CONNECTING EXCHANGES…</div>
+    </div>
+    <div class="flow-controls">
+      <span class="flow-control-label">TAKER WINDOW</span>
+      <select class="flow-select" id="ftWin" aria-label="Taker ratio window">
+        <option value="5m" selected>5 minute</option><option value="1h">1 hour</option>
+      </select>
+      <span class="flow-control-label">REFRESH EVERY</span>
+      <select class="flow-select" id="ftEvery" aria-label="Table refresh interval">
+        <option value="3">3 s</option><option value="5" selected>5 s</option><option value="10">10 s</option><option value="30">30 s</option>
+      </select>
+      <button class="ft-btn" id="ftNow" type="button">REFRESH NOW</button>
+      <span class="flow-control-label" id="ftUpdated" style="margin-left:auto">LOADING…</span>
+    </div>
+    <div class="ft-wrap">
+      <table class="ft-table">
+        <thead>
+          <tr><th>EXCHANGE</th><th>PRICE</th><th>24H %</th><th>VOLUME 24H</th><th>OPEN INTEREST</th><th>FUNDING</th><th>TAKER BUY / SELL</th><th>STATUS</th></tr>
+        </thead>
+        <tbody id="ftRows"></tbody>
+        <tfoot>
+          <tr><td>ALL<span class="ft-note" id="ftCount"></span></td><td></td><td></td><td id="ftTotVol">—</td><td id="ftTotOi">—</td><td></td><td></td><td></td></tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="flow-chart-foot">Taker buy / sell = taker buy volume ÷ taker sell volume over the chosen window (above 1 means more aggressive buying). Data comes straight from each exchange's public API for BTC/USDT perpetuals, and the table re-reads it on the timer above. Funding is shown per each exchange's own interval; Hyperliquid's hourly rate is multiplied by 8 so it lines up. This is a four-venue table, not CoinGlass's full exchange list. "Blocked" means that exchange refuses connections from your location; the other rows keep updating.</div>
   </section>
 
   <section class="events">
@@ -1186,6 +1241,302 @@ button{font:inherit}
   connect();
   bootstrapHistory();
   restTimer = setInterval(pollRestBackup, 1000);
+})();
+</script>
+<script>
+/* Live BTC futures table (added section). Self-contained: a failure here cannot affect the tracker above. */
+(() => {
+try {
+  const el = id => document.getElementById(id);
+  const tbody = el('ftRows');
+  if (!tbody) return;
+
+  const num = v => { const n = Number(v); return (v !== null && v !== '' && v !== undefined && Number.isFinite(n)) ? n : null; };
+  const mul = (a, b) => (a != null && b != null) ? a * b : null;
+
+  async function getJSON(url, opts) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    try {
+      const r = await fetch(url, Object.assign({ cache: 'no-store', signal: ctrl.signal }, opts || {}));
+      if (!r.ok) { const e = new Error('HTTP ' + r.status); e.status = r.status; throw e; }
+      return await r.json();
+    } finally {
+      clearTimeout(t);
+    }
+  }
+
+  function explain(e) {
+    if (e && (e.status === 451 || e.status === 403)) return 'BLOCKED';
+    if (e && e.name === 'AbortError') return 'TIMED OUT';
+    if (e instanceof TypeError) return 'UNREACHABLE';
+    return (e && e.message) ? String(e.message).toUpperCase() : 'ERROR';
+  }
+
+  function pack(out, results, names) {
+    const failed = [];
+    results.forEach((r, i) => { if (r.status === 'rejected') failed.push(names[i]); });
+    if (Object.keys(out).length === 0) {
+      const bad = results.find(r => r.status === 'rejected');
+      throw bad ? bad.reason : new Error('No data');
+    }
+    out.failed = failed;
+    return out;
+  }
+
+  async function getBinance(win) {
+    const B = 'https://fapi.binance.com';
+    const rs = await Promise.allSettled([
+      getJSON(B + '/fapi/v1/ticker/24hr?symbol=BTCUSDT'),
+      getJSON(B + '/fapi/v1/openInterest?symbol=BTCUSDT'),
+      getJSON(B + '/fapi/v1/premiumIndex?symbol=BTCUSDT'),
+      getJSON(B + '/futures/data/takerlongshortRatio?symbol=BTCUSDT&period=' + win + '&limit=1')
+    ]);
+    const tk = rs[0], oi = rs[1], pi = rs[2], tr = rs[3];
+    const out = {};
+    if (tk.status === 'fulfilled') {
+      out.price = num(tk.value.lastPrice);
+      out.chg = num(tk.value.priceChangePercent);
+      out.vol = num(tk.value.quoteVolume);
+    }
+    if (oi.status === 'fulfilled') {
+      const mark = (pi.status === 'fulfilled' ? num(pi.value.markPrice) : null) || out.price;
+      out.oi = mul(num(oi.value.openInterest), mark);
+    }
+    if (pi.status === 'fulfilled') out.funding = mul(num(pi.value.lastFundingRate), 100);
+    if (tr.status === 'fulfilled' && Array.isArray(tr.value) && tr.value[0]) {
+      out.taker = { ratio: num(tr.value[0].buySellRatio) };
+    }
+    return pack(out, rs, ['price', 'open interest', 'funding', 'taker']);
+  }
+
+  async function getBybit() {
+    const B = 'https://api.bybit.com/v5/market';
+    const rs = await Promise.allSettled([
+      getJSON(B + '/tickers?category=linear&symbol=BTCUSDT'),
+      getJSON(B + '/recent-trade?category=linear&symbol=BTCUSDT&limit=1000')
+    ]);
+    const tk = rs[0], tr = rs[1];
+    const out = {};
+    if (tk.status === 'fulfilled' && tk.value.result && tk.value.result.list && tk.value.result.list[0]) {
+      const t = tk.value.result.list[0];
+      out.price = num(t.lastPrice);
+      out.chg = mul(num(t.price24hPcnt), 100);
+      out.vol = num(t.turnover24h);
+      out.oi = num(t.openInterestValue);
+      out.funding = mul(num(t.fundingRate), 100);
+    }
+    if (tr.status === 'fulfilled' && tr.value.result && Array.isArray(tr.value.result.list)) {
+      let buy = 0, sell = 0;
+      tr.value.result.list.forEach(x => {
+        const s = num(x.size) || 0;
+        if (x.side === 'Buy') buy += s; else if (x.side === 'Sell') sell += s;
+      });
+      out.taker = { ratio: sell > 0 ? buy / sell : null };
+    }
+    return pack(out, rs, ['price/OI/funding', 'taker']);
+  }
+
+  async function getOkx(win) {
+    const B = 'https://www.okx.com/api/v5';
+    const period = win === '1h' ? '1H' : '5m';
+    const rs = await Promise.allSettled([
+      getJSON(B + '/market/ticker?instId=BTC-USDT-SWAP'),
+      getJSON(B + '/public/open-interest?instType=SWAP&instId=BTC-USDT-SWAP'),
+      getJSON(B + '/public/funding-rate?instId=BTC-USDT-SWAP'),
+      getJSON(B + '/rubik/stat/taker-volume?ccy=BTC&instType=CONTRACTS&period=' + period)
+    ]);
+    const tk = rs[0], oi = rs[1], fr = rs[2], tr = rs[3];
+    const out = {};
+    if (tk.status === 'fulfilled' && tk.value.data && tk.value.data[0]) {
+      const t = tk.value.data[0];
+      out.price = num(t.last);
+      const open = num(t.open24h);
+      out.chg = (out.price != null && open) ? (out.price - open) / open * 100 : null;
+      out.vol = mul(num(t.volCcy24h), out.price);
+    }
+    if (oi.status === 'fulfilled' && oi.value.data && oi.value.data[0]) {
+      const d = oi.value.data[0];
+      out.oi = num(d.oiUsd) != null ? num(d.oiUsd) : mul(num(d.oiCcy), out.price);
+    }
+    if (fr.status === 'fulfilled' && fr.value.data && fr.value.data[0]) {
+      out.funding = mul(num(fr.value.data[0].fundingRate), 100);
+    }
+    if (tr.status === 'fulfilled' && tr.value.data && tr.value.data[0]) {
+      const row = tr.value.data[0]; // [ts, sellVol, buyVol]
+      const sell = num(row[1]), buy = num(row[2]);
+      out.taker = { ratio: (sell && buy != null) ? buy / sell : null };
+    }
+    return pack(out, rs, ['price', 'open interest', 'funding', 'taker']);
+  }
+
+  async function getHyperliquid() {
+    const r = await getJSON('https://api.hyperliquid.xyz/info', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'metaAndAssetCtxs' })
+    });
+    const i = r[0].universe.findIndex(u => u.name === 'BTC');
+    if (i < 0) throw new Error('BTC not found');
+    const c = r[1][i];
+    const price = num(c.markPx);
+    const prev = num(c.prevDayPx);
+    return {
+      price: price,
+      chg: (price != null && prev) ? (price - prev) / prev * 100 : null,
+      vol: num(c.dayNtlVlm),
+      oi: mul(num(c.openInterest), price),
+      funding: mul(num(c.funding), 800), // hourly rate x 8, as a percent
+      failed: []
+    };
+  }
+
+  const EXCHANGES = [
+    { id: 'binance',     name: 'Binance',     fn: getBinance,     note: '' },
+    { id: 'bybit',       name: 'Bybit',       fn: getBybit,       note: 'taker = last 1,000 trades' },
+    { id: 'okx',         name: 'OKX',         fn: getOkx,         note: '' },
+    { id: 'hyperliquid', name: 'Hyperliquid', fn: getHyperliquid, note: 'funding = 1h rate × 8 · no taker feed' }
+  ];
+
+  function fmtUSD(v) {
+    if (v == null) return '—';
+    const a = Math.abs(v);
+    if (a >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+    if (a >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
+    return '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 });
+  }
+  const fmtPrice = v => v == null ? '—' : '$' + v.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  const fmtPct = (v, d) => v == null ? '—' : (v > 0 ? '+' : '') + v.toFixed(d) + '%';
+
+  const rowEls = {};
+  const last = {};
+  const okNow = {};
+  const state = { win: '5m', every: 5 };
+
+  EXCHANGES.forEach(ex => {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><span class="ft-ex">' + ex.name + '</span><span class="ft-note">' + ex.note + '</span></td>' +
+      '<td data-k="price">—</td>' +
+      '<td data-k="chg">—</td>' +
+      '<td data-k="vol">—</td>' +
+      '<td data-k="oi">—</td>' +
+      '<td data-k="funding">—</td>' +
+      '<td data-k="taker"><span class="ft-ratio">—</span><div class="ft-meter"><i></i></div></td>' +
+      '<td><span class="ft-st" data-k="status">LOADING…</span></td>';
+    tbody.appendChild(tr);
+    rowEls[ex.id] = tr;
+  });
+
+  function setNum(td, v, text, signed) {
+    const old = td._v;
+    td.textContent = text;
+    td._v = v;
+    if (signed) {
+      td.classList.toggle('ft-pos', v != null && v > 0);
+      td.classList.toggle('ft-neg', v != null && v < 0);
+    }
+    if (old != null && v != null && v !== old) {
+      td.classList.remove('ft-up', 'ft-down');
+      void td.offsetWidth;
+      td.classList.add(v > old ? 'ft-up' : 'ft-down');
+      setTimeout(() => td.classList.remove('ft-up', 'ft-down'), 700);
+    }
+  }
+
+  function paint(ex, d) {
+    const tr = rowEls[ex.id];
+    const q = k => tr.querySelector('[data-k="' + k + '"]');
+    setNum(q('price'), d.price, fmtPrice(d.price), false);
+    setNum(q('chg'), d.chg, fmtPct(d.chg, 2), true);
+    setNum(q('vol'), d.vol, fmtUSD(d.vol), false);
+    setNum(q('oi'), d.oi, fmtUSD(d.oi), false);
+    setNum(q('funding'), d.funding, fmtPct(d.funding, 4), true);
+    const cell = q('taker');
+    const rEl = cell.querySelector('.ft-ratio');
+    const bar = cell.querySelector('.ft-meter i');
+    if (d.taker && d.taker.ratio != null) {
+      const r = d.taker.ratio;
+      rEl.textContent = r.toFixed(3);
+      rEl.className = 'ft-ratio ' + (r >= 1 ? 'ft-pos' : 'ft-neg');
+      bar.style.width = (r / (1 + r) * 100).toFixed(1) + '%';
+    } else {
+      rEl.textContent = '—';
+      rEl.className = 'ft-ratio';
+      bar.style.width = '0%';
+    }
+  }
+
+  function setStatus(ex, cls, text) {
+    const s = rowEls[ex.id].querySelector('[data-k="status"]');
+    s.className = 'ft-st ' + cls;
+    s.textContent = text;
+  }
+
+  function paintTotals() {
+    let oi = 0, vol = 0, n = 0;
+    EXCHANGES.forEach(ex => {
+      const d = last[ex.id];
+      if (d) { if (d.oi != null) oi += d.oi; if (d.vol != null) vol += d.vol; n++; }
+    });
+    el('ftTotVol').textContent = n ? fmtUSD(vol) : '—';
+    el('ftTotOi').textContent = n ? fmtUSD(oi) : '—';
+    el('ftCount').textContent = n + ' of ' + EXCHANGES.length + ' exchanges reporting';
+  }
+
+  async function updateOne(ex) {
+    try {
+      const d = await ex.fn(state.win);
+      const merged = Object.assign({}, last[ex.id] || {});
+      Object.keys(d).forEach(k => { if (d[k] != null && k !== 'failed') merged[k] = d[k]; });
+      last[ex.id] = merged;
+      paint(ex, merged);
+      okNow[ex.id] = true;
+      if (d.failed && d.failed.length) setStatus(ex, 'partial', 'PARTIAL · ' + d.failed.join(', ').toUpperCase() + ' MISSING');
+      else setStatus(ex, 'live', 'LIVE');
+    } catch (e) {
+      okNow[ex.id] = false;
+      const msg = explain(e);
+      if (last[ex.id]) setStatus(ex, 'stale', 'STALE · ' + msg);
+      else setStatus(ex, 'err', msg);
+    }
+  }
+
+  let busy = false;
+  let timer = null;
+
+  async function refresh() {
+    if (busy) return;
+    busy = true;
+    try {
+      await Promise.all(EXCHANGES.map(updateOne));
+    } finally {
+      busy = false;
+    }
+    paintTotals();
+    const live = EXCHANGES.filter(ex => okNow[ex.id]).length;
+    const st = el('ftStatus');
+    if (live === EXCHANGES.length) { st.className = 'flow-status live'; st.textContent = 'LIVE · ' + live + '/' + EXCHANGES.length + ' EXCHANGES'; }
+    else if (live > 0) { st.className = 'flow-status partial'; st.textContent = 'PARTIAL · ' + live + '/' + EXCHANGES.length + ' EXCHANGES'; }
+    else { st.className = 'flow-status'; st.textContent = 'NO EXCHANGE REACHABLE'; }
+    el('ftUpdated').textContent = 'UPDATED ' + new Date().toLocaleTimeString();
+  }
+
+  function schedule() {
+    clearInterval(timer);
+    timer = setInterval(refresh, state.every * 1000);
+  }
+
+  el('ftWin').addEventListener('change', e => { state.win = e.target.value; refresh(); });
+  el('ftEvery').addEventListener('change', e => { state.every = Number(e.target.value); schedule(); });
+  el('ftNow').addEventListener('click', refresh);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+
+  refresh();
+  schedule();
+} catch (err) {
+  console.error('Futures table failed to start:', err);
+}
 })();
 </script>
 </body>

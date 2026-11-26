@@ -246,7 +246,7 @@ button{font:inherit}
     <div class="flow-card-head">
       <div>
         <div class="flow-title">TAKER BUY / SELL</div>
-        <div class="flow-subtitle">BTC FUTURES · EVERY EXCHANGE · COINGLASS DATA · UPDATES BY ITSELF</div>
+        <div class="flow-subtitle">BTC PERPETUALS · DIRECT PUBLIC TRADE FEEDS · LIVE AGGREGATE</div>
       </div>
       <div class="flow-status" id="tbStatus">LOADING…</div>
     </div>
@@ -914,154 +914,169 @@ button{font:inherit}
 })();
 </script>
 <script>
-/* TAKER BUY / SELL table (added section). Self-contained: a failure here cannot affect the tracker above. */
+/* Independent public futures taker-flow aggregator. No CoinGlass API or proxy required. */
 (() => {
+'use strict';
 try {
   const el = id => document.getElementById(id);
   const rowsEl = el('tbRows');
   if (!rowsEl) return;
-
-  const REFRESH_MS = 10000;
-  // On the GitHub address the data server lives on the Cloudflare site; on the Cloudflare site it is the same address.
-  const API_BASE = /\.github\.io$/.test(location.hostname) ? 'https://btc-5m-dashboard.barcodeuserlll.workers.dev' : '';
-  let range = '5m';
-  let seq = 0;
-  let hasData = false;
-  const rowMap = new Map();
-
-  const fmtUSD = v => {
-    if (v == null) return '—';
-    const a = Math.abs(v);
-    if (a >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
-    if (a >= 1e6) return '$' + (v / 1e6).toFixed(2) + 'M';
-    if (a >= 1e3) return '$' + (v / 1e3).toFixed(1) + 'K';
-    return '$' + v.toFixed(0);
+  const startedAt=Date.now();
+  const RANGE_MS = { '5m':300000, '15m':900000, '30m':1800000, '1h':3600000, '4h':14400000, '12h':43200000, '24h':86400000 };
+  const REFRESH_MS = 5000;
+  const venues = {
+    Binance:{state:'connecting',buckets:new Map(),seen:new Set()},
+    Bybit:{state:'connecting',buckets:new Map(),seen:new Set()},
+    OKX:{state:'connecting',buckets:new Map(),seen:new Set()},
+    Gate:{state:'connecting',buckets:new Map(),seen:new Set()},
+    Bitget:{state:'connecting',buckets:new Map(),seen:new Set()},
+    Hyperliquid:{state:'connecting',buckets:new Map(),seen:new Set()}
   };
-  const fmtPct = v => v == null ? '—' : v.toFixed(2) + '%';
-
-  function setStatus(cls, text) {
-    const s = el('tbStatus');
-    s.className = 'flow-status' + (cls ? ' ' + cls : '');
-    s.textContent = text;
+  const sockets = {}, timers = {};
+  let range='5m';
+  const fmtUSD = v => {
+    if(!Number.isFinite(v))return '—';
+    const a=Math.abs(v);
+    if(a>=1e9)return '$'+(v/1e9).toFixed(2)+'B';
+    if(a>=1e6)return '$'+(v/1e6).toFixed(2)+'M';
+    if(a>=1e3)return '$'+(v/1e3).toFixed(1)+'K';
+    return '$'+v.toFixed(0);
+  };
+  const fmtPct = v => Number.isFinite(v)?v.toFixed(2)+'%':'—';
+  function status(){
+    const live=Object.values(venues).filter(v=>v.state==='live').length;
+    const s=el('tbStatus');s.className='flow-status '+(live===6?'live':live?'partial':'');
+    s.textContent=live+'/6 FEEDS LIVE';
   }
-  function setMsg(html) { el('tbMsg').innerHTML = html || ''; }
-
-  function setCell(td, v, text) {
-    const old = td._v;
-    td.textContent = text;
-    td._v = v;
-    if (old != null && v != null && v !== old) {
-      td.classList.remove('tb-flash-up', 'tb-flash-down');
-      void td.offsetWidth;
-      td.classList.add(v > old ? 'tb-flash-up' : 'tb-flash-down');
-      setTimeout(() => td.classList.remove('tb-flash-up', 'tb-flash-down'), 700);
+  function addTrade(name,side,price,size,ts,id,quoteUsd){
+    const v=venues[name],p=Number(price),q=Number(size),t=Number(ts);
+    if(!v||!Number.isFinite(p)||p<=0||!Number.isFinite(q)||q<=0)return;
+    if(id!=null){
+      const key=String(id);
+      if(v.seen.has(key))return;
+      v.seen.add(key);
+      if(v.seen.size>12000)v.seen.clear();
     }
+    const usd=Number.isFinite(quoteUsd)?quoteUsd:p*q;
+    if(!Number.isFinite(usd)||usd<=0)return;
+    const sec=Math.floor((Number.isFinite(t)&&t>0?t:Date.now())/1000);
+    let b=v.buckets.get(sec);
+    if(!b){b={buy:0,sell:0};v.buckets.set(sec,b);}
+    const s=String(side).toLowerCase();
+    if(s==='buy'||s==='b')b.buy+=usd;
+    else if(s==='sell'||s==='s'||s==='a')b.sell+=usd;
+    else return;
+    const cutoff=Math.floor(Date.now()/1000)-86410;
+    for(const k of v.buckets.keys())if(k<cutoff)v.buckets.delete(k);
   }
-
-  function ensureRow(key) {
-    let tr = rowMap.get(key);
-    if (!tr) {
-      tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td class="tb-ex"></td><td class="tb-buy"></td><td class="tb-sell"></td>' +
-        '<td class="tb-bv"></td><td class="tb-sv"></td>' +
-        '<td><div class="tb-split"><i></i></div></td>';
-      rowMap.set(key, tr);
-    }
-    return tr;
+  function connect(name,url,onOpen,onMessage){
+    try{
+      if(sockets[name]&&(sockets[name].readyState===0||sockets[name].readyState===1))return;
+      venues[name].state='connecting';status();
+      const ws=new WebSocket(url);sockets[name]=ws;
+      ws.onopen=()=>{venues[name].state='live';status();if(onOpen)onOpen(ws);};
+      ws.onmessage=e=>{
+        try{
+          if(e.data==='ping'){ws.send('pong');return;}
+          onMessage(JSON.parse(e.data),ws);
+        }catch(_){}
+      };
+      ws.onerror=()=>{venues[name].state='error';status();};
+      ws.onclose=()=>{venues[name].state='reconnecting';status();clearTimeout(timers[name]);timers[name]=setTimeout(()=>connectors[name](),5000);};
+    }catch(_){venues[name].state='error';status();clearTimeout(timers[name]);timers[name]=setTimeout(()=>connectors[name](),8000);}
   }
-
-  function fillRow(tr, label, r) {
-    const c = tr.children;
-    c[0].textContent = label;
-    setCell(c[1], r.buyRatio, fmtPct(r.buyRatio));
-    setCell(c[2], r.sellRatio, fmtPct(r.sellRatio));
-    setCell(c[3], r.buyUsd, fmtUSD(r.buyUsd));
-    setCell(c[4], r.sellUsd, fmtUSD(r.sellUsd));
-    const buy = r.buyRatio != null ? r.buyRatio : 50;
-    c[5].querySelector('i').style.width = Math.max(0, Math.min(100, buy)).toFixed(1) + '%';
+  const connectors={};
+  connectors.Binance=()=>connect('Binance','wss://fstream.binance.com/market/ws/btcusdt@aggTrade',null,d=>{
+    if(d.e==='aggTrade')addTrade('Binance',d.m?'sell':'buy',d.p,d.q,d.T,d.a);
+  });
+  connectors.Bybit=()=>connect('Bybit','wss://stream.bybit.com/v5/public/linear',ws=>{
+    ws.send(JSON.stringify({op:'subscribe',args:['publicTrade.BTCUSDT']}));
+  },d=>{
+    if(d.topic==='publicTrade.BTCUSDT'&&Array.isArray(d.data))d.data.forEach(t=>addTrade('Bybit',t.S,t.p,t.v,t.T,t.i));
+  });
+  async function connectOKX(){
+    try{
+      const res=await fetch('https://www.okx.com/api/v5/public/instruments?instType=SWAP&instId=BTC-USDT-SWAP',{cache:'no-store'});
+      const j=await res.json(),x=j&&j.data&&j.data[0],ctVal=Number(x&&x.ctVal),ctMult=Number(x&&x.ctMult||1);
+      if(String(j.code)!=='0'||!x||x.ctValCcy!=='BTC'||!Number.isFinite(ctVal)||ctVal<=0||!Number.isFinite(ctMult)||ctMult<=0)throw Error('OKX contract metadata unavailable');
+      connect('OKX','wss://ws.okx.com:8443/ws/v5/public',ws=>ws.send(JSON.stringify({op:'subscribe',args:[{channel:'trades',instId:'BTC-USDT-SWAP'}]})),d=>{
+        if(d.arg&&d.arg.channel==='trades'&&Array.isArray(d.data))d.data.forEach(t=>addTrade('OKX',t.side,t.px,Number(t.sz)*ctVal*ctMult,t.ts,t.tradeId));
+      });
+    }catch(_){venues.OKX.state='error';status();clearTimeout(timers.OKX);timers.OKX=setTimeout(connectOKX,12000);}
   }
-
-  function render(data) {
-    if (!hasData) { rowsEl.innerHTML = ''; hasData = true; }
-    const list = (data.exchanges || []).slice().sort((a, b) =>
-      ((b.buyUsd || 0) + (b.sellUsd || 0)) - ((a.buyUsd || 0) + (a.sellUsd || 0)));
-    const keep = new Set(['__all']);
-
-    const allRow = ensureRow('__all');
-    allRow.className = 'tb-all';
-    fillRow(allRow, 'All exchanges', data.total || {});
-    rowsEl.appendChild(allRow);
-
-    list.forEach(r => {
-      keep.add(r.exchange);
-      const tr = ensureRow(r.exchange);
-      fillRow(tr, r.exchange, r);
-      rowsEl.appendChild(tr);
-    });
-
-    Array.from(rowMap.keys()).forEach(k => {
-      if (!keep.has(k)) { const tr = rowMap.get(k); if (tr.parentNode) tr.parentNode.removeChild(tr); rowMap.delete(k); }
-    });
+  async function connectGate(){
+    try{
+      const res=await fetch('https://api.gateio.ws/api/v4/futures/usdt/contracts/BTC_USDT',{cache:'no-store'});
+      const x=await res.json(),mult=Number(x&&x.quanto_multiplier);
+      if(!res.ok||!Number.isFinite(mult)||mult<=0)throw Error('Gate contract multiplier unavailable');
+      connect('Gate','wss://fx-ws.gateio.ws/v4/ws/usdt',ws=>ws.send(JSON.stringify({time:Math.floor(Date.now()/1000),channel:'futures.trades',event:'subscribe',payload:['BTC_USDT']})),d=>{
+        if(d.channel==='futures.trades'&&d.event==='update'&&Array.isArray(d.result))d.result.forEach(t=>{
+          const size=Number(t.size);
+          addTrade('Gate',size>0?'buy':'sell',t.price,Math.abs(size)*mult,(t.create_time_ms||Number(t.create_time)*1000),t.id);
+        });
+      });
+    }catch(_){venues.Gate.state='error';status();clearTimeout(timers.Gate);timers.Gate=setTimeout(connectGate,12000);}
   }
-
-  function showError(code, msg) {
-    if (code === 'NO_KEY') {
-      setStatus('', 'ONE-TIME SETUP NEEDED');
-      setMsg('<b>The data server is running, but your CoinGlass API key has not been added yet.</b> Tell me and I will walk you through it one step at a time.');
-    } else if (code === 'NOAPI') {
-      setStatus('', 'NO DATA SERVER HERE');
-      setMsg('<b>This web address cannot reach the data server.</b> Open the dashboard from your Cloudflare link instead: <a href="https://btc-5m-dashboard.barcodeuserlll.workers.dev/" style="color:#a879ff">btc-5m-dashboard.barcodeuserlll.workers.dev</a>');
-    } else if (code === 'UPSTREAM') {
-      setStatus('', hasData ? 'COINGLASS ERROR · SHOWING LAST DATA' : 'COINGLASS ERROR');
-      setMsg('CoinGlass said: <b></b>');
-      el('tbMsg').querySelector('b').textContent = msg || 'no details';
-    } else {
-      setStatus('', hasData ? 'RETRYING · SHOWING LAST DATA' : 'RETRYING…');
-      setMsg('');
-    }
-    if (!hasData) {
-      rowsEl.innerHTML = '<tr><td class="tb-empty" colspan="6">No data yet</td></tr>';
-    }
-  }
-
-  async function load() {
-    const my = ++seq;
-    const r = range;
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 12000);
-    try {
-      const res = await fetch(API_BASE + '/api/taker?range=' + encodeURIComponent(r), { cache: 'no-store', signal: ctrl.signal });
-      let body = null;
-      try { body = await res.json(); } catch (e) { body = null; }
-      if (my !== seq) return;
-      if (!body) { showError('NOAPI'); return; }
-      if (!body.ok) { showError(body.code || 'ERR', body.error); return; }
-      render(body);
-      setStatus('live', 'LIVE · ' + new Date().toLocaleTimeString());
-      setMsg('');
-    } catch (e) {
-      if (my !== seq) return;
-      showError('NET');
-    } finally {
-      clearTimeout(t);
-    }
-  }
-
-  el('tbTabs').addEventListener('click', e => {
-    const b = e.target.closest('.tb-tab');
-    if (!b) return;
-    range = b.getAttribute('data-r');
-    document.querySelectorAll('#tbTabs .tb-tab').forEach(x => x.classList.toggle('on', x === b));
-    load();
+  connectors.Bitget=()=>connect('Bitget','wss://ws.bitget.com/v2/ws/public',ws=>{
+    ws.send(JSON.stringify({op:'subscribe',args:[{instType:'USDT-FUTURES',channel:'trade',instId:'BTCUSDT'}]}));
+  },d=>{
+    if(Array.isArray(d.data))d.data.forEach(t=>addTrade('Bitget',t.side||t.S,t.price||t.p,t.size||t.qty||t.v,t.ts||t.T,t.tradeId||t.tradeID||t.i));
+  });
+  connectors.Hyperliquid=()=>connect('Hyperliquid','wss://api.hyperliquid.xyz/ws',ws=>{
+    ws.send(JSON.stringify({method:'subscribe',subscription:{type:'trades',coin:'BTC'}}));
+  },d=>{
+    if(d.channel==='trades'&&Array.isArray(d.data))d.data.forEach(t=>addTrade('Hyperliquid',t.side,t.px,t.sz,t.time,t.tid));
   });
 
-  setInterval(() => { if (!document.hidden) load(); }, REFRESH_MS);
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
-  load();
-} catch (err) {
-  console.error('Taker buy/sell table failed to start:', err);
-}
+  const rowMap=new Map();
+  function ensureRow(key){
+    let tr=rowMap.get(key);
+    if(!tr){tr=document.createElement('tr');tr.innerHTML='<td class="tb-ex"></td><td class="tb-buy"></td><td class="tb-sell"></td><td class="tb-bv"></td><td class="tb-sv"></td><td><div class="tb-split"><i></i></div></td>';rowMap.set(key,tr);}
+    return tr;
+  }
+  function paintCell(td,value,label){
+    const old=td._v;td.textContent=label;td._v=value;
+    if(old!=null&&value!=null&&value!==old){
+      td.classList.remove('tb-flash-up','tb-flash-down');void td.offsetWidth;
+      td.classList.add(value>old?'tb-flash-up':'tb-flash-down');
+      setTimeout(()=>td.classList.remove('tb-flash-up','tb-flash-down'),600);
+    }
+  }
+  function totals(v,now,windowMs){
+    const min=Math.floor((now-windowMs)/1000);let buy=0,sell=0;
+    for(const [sec,b] of v.buckets)if(sec>=min){buy+=b.buy;sell+=b.sell;}
+    const all=buy+sell;
+    return {buy,sell,buyRatio:all?buy/all*100:null,sellRatio:all?sell/all*100:null};
+  }
+  function fill(tr,label,r){
+    const c=tr.children;c[0].textContent=label;
+    paintCell(c[1],r.buyRatio,fmtPct(r.buyRatio));paintCell(c[2],r.sellRatio,fmtPct(r.sellRatio));
+    paintCell(c[3],r.buy,fmtUSD(r.buy));paintCell(c[4],r.sell,fmtUSD(r.sell));
+    c[5].querySelector('i').style.width=(r.buyRatio==null?0:Math.max(0,Math.min(100,r.buyRatio))).toFixed(1)+'%';
+  }
+  function render(){
+    const now=Date.now(),win=RANGE_MS[range],rows=[],grand={buy:0,sell:0};
+    Object.entries(venues).forEach(([name,v])=>{const r=totals(v,now,win);grand.buy+=r.buy;grand.sell+=r.sell;rows.push({name,r,state:v.state});});
+    const all=grand.buy+grand.sell,total={buy:grand.buy,sell:grand.sell,buyRatio:all?grand.buy/all*100:null,sellRatio:all?grand.sell/all*100:null};
+    const allRow=ensureRow('__all');allRow.className='tb-all';fill(allRow,'Combined live feeds',total);rowsEl.appendChild(allRow);
+    rows.forEach(({name,r,state})=>{const tr=ensureRow(name);tr.className=state==='live'?'':'tb-offline';fill(tr,name,r);rowsEl.appendChild(tr);});
+    const elapsed=Math.min(win,now-startedAt),full=elapsed>=win,live=rows.filter(x=>x.state==='live').length;
+    const st=el('tbStatus');st.className='flow-status '+(live===6?'live':live?'partial':'');
+    st.textContent=live+'/6 LIVE · '+range.toUpperCase()+(full?' READY':' WARMING');
+    el('tbMsg').textContent=full
+      ?'Direct public futures trade feeds. This rolling window is fully collected since this page session began.'
+      :'Live-only collection: this window is warming up. '+Math.ceil((win-elapsed)/60000)+' min remaining for a full '+range+' sample. No historical volume is invented.';
+  }
+  el('tbTabs').addEventListener('click',e=>{
+    const b=e.target.closest('.tb-tab');if(!b)return;
+    range=b.getAttribute('data-r');
+    document.querySelectorAll('#tbTabs .tb-tab').forEach(x=>x.classList.toggle('on',x===b));render();
+  });
+  Object.values(connectors).forEach(fn=>fn());connectOKX();connectGate();
+  setInterval(()=>{if(!document.hidden)render();},REFRESH_MS);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)render();});
+  render();
+} catch(err){console.error('Live taker table failed:',err);}
 })();
 </script>
 </body>

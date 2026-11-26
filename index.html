@@ -225,41 +225,40 @@ button{font:inherit}
   <section class="flow-card" id="flowPanel">
     <div class="flow-card-head">
       <div>
-        <div class="flow-title">BTC FUTURES INFLOW / OUTFLOW</div>
-        <div class="flow-subtitle">COINGLASS AGGREGATED FUTURES TAKER BUY / SELL · BINANCE / BYBIT / OKX</div>
+        <div class="flow-title">BTC FUTURES TAKER BUY / SELL RATIO</div>
+        <div class="flow-subtitle">LIVE AGGRESSOR FLOW · BINANCE USDⓈ-M + BYBIT LINEAR · BTCUSDT</div>
       </div>
-      <div class="flow-status" id="flowStatus">CONNECTING FEEDS…</div>
+      <div class="flow-status" id="flowStatus">CONNECTING EXCHANGES…</div>
     </div>
     <div class="flow-controls">
-      <span class="flow-control-label">MARKET</span><span class="flow-control-label" style="color:#e0dbea">FUTURES</span>
-      <span class="flow-control-label">ASSET</span><span class="flow-control-label" style="color:#e0dbea">BTC</span>
-      <span class="flow-control-label">INTERVAL</span>
-      <select class="flow-select" id="flowInterval" aria-label="Flow chart interval">
+      <span class="flow-control-label">MARKET</span><span class="flow-control-label" style="color:#e0dbea">BTC PERPETUALS</span>
+      <span class="flow-control-label">WINDOW</span>
+      <select class="flow-select" id="flowInterval" aria-label="Taker ratio rolling window">
         <option value="5m" selected>5 minute rolling</option><option value="15m">15 minute rolling</option><option value="1h">1 hour rolling</option>
       </select>
-      <label class="flow-toggle"><input type="checkbox" id="flowNetToggle"> Netflow focus</label>
+      <label class="flow-toggle"><input type="checkbox" id="flowNetToggle"> Net delta view</label>
     </div>
     <div class="flow-stats">
-      <div class="flow-stat in"><small>COINGLASS TAKER BUY · INFLOW</small><strong id="flowIn">$0</strong></div>
-      <div class="flow-stat out"><small>COINGLASS TAKER SELL · OUTFLOW</small><strong id="flowOut">$0</strong></div>
-      <div class="flow-stat net"><small>NET FLOW</small><strong id="flowNet">$0</strong></div>
-      <div class="flow-stat price"><small>DATA SOURCE</small><strong id="flowPrice">COINGLASS</strong></div>
+      <div class="flow-stat price"><small>TAKER BUY / SELL RATIO</small><strong id="flowRatio">--</strong></div>
+      <div class="flow-stat in"><small>TAKER BUY</small><strong id="flowBuyPct">--</strong></div>
+      <div class="flow-stat out"><small>TAKER SELL</small><strong id="flowSellPct">--</strong></div>
+      <div class="flow-stat net"><small>TOTAL TRADED</small><strong id="flowTotal">$--</strong></div>
     </div>
     <div class="flow-chart-head">
-      <div class="chart-title" id="flowChartTitle">COINGLASS BTC FUTURES FLOW · ROLLING 5M</div>
-      <div class="flow-legend"><span><i style="background:#1bb99b"></i>INFLOW</span><span><i style="background:#ff425e"></i>OUTFLOW</span></div>
+      <div class="chart-title" id="flowChartTitle">BTC TAKER BUY / SELL RATIO · ROLLING 5M</div>
+      <div class="flow-legend"><span><i style="background:#1bb99b"></i>BUY PRESSURE</span><span><i style="background:#ff425e"></i>SELL PRESSURE</span><span><i style="background:#efc34b"></i>BUY / SELL RATIO</span></div>
     </div>
     <div class="flow-chart-wrap">
-      <canvas id="flowChart" aria-label="Live Bitcoin futures inflow and outflow bars with BTC price line"></canvas>
+      <canvas id="flowChart" aria-label="Live BTC futures taker buy sell ratio chart"></canvas>
       <div class="flow-tooltip" id="flowTooltip"></div>
     </div>
-    <div class="flow-chart-foot" id="flowChartFoot">Waiting for CoinGlass rolling-window snapshots.</div>
+    <div class="flow-chart-foot" id="flowChartFoot">Warming up live trade feeds. A complete rolling 5-minute reading requires five minutes of collection.</div>
     <div class="flow-sources">
-      <span class="flow-source" id="flowBinance">SOURCE · COINGLASS</span>
-      <span class="flow-source" id="flowBybit">EXCHANGES · BINANCE / BYBIT / OKX</span>
-      <span class="flow-source" id="flowHyper">WAITING FOR FIRST UPDATE</span>
+      <span class="flow-source" id="flowBinance">BINANCE · CONNECTING</span>
+      <span class="flow-source" id="flowBybit">BYBIT · CONNECTING</span>
+      <span class="flow-source" id="flowHyper">LIVE WINDOW · WARMING UP</span>
     </div>
-    <div class="flow-chart-foot">Source: CoinGlass futures netflow API aggregated across Binance, Bybit and OKX. Each plotted observation is a rolling-window snapshot, not a historical candle. The endpoint reports trailing 5m, 15m and 1h values; snapshots are polled every 15 seconds.</div>
+    <div class="flow-chart-foot">Method: sums executed USD value of aggressive buyer-initiated and seller-initiated futures trades over the selected rolling window. Binance aggTrade and Bybit publicTrade are counted once per received trade. This is a transparent two-exchange live estimate, not CoinGlass's 30-exchange aggregate; no historical trades are backfilled, so the reading becomes fully warmed after the selected window has elapsed. Missing/disconnected feeds are excluded and shown above.</div>
   </section>
 
   <section class="events">
@@ -902,11 +901,16 @@ button{font:inherit}
   }
 
 
-  // CoinGlass rolling futures netflow snapshots via the private Cloudflare Worker.
-  const COINGLASS_URL = "https://btc-5m-dashboard.barcodeuserlll.workers.dev/api/flow";
-  const FLOW_WINDOWS = ["5m","15m","1h"];
+  // Direct public futures trade streams: Binance USD-M + Bybit Linear.
+  // Aggressor side is used: Binance m=true means buyer was maker => taker sell.
+  const FLOW_WINDOWS = { "5m":300, "15m":900, "1h":3600 };
+  const flowBuckets = new Map();
   const flowHistory = [];
-  let flowSnapshot = null, flowBusy = false, flowLastSuccess = 0;
+  const flowSockets = { binance:null, bybit:null };
+  const flowState = { binance:"connecting", bybit:"connecting" };
+  let flowLastDraw = 0;
+  let flowReconnect = { binance:null, bybit:null };
+  let flowPingTimer = null;
 
   function flowFmt(n) {
     if (!Number.isFinite(n)) return "--";
@@ -920,12 +924,84 @@ button{font:inherit}
   }
   function flowWindow() {
     const v=$("flowInterval").value;
-    return FLOW_WINDOWS.includes(v)?v:"5m";
+    return FLOW_WINDOWS[v]?v:"5m";
   }
+  function flowBucket(sec) {
+    let b=flowBuckets.get(sec);
+    if(!b){b={sec,buy:0,sell:0};flowBuckets.set(sec,b);}
+    return b;
+  }
+  function flowTrade(side,price,size,source,timeMs) {
+    const p=Number(price),q=Number(size);
+    if(!Number.isFinite(p)||!Number.isFinite(q)||p<=0||q<=0)return;
+    const sec=Math.floor((Number(timeMs)||Date.now())/1000);
+    const usd=p*q;
+    const b=flowBucket(sec);
+    if(side==="buy")b.buy+=usd;else if(side==="sell")b.sell+=usd;else return;
+    const nowSec=Math.floor(Date.now()/1000);
+    for(const k of flowBuckets.keys())if(k<nowSec-3605)flowBuckets.delete(k);
+    flowLastDraw=0;
+  }
+  function flowConnectBinance() {
+    try {
+      if(flowSockets.binance && (flowSockets.binance.readyState===0||flowSockets.binance.readyState===1))return;
+      flowState.binance="connecting";flowPaintStatus();
+      const ws=new WebSocket("wss://fstream.binance.com/ws/btcusdt@aggTrade");
+      flowSockets.binance=ws;
+      ws.onopen=()=>{flowState.binance="live";flowPaintStatus();};
+      ws.onmessage=(ev)=>{
+        try{
+          const d=JSON.parse(ev.data);
+          flowTrade(d.m?"sell":"buy",d.p,d.q,"Binance",d.T||d.E);
+        }catch(_){}
+      };
+      ws.onerror=()=>{flowState.binance="error";flowPaintStatus();};
+      ws.onclose=()=>{flowState.binance="reconnecting";flowPaintStatus();clearTimeout(flowReconnect.binance);flowReconnect.binance=setTimeout(flowConnectBinance,2500);};
+    }catch(_){flowState.binance="error";flowPaintStatus();setTimeout(flowConnectBinance,4000);}
+  }
+  function flowConnectBybit() {
+    try {
+      if(flowSockets.bybit && (flowSockets.bybit.readyState===0||flowSockets.bybit.readyState===1))return;
+      flowState.bybit="connecting";flowPaintStatus();
+      const ws=new WebSocket("wss://stream.bybit.com/v5/public/linear");
+      flowSockets.bybit=ws;
+      ws.onopen=()=>{
+        flowState.bybit="live";flowPaintStatus();
+        ws.send(JSON.stringify({op:"subscribe",args:["publicTrade.BTCUSDT"]}));
+      };
+      ws.onmessage=(ev)=>{
+        try{
+          const d=JSON.parse(ev.data);
+          if(d.op==="ping")return;
+          if(d.topic==="publicTrade.BTCUSDT"&&Array.isArray(d.data)){
+            d.data.forEach(t=>flowTrade(String(t.S).toLowerCase(),t.p,t.v,"Bybit",Number(t.T)));
+          }
+        }catch(_){}
+      };
+      ws.onerror=()=>{flowState.bybit="error";flowPaintStatus();};
+      ws.onclose=()=>{flowState.bybit="reconnecting";flowPaintStatus();clearTimeout(flowReconnect.bybit);flowReconnect.bybit=setTimeout(flowConnectBybit,2500);};
+    }catch(_){flowState.bybit="error";flowPaintStatus();setTimeout(flowConnectBybit,4000);}
+  }
+  function flowPaintStatus() {
+    const live=Object.values(flowState).filter(x=>x==="live").length;
+    const bad=Object.values(flowState).filter(x=>x==="error").length;
+    flowStatus(live===2?"2 EXCHANGES · LIVE":live===1?"1 EXCHANGE · PARTIAL":bad?"FEED ERROR":"CONNECTING…",live===2?"live":live===1?"partial":"");
+    $("flowBinance").textContent="BINANCE · "+flowState.binance.toUpperCase();
+    $("flowBybit").textContent="BYBIT · "+flowState.bybit.toUpperCase();
+    $("flowBinance").className="flow-source "+(flowState.binance==="live"?"live":"stale");
+    $("flowBybit").className="flow-source "+(flowState.bybit==="live"?"live":"stale");
+  }
+  function flowGetTotals(seconds) {
+    const now=Math.floor(Date.now()/1000),from=now-seconds+1;
+    let buy=0,sell=0,covered=0;
+    for(const [sec,b] of flowBuckets){if(sec>=from&&sec<=now){buy+=b.buy;sell+=b.sell;}}
+    const total=buy+sell;
+    return {buy,sell,total,ratio:sell>0?buy/sell:null,buyPct:total>0?buy/total*100:null,sellPct:total>0?sell/total*100:null,coverage:Math.min(1,Math.max(0,(now-(flowStartedAt||now))/seconds))};
+  }
+  let flowStartedAt=Date.now()/1000;
   function flowNiceCeil(value) {
-    const v=Math.max(1,value),power=Math.pow(10,Math.floor(Math.log10(v))),scaled=v/power;
-    const nice=scaled<=1?1:scaled<=2?2:scaled<=5?5:10;
-    return nice*power;
+    const v=Math.max(.01,value),power=Math.pow(10,Math.floor(Math.log10(v))),scaled=v/power;
+    return (scaled<=1?1:scaled<=2?2:scaled<=5?5:10)*power;
   }
   function flowDraw() {
     const canvas=$("flowChart");if(!canvas)return;
@@ -935,72 +1011,60 @@ button{font:inherit}
     if(canvas.width!==pw||canvas.height!==ph){canvas.width=pw;canvas.height=ph;}
     ctx.setTransform(dpr,0,0,dpr,0,0);
     const w=rect.width,h=rect.height;ctx.clearRect(0,0,w,h);ctx.fillStyle="#050609";ctx.fillRect(0,0,w,h);
-    const interval=flowWindow(),rows=flowHistory.slice(-60),left=w<520?48:62,right=w-14,top=22,bottom=h-32;
-    const values=rows.map(x=>x.windows&&x.windows[interval]).filter(Boolean);
+    const interval=flowWindow(),seconds=FLOW_WINDOWS[interval],now=Math.floor(Date.now()/1000);
+    const samples=[];
+    for(let i=59;i>=0;i--){
+      const end=now-i*5,from=end-seconds+1;let buy=0,sell=0;
+      for(const [sec,b] of flowBuckets)if(sec>=from&&sec<=end){buy+=b.buy;sell+=b.sell;}
+      const total=buy+sell;
+      samples.push({at:end,buy,sell,buyPct:total?buy/total*100:null,sellPct:total?sell/total*100:null,ratio:sell?buy/sell:null});
+    }
+    const latest=flowGetTotals(seconds),left=w<520?48:60,right=w-14,top=24,bottom=h-32,plotH=bottom-top,step=(right-left)/samples.length,bw=Math.max(2,step*.62);
     const netMode=$("flowNetToggle").checked;
-    const max=Math.max(1,...values.map(x=>netMode?Math.abs(Number(x.netUsd)||0):Math.max(Number(x.buyUsd)||0,Number(x.sellUsd)||0)));
-    const nice=flowNiceCeil(max),step=(right-left)/60,bw=Math.max(2,step*.68);
-    const zero=netMode?(top+bottom)/2:bottom;
-    ctx.font="10px system-ui";ctx.textBaseline="middle";
+    const peak=Math.max(1,...samples.map(x=>netMode?Math.abs(x.buy-x.sell):Math.max(x.buy,x.sell)));
+    const nice=flowNiceCeil(peak);
+    ctx.font="9px system-ui";ctx.textBaseline="middle";
     [0,.25,.5,.75,1].forEach(f=>{
-      const y=bottom-f*(bottom-top);
-      ctx.strokeStyle="#202832";ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();ctx.setLineDash([]);
-      ctx.fillStyle="#89939e";ctx.textAlign="right";ctx.fillText(flowFmt(nice*f),left-8,y);
+      const y=bottom-f*plotH;ctx.strokeStyle="#202832";ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle="#89939e";ctx.textAlign="right";ctx.fillText(flowFmt(nice*f),left-7,y);
     });
-    rows.forEach((snap,index)=>{
-      const d=snap.windows&&snap.windows[interval];if(!d)return;
-      const x=left+index*step+(step-bw)/2;
-      const buy=Math.max(0,Number(d.buyUsd)||0),sell=Math.max(0,Number(d.sellUsd)||0);
+    samples.forEach((x,i)=>{
+      const px=left+i*step+(step-bw)/2;
       if(netMode){
-        const net=Number(d.netUsd)||0,barH=Math.abs(net)/nice*((bottom-top)/2);
-        ctx.fillStyle=net>=0?"#20b79a":"#f0445e";
-        ctx.fillRect(x,net>=0?zero-barH:zero,bw,Math.max(1,barH));
+        const delta=x.buy-x.sell,bar=Math.abs(delta)/nice*plotH;
+        ctx.fillStyle=delta>=0?"#20b79a":"#f0445e";ctx.fillRect(px,delta>=0?bottom-bar:bottom,bw,Math.max(1,bar));
       }else{
-        ctx.fillStyle="#20b79a";ctx.fillRect(x,bottom-buy/nice*(bottom-top),bw,buy/nice*(bottom-top));
-        ctx.fillStyle="#f0445e";ctx.fillRect(x,bottom-sell/nice*(bottom-top),bw,sell/nice*(bottom-top));
+        ctx.fillStyle="#20b79a";ctx.fillRect(px,bottom-x.buy/nice*plotH,bw,x.buy/nice*plotH);
+        ctx.fillStyle="#f0445e";ctx.fillRect(px,bottom-x.sell/nice*plotH,bw,x.sell/nice*plotH);
       }
     });
     ctx.font="9px system-ui";ctx.textAlign="center";ctx.textBaseline="alphabetic";ctx.fillStyle="#8a939e";
-    const every=Math.max(1,Math.floor(rows.length/6));
-    rows.forEach((x,i)=>{if(i%every&&i!==rows.length-1)return;ctx.fillText(new Date(x.at).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit",second:"2-digit"}),left+i*step+step/2,h-10);});
-    const d=flowSnapshot&&flowSnapshot.windows&&flowSnapshot.windows[interval];
-    if(d){
-      $("flowIn").textContent=flowFmt(d.buyUsd);$("flowOut").textContent=flowFmt(d.sellUsd);$("flowNet").textContent=flowFmt(d.netUsd);
-      $("flowNet").style.color=d.netUsd>0?"#20b79a":d.netUsd<0?"#f0445e":"#dbe0e7";
-    }else{$("flowIn").textContent="--";$("flowOut").textContent="--";$("flowNet").textContent="--";}
-    $("flowPrice").textContent="LIVE API";
-    $("flowChartTitle").textContent="COINGLASS BTC FUTURES FLOW · "+interval.toUpperCase()+" ROLLING WINDOW SNAPSHOTS";
-    $("flowChartFoot").textContent=rows.length>1?"Each bar is a timestamped CoinGlass snapshot of the trailing "+interval+" window. Snapshots are sampled every 15 seconds; these are not exchange-native historical candles.":"Waiting for CoinGlass snapshots. New observations are collected every 15 seconds.";
-  }
-  async function flowFetch() {
-    if(flowBusy)return;
-    flowBusy=true;
-    try{
-      const response=await fetch(COINGLASS_URL,{cache:"no-store"});
-      const body=await response.json();
-      if(!response.ok||!body||body.ok!==true||!body.windows)throw new Error(body&&body.error?body.error:"Worker HTTP "+response.status);
-      const clean={at:Number(body.fetchedAt)||Date.now(),windows:{}};
-      FLOW_WINDOWS.forEach(k=>{
-        const d=body.windows[k]||{};
-        clean.windows[k]={buyUsd:Number.isFinite(Number(d.buyUsd))?Number(d.buyUsd):0,sellUsd:Number.isFinite(Number(d.sellUsd))?Number(d.sellUsd):0,netUsd:Number.isFinite(Number(d.netUsd))?Number(d.netUsd):0,changePct:Number.isFinite(Number(d.changePct))?Number(d.changePct):null};
-      });
-      flowSnapshot=clean;flowHistory.push(clean);
-      if(flowHistory.length>240)flowHistory.splice(0,flowHistory.length-240);
-      flowLastSuccess=Date.now();flowStatus("COINGLASS · LIVE","live");
-      $("flowBinance").textContent="SOURCE · COINGLASS";
-      $("flowBybit").textContent="EXCHANGES · BINANCE / BYBIT / OKX";
-      $("flowHyper").textContent="UPDATED · "+new Date(clean.at).toLocaleTimeString();
-      ["flowBinance","flowBybit","flowHyper"].forEach(id=>$(id).className="flow-source live");
-      flowDraw();
-    }catch(error){
-      flowStatus(flowLastSuccess?"COINGLASS · STALE":"COINGLASS · ERROR",flowLastSuccess?"partial":"");
-      $("flowChartFoot").textContent="CoinGlass feed unavailable: "+String(error.message||error)+". Check Worker deployment, API key permissions and CoinGlass plan.";
-    }finally{flowBusy=false;}
+    samples.forEach((x,i)=>{if(i%10!==0&&i!==samples.length-1)return;ctx.fillText(new Date(x.at*1000).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),left+i*step+step/2,h-10);});
+    const ratioSamples=samples.filter(x=>Number.isFinite(x.ratio));
+    if(!netMode&&ratioSamples.length>1){
+      const vals=ratioSamples.map(x=>x.ratio),min=Math.max(0,Math.min(.5,...vals)),max=Math.max(1.5,...vals),lo=Math.min(min,max-.05),hi=Math.max(max,lo+.05);
+      ctx.strokeStyle="#efc34b";ctx.lineWidth=2;ctx.beginPath();
+      ratioSamples.forEach((x,i)=>{const index=samples.indexOf(x),px=left+index*step+step/2,py=top+(hi-x.ratio)/(hi-lo)*plotH;if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);});
+      ctx.stroke();
+    }
+    $("flowRatio").textContent=latest.ratio===null?"--":latest.ratio.toFixed(3);
+    $("flowRatio").style.color=latest.ratio===null?"#dbe0e7":latest.ratio>1?"#20b79a":latest.ratio<1?"#f0445e":"#dbe0e7";
+    $("flowBuyPct").textContent=latest.buyPct===null?"--":latest.buyPct.toFixed(2)+"%";
+    $("flowSellPct").textContent=latest.sellPct===null?"--":latest.sellPct.toFixed(2)+"%";
+    $("flowTotal").textContent=flowFmt(latest.total);
+    $("flowChartTitle").textContent="BTC TAKER BUY / SELL RATIO · ROLLING "+interval.toUpperCase();
+    const age=Math.max(0,Math.floor(Date.now()/1000-flowStartedAt));
+    const warm=Math.min(100,age/seconds*100);
+    $("flowHyper").textContent="WINDOW WARM-UP · "+Math.floor(warm)+"%";
+    $("flowChartFoot").textContent=age<seconds?"Collecting live trades: "+Math.floor(age)+" of "+seconds+" seconds ("+Math.floor(warm)+"% warmed). Ratio is provisional until the full window is populated.":"Full "+interval+" rolling window active. Ratio = aggressive buy USD ÷ aggressive sell USD. Last updated "+new Date().toLocaleTimeString()+".";
   }
   $("flowInterval").addEventListener("change",flowDraw);
   $("flowNetToggle").addEventListener("change",flowDraw);
-  flowFetch();
-  setInterval(flowFetch,15000);
+  flowStartedAt=Math.floor(Date.now()/1000);
+  flowConnectBinance();
+  flowConnectBybit();
+  flowPingTimer=setInterval(()=>{const ws=flowSockets.bybit;if(ws&&ws.readyState===WebSocket.OPEN)try{ws.send(JSON.stringify({op:"ping"}));}catch(_){}},20000);
+  setInterval(flowDraw,1000);
   window.addEventListener("resize",flowDraw);
 
   $("alerts").addEventListener("click", async () => {

@@ -95,6 +95,48 @@ button{font:inherit}
 .flow-source{padding:5px 8px;border:1px solid #343043;border-radius:99px;background:#11101a;color:#817c92;font-size:8px;font-weight:900;letter-spacing:.05em}
 .flow-source.live{color:var(--green);border-color:#255b47;background:#0d1e18}
 .flow-source.stale{color:var(--orange);border-color:#654b2b;background:#1d170f}
+
+/* CoinGlass-inspired terminal styling for the live futures flow chart */
+.flow-card{margin-top:18px;border:0;border-top:1px solid #20252c;border-bottom:1px solid #20252c;border-radius:0;background:#050609;box-shadow:none;overflow:hidden}
+.flow-card-head{padding:17px 6px 12px;border:0;background:#050609}
+.flow-title{font-size:17px;font-weight:800;letter-spacing:-.025em;color:#e7eaf0;text-transform:none}
+.flow-subtitle{margin-top:4px;font-size:9px;color:#828a96;letter-spacing:.02em}
+.flow-status{padding:5px 9px;border-radius:4px;background:#15191f;border:1px solid #2d353f;color:#aeb7c2;font-size:9px}
+.flow-status.live{background:#0b201d;border-color:#176b5c;color:#21b99b}
+.flow-status.partial{background:#211a0d;border-color:#745b25;color:#e6b74e}
+.flow-controls{justify-content:flex-end;gap:9px;padding:8px 6px 13px;border:0}
+.flow-control-label{font-size:10px;color:#aab2bd;letter-spacing:0;font-weight:700}
+.flow-select{min-width:95px;padding:8px 25px 8px 10px;background:#090d12;border:1px solid #303944;border-radius:6px;color:#d4dae2;font-size:11px}
+.flow-toggle{margin-left:7px;color:#c4cbd3;font-size:11px;font-weight:600}
+.flow-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:5px 6px 10px;border-bottom:1px solid #171c23}
+.flow-stat{padding:7px 12px;border:0;border-right:1px solid #20252c;border-radius:0;background:transparent}
+.flow-stat:first-child{padding-left:0}
+.flow-stat:last-child{border-right:0}
+.flow-stat small{color:#838c98;font-size:9px;letter-spacing:.06em}
+.flow-stat strong{margin-top:5px;font-size:17px;font-weight:750}
+.flow-stat.in strong{color:#24b69d}.flow-stat.out strong{color:#f0445e}.flow-stat.net strong{color:#dbe0e7}.flow-stat.price strong{color:#efc34b}
+.flow-chart-head{padding:12px 6px 5px}
+.flow-legend{gap:16px;color:#b4bdc7;font-size:10px}
+.flow-legend i{width:10px;height:10px;border-radius:1px}
+.flow-legend span:last-child i{height:2px}
+.flow-chart-wrap{position:relative;width:100%;background:#050609}
+#flowChart{display:block;width:100%;height:350px}
+.flow-tooltip{position:absolute;z-index:2;display:none;pointer-events:none;min-width:155px;padding:9px 11px;border:1px solid #424b57;border-radius:4px;background:rgba(12,16,22,.96);box-shadow:0 5px 18px #0009;color:#dce2e9;font-size:10px;line-height:1.7;white-space:nowrap}
+.flow-tooltip b{display:block;color:#f2f4f7;font-size:10px;margin-bottom:3px}
+.flow-tooltip .tip-in{color:#24b69d}.flow-tooltip .tip-out{color:#f0445e}.flow-tooltip .tip-price{color:#efc34b}
+.flow-chart-foot{padding:7px 6px 10px;color:#7b8591;font-size:9px;line-height:1.5}
+.flow-sources{padding:0 6px 12px;gap:6px}
+.flow-source{padding:4px 7px;border-radius:3px;background:#0b0f14;border-color:#262d36;color:#8b95a1;font-size:8px}
+.flow-source.live{background:#0a1e1a;border-color:#185b4e;color:#24b69d}
+.flow-source.stale{background:#20190d;border-color:#6c5126;color:#e5b54b}
+@media(max-width:620px){
+ .flow-card-head,.flow-controls,.flow-chart-head{padding-left:4px;padding-right:4px}
+ .flow-stats{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:8px;padding:8px 4px}
+ .flow-stat{padding:7px 8px;border-right:0;border-bottom:1px solid #20252c}
+ .flow-stat:nth-child(odd){padding-left:0}
+ #flowChart{height:285px}
+ .flow-chart-foot,.flow-sources{padding-left:4px;padding-right:4px}
+}
 @media(max-width:620px){
  body{padding:18px 10px 30px}.header{align-items:flex-start}.brand-title{font-size:11px}.brand-sub{font-size:9px}
  .card-top,.metrics,.hero,.countdown-row,.chart-head,.controls{padding-left:12px;padding-right:12px}
@@ -207,7 +249,10 @@ button{font:inherit}
       <div class="chart-title" id="flowChartTitle">BTC FUTURES FLOW · LAST 5 HOURS</div>
       <div class="flow-legend"><span><i style="background:#1bb99b"></i>INFLOW</span><span><i style="background:#ff425e"></i>OUTFLOW</span><span><i style="background:#f2c64b;height:2px"></i>BTC PRICE</span></div>
     </div>
-    <canvas id="flowChart" aria-label="Live Bitcoin futures inflow and outflow bars with BTC price line"></canvas>
+    <div class="flow-chart-wrap">
+      <canvas id="flowChart" aria-label="Live Bitcoin futures inflow and outflow bars with BTC price line"></canvas>
+      <div class="flow-tooltip" id="flowTooltip"></div>
+    </div>
     <div class="flow-chart-foot" id="flowChartFoot">Waiting for live futures trades. Current five-minute bar updates continuously as trades arrive.</div>
     <div class="flow-sources">
       <span class="flow-source" id="flowBinance">BINANCE · CONNECTING</span>
@@ -937,44 +982,109 @@ button{font:inherit}
       localStorage.setItem(FLOW_KEY,JSON.stringify(data));
     }catch(_){}
   }
+  function flowAxisMoney(value) {
+    const abs=Math.abs(value);
+    const n=abs>=1e9?(abs/1e9).toFixed(2)+"B":abs>=1e6?(abs/1e6).toFixed(0)+"M":abs>=1e3?(abs/1e3).toFixed(0)+"K":abs.toFixed(0);
+    return (value<0?"-$":"$")+n;
+  }
+  function flowNiceCeil(value) {
+    const v=Math.max(1,value),power=Math.pow(10,Math.floor(Math.log10(v))),scaled=v/power;
+    const nice=scaled<=1?1:scaled<=2?2:scaled<=5?5:10;
+    return nice*power;
+  }
+  function flowRows(interval) {
+    const duration=FLOW_INTERVALS[interval],current=Math.floor(Date.now()/duration)*duration,rows=[];
+    for(let i=FLOW_BARS-1;i>=0;i--){const t=current-i*duration;rows.push(flowMaps[interval].get(t)||{t,inflow:0,outflow:0,price:null,trades:0});}
+    return {rows,current};
+  }
   function flowDraw() {
     const canvas=$("flowChart");if(!canvas)return;
     const ctx=canvas.getContext("2d");if(!ctx)return;
-    const r=canvas.getBoundingClientRect();if(!r.width||!r.height)return;
-    const d=Math.min(2,window.devicePixelRatio||1),pw=Math.round(r.width*d),ph=Math.round(r.height*d);
-    if(canvas.width!==pw||canvas.height!==ph){canvas.width=pw;canvas.height=ph;}
-    ctx.setTransform(d,0,0,d,0,0);const w=r.width,h=r.height;ctx.clearRect(0,0,w,h);
-    const interval=$("flowInterval").value,duration=FLOW_INTERVALS[interval],current=Math.floor(Date.now()/duration)*duration;
-    const rows=[];
-    for(let i=FLOW_BARS-1;i>=0;i--){const t=current-i*duration;rows.push(flowMaps[interval].get(t)||{t,inflow:0,outflow:0,price:null,trades:0});}
-    const left=12,right=w-12,top=19,bottom=h-29,zero=top+(bottom-top)*.58,upper=zero-top-8,lower=bottom-zero-8;
-    const netMode=$("flowNetToggle").checked;
-    const max=Math.max(1,...rows.map(x=>netMode?Math.abs(x.inflow-x.outflow):Math.max(x.inflow,x.outflow)));
-    const step=(right-left)/rows.length,bw=Math.max(2,step*.62);
-    ctx.strokeStyle="rgba(170,155,205,.13)";ctx.lineWidth=1;
-    for(let i=0;i<=4;i++){const y=top+(bottom-top)*i/4;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();}
-    ctx.strokeStyle="rgba(215,208,230,.42)";ctx.beginPath();ctx.moveTo(left,zero);ctx.lineTo(right,zero);ctx.stroke();
-    rows.forEach((x,i)=>{
-      const bx=left+i*step+(step-bw)/2;
-      if(netMode){const n=x.inflow-x.outflow,hh=Math.abs(n)/max*(n>=0?upper:lower);ctx.fillStyle=n>=0?"#1bb99b":"#ff425e";ctx.fillRect(bx,n>=0?zero-hh:zero,bw,hh);}
-      else{ctx.fillStyle="#1bb99b";ctx.fillRect(bx,zero-x.inflow/max*upper,bw,x.inflow/max*upper);ctx.fillStyle="#ff425e";ctx.fillRect(bx,zero,bw,x.outflow/max*lower);}
-    });
-    const valid=rows.filter(x=>Number.isFinite(x.price)&&x.price>0);
-    if(valid.length>1){
-      const min=Math.min(...valid.map(x=>x.price)),maxP=Math.max(...valid.map(x=>x.price)),range=maxP-min||Math.max(maxP*.00015,1);
-      ctx.beginPath();ctx.strokeStyle="#f2c64b";ctx.lineWidth=1.8;ctx.lineJoin="round";ctx.lineCap="round";let drawing=false;
-      rows.forEach((x,i)=>{if(!Number.isFinite(x.price)||x.price<=0){drawing=false;return;}const xx=left+i*step+step/2,yy=top+5+(maxP-x.price)/range*(bottom-top-12);if(!drawing){ctx.moveTo(xx,yy);drawing=true;}else ctx.lineTo(xx,yy);});ctx.stroke();
+    const rect=canvas.getBoundingClientRect();if(!rect.width||!rect.height)return;
+    const dpr=Math.min(2,window.devicePixelRatio||1),pixelW=Math.round(rect.width*dpr),pixelH=Math.round(rect.height*dpr);
+    if(canvas.width!==pixelW||canvas.height!==pixelH){canvas.width=pixelW;canvas.height=pixelH;}
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    const w=rect.width,h=rect.height;ctx.clearRect(0,0,w,h);ctx.fillStyle="#050609";ctx.fillRect(0,0,w,h);
+    const interval=$("flowInterval").value;
+    const pack=flowRows(interval),rows=pack.rows,current=pack.current,netMode=$("flowNetToggle").checked;
+    const left=w<520?48:62,right=w-58,top=23,bottom=h-32;
+    const zero=top+(bottom-top)*.58,upper=zero-top,lower=bottom-zero;
+    const maxFlow=flowNiceCeil(Math.max(1,...rows.map(x=>Math.max(x.inflow,x.outflow,netMode?Math.abs(x.inflow-x.outflow):0))));
+    const step=(right-left)/rows.length,bw=Math.max(2,step*.68);
+    const yPos=value=>value>=0?zero-(value/maxFlow)*upper:zero+(-value/maxFlow)*lower;
+    const priceRows=rows.filter(x=>Number.isFinite(x.price)&&x.price>0);
+    let minP=priceRows.length?Math.min(...priceRows.map(x=>x.price)):0;
+    let maxP=priceRows.length?Math.max(...priceRows.map(x=>x.price)):0;
+    if(minP===maxP&&maxP>0){const pad=maxP*.001;minP-=pad;maxP+=pad;}
+    const priceY=value=>top+5+(maxP-value)/(maxP-minP||1)*(bottom-top-10);
+
+    // Subtle horizontal grid and left/right scales, similar to the reference terminal.
+    ctx.font="10px system-ui";ctx.textBaseline="middle";
+    for(let i=0;i<=4;i++){
+      const ratio=i/4,y=top+(bottom-top)*ratio;
+      const signed=maxFlow*(1-ratio);
+      const volumeLabel=ratio<.5?flowAxisMoney(signed):ratio===.5?"$0":flowAxisMoney(-maxFlow*((ratio-.5)/.5));
+      ctx.strokeStyle=ratio===2/4?"#3a424c":"#1c232b";ctx.lineWidth=ratio===.5?1:0.8;
+      ctx.setLineDash(ratio===.5?[]:[3,4]);ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle="#89939e";ctx.textAlign="right";ctx.fillText(volumeLabel,left-8,y);
+      if(maxP>0){const priceTick=maxP-(maxP-minP)*ratio;ctx.fillStyle="#89939e";ctx.textAlign="left";ctx.fillText("$"+priceTick.toLocaleString("en-US",{maximumFractionDigits:0}),right+8,y);}
     }
-    ctx.font="8px ui-monospace,monospace";ctx.textAlign="center";ctx.fillStyle="#797489";
+
+    // Positive taker-buy bars and negative taker-sell bars share a zero line.
+    rows.forEach((item,index)=>{
+      const x=left+index*step+(step-bw)/2;
+      if(netMode){
+        const net=item.inflow-item.outflow,yy=yPos(net);
+        ctx.fillStyle=net>=0?"#20b79a":"#f0445e";
+        ctx.fillRect(x,net>=0?yy:zero,bw,Math.max(1,Math.abs(zero-yy)));
+      }else{
+        const buyHeight=item.inflow/maxFlow*upper,sellHeight=item.outflow/maxFlow*lower;
+        ctx.fillStyle="#20b79a";ctx.fillRect(x,zero-buyHeight,bw,Math.max(0,buyHeight));
+        ctx.fillStyle="#f0445e";ctx.fillRect(x,zero,bw,Math.max(0,sellHeight));
+      }
+    });
+
+    // Thin BTC price line uses the independent right-hand price scale.
+    if(priceRows.length>1){
+      ctx.beginPath();ctx.strokeStyle="#f0c43e";ctx.lineWidth=1.65;ctx.lineJoin="round";ctx.lineCap="round";
+      let drawing=false;
+      rows.forEach((item,index)=>{
+        if(!Number.isFinite(item.price)||item.price<=0){drawing=false;return;}
+        const x=left+index*step+step/2,y=priceY(item.price);
+        if(!drawing){ctx.moveTo(x,y);drawing=true;}else ctx.lineTo(x,y);
+      });
+      ctx.stroke();
+      const last=priceRows[priceRows.length-1];
+      ctx.fillStyle="#f0c43e";ctx.beginPath();ctx.arc(left+(rows.length-1)*step+step/2,priceY(last.price),2.6,0,Math.PI*2);ctx.fill();
+    }
+
+    // Time labels.
+    ctx.font="9px system-ui";ctx.textAlign="center";ctx.textBaseline="alphabetic";ctx.fillStyle="#8a939e";
     const every=Math.max(1,Math.floor(rows.length/6));
-    rows.forEach((x,i)=>{if(i%every&&i!==rows.length-1)return;ctx.fillText(new Date(x.t).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),left+i*step+step/2,h-12);});
+    rows.forEach((item,index)=>{if(index%every&&index!==rows.length-1)return;const label=new Date(item.t).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});ctx.fillText(label,left+index*step+step/2,h-10);});
+
     const live=flowMaps[interval].get(current),buy=live?live.inflow:0,sell=live?live.outflow:0,net=buy-sell;
     $("flowIn").textContent=flowFmt(buy);$("flowOut").textContent=flowFmt(sell);$("flowNet").textContent=flowFmt(net);
-    $("flowNet").style.color=net>0?"#1bb99b":net<0?"#ff425e":"#d9d3e7";
+    $("flowNet").style.color=net>0?"#20b79a":net<0?"#f0445e":"#dbe0e7";
     const price=flowPrices.binance&&Date.now()-flowPriceAt.binance<10000?flowPrices.binance:flowPrices.bybit&&Date.now()-flowPriceAt.bybit<10000?flowPrices.bybit:flowPrices.hyper&&Date.now()-flowPriceAt.hyper<10000?flowPrices.hyper:null;
     $("flowPrice").textContent=price?"$"+price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}):"--";
     $("flowChartTitle").textContent="BTC FUTURES FLOW · LAST "+(interval==="1m"?"60 MINUTES":interval==="5m"?"5 HOURS":"15 HOURS");
-    $("flowChartFoot").textContent=live&&live.trades?"Current "+interval+" candle is live · "+live.trades.toLocaleString()+" trades counted · data is saved in this browser.":"Waiting for trades in the current "+interval+" candle. Bars update automatically without refreshing.";
+    $("flowChartFoot").textContent=live&&live.trades?"Current "+interval+" candle is live · "+live.trades.toLocaleString()+" trade prints in this bar. Hover over the chart for bar details.":"Waiting for trades in the current "+interval+" candle. The chart updates automatically without refreshing.";
+  }
+  function flowHover(event){
+    const canvas=$("flowChart"),tooltip=$("flowTooltip"),wrap=canvas&&canvas.parentElement;
+    if(!canvas||!tooltip||!wrap)return;
+    const rect=canvas.getBoundingClientRect(),x=event.clientX-rect.left,y=event.clientY-rect.top,w=rect.width,h=rect.height;
+    const left=w<520?48:62,right=w-58;
+    if(x<left||x>right||y<12||y>h-25){tooltip.style.display="none";return;}
+    const interval=$("flowInterval").value,pack=flowRows(interval),rows=pack.rows;
+    const index=Math.max(0,Math.min(rows.length-1,Math.floor((x-left)/(right-left)*rows.length)));
+    const item=rows[index],price=Number.isFinite(item.price)?"$"+item.price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}):"—";
+    tooltip.innerHTML="<b>"+new Date(item.t).toLocaleString()+"</b><span class='tip-in'>Inflow: "+flowFmt(item.inflow)+"</span><br><span class='tip-out'>Outflow: -"+flowFmt(item.outflow).replace("-$","$")+"</span><br>Net: "+flowFmt(item.inflow-item.outflow)+"<br><span class='tip-price'>BTC Price: "+price+"</span>";
+    tooltip.style.display="block";
+    const tipW=tooltip.offsetWidth,tipH=tooltip.offsetHeight;
+    tooltip.style.left=Math.max(5,Math.min(w-tipW-5,x+14))+"px";
+    tooltip.style.top=Math.max(5,Math.min(h-tipH-5,y-tipH/2))+"px";
   }
   function flowRetry(name,fn,delay){if(flowReconnect[name])return;flowReconnect[name]=setTimeout(()=>{flowReconnect[name]=null;fn();},delay||2500);}
   function flowConnectBinance(){
@@ -1033,6 +1143,8 @@ button{font:inherit}
   }
   $("flowInterval").addEventListener("change",flowDraw);
   $("flowNetToggle").addEventListener("change",flowDraw);
+  $("flowChart").addEventListener("mousemove",flowHover);
+  $("flowChart").addEventListener("mouseleave",()=>{$("flowTooltip").style.display="none";});
   flowRestore();flowDraw();flowConnectBinance();flowConnectBybit();flowConnectHyper();flowBackfill();
   setInterval(()=>{
     const now=Date.now();

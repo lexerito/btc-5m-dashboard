@@ -910,6 +910,119 @@ button{font:inherit}
   }
 
 
+  // Start the tracker and keep both its WebSocket and REST fallback alive.
+  $("alerts").addEventListener("click", async () => {
+    if (!("Notification" in window)) {
+      $("alerts").textContent = "ALERTS NOT SUPPORTED";
+      return;
+    }
+    try {
+      notificationPermission = await window.Notification.requestPermission();
+      $("alerts").textContent = notificationPermission === "granted"
+        ? "ALERTS ENABLED"
+        : "ALERTS " + notificationPermission.toUpperCase();
+      if (notificationPermission === "granted") log("Browser notifications enabled.");
+    } catch (_) {
+      $("alerts").textContent = "ALERTS UNAVAILABLE";
+    }
+  });
+
+  $("pause").addEventListener("click", () => {
+    paused = !paused;
+    $("pause").textContent = paused ? "RESUME TRACKING" : "PAUSE TRACKING";
+    if (paused) {
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+      if (connectTimer) clearTimeout(connectTimer);
+      connectTimer = null;
+      if (coinbaseReconnectTimer) clearTimeout(coinbaseReconnectTimer);
+      coinbaseReconnectTimer = null;
+      try { if (ws) ws.close(); } catch (_) {}
+      try { if (coinbaseWs) coinbaseWs.close(); } catch (_) {}
+      log("Tracking paused.");
+      setConnection("PAUSED", "stale");
+      $("roundState").textContent = "TRACKING PAUSED";
+    } else {
+      log("Tracking resumed · syncing fresh BTC data.");
+      lastBootstrapAttemptAt = 0;
+      lastWsMessageAt = 0;
+      connect();
+      bootstrapHistory();
+    }
+  });
+
+  $("reset").addEventListener("click", () => {
+    prices.length = 0;
+    chartValues = [];
+    spot = null;
+    twap = null;
+    opening = null;
+    lastMarket = null;
+    marketStart = null;
+    lastSignal = "";
+    lastCandleTime = null;
+    events = [];
+    $("events").textContent = "";
+    $("spot").textContent = "--";
+    $("twap").textContent = "LOADING";
+    $("opening").textContent = "WAITING";
+    $("difference").textContent = "--";
+    $("difference").className = "difference";
+    $("percentage").textContent = "Rebuilding candle history";
+    $("direction").textContent = "WAITING";
+    $("direction").className = "direction";
+    log("Tracker reset · downloading a fresh candle history.");
+    drawChart();
+    lastBootstrapAttemptAt = 0;
+    bootstrapHistory();
+  });
+
+  setInterval(timer, 1000);
+  setInterval(() => {
+    if (paused) return;
+    const now = Date.now();
+    if (ws && ws.readyState === WebSocket.OPEN &&
+        now - Math.max(lastWsMessageAt, wsOpenedAt) > 8000) {
+      lastSocketError = "Connected but no fresh BTC candles arrived";
+      try { ws.close(); } catch (_) {}
+    }
+    if (ws && ws.readyState === WebSocket.CLOSED && !reconnectTimer) {
+      scheduleReconnect(500);
+    }
+    if (!lastWsMessageAt || now - lastWsMessageAt > 4500) pollRestBackup();
+    if (!lastDataReceivedAt || now - lastDataReceivedAt > 8000) connectCoinbaseBackup();
+    sampleCoinbaseBackup();
+
+    if (lastWsMessageAt && now - lastWsMessageAt <= 4500) {
+      setConnection("LIVE · BINANCE", "live");
+    } else if (lastDataReceivedAt && now - lastDataReceivedAt <= 6000) {
+      setConnection(lastDataSource.indexOf("COINBASE BACKUP") === 0
+        ? "COINBASE BACKUP · LIVE" : "REST BACKUP · LIVE", "stale");
+    } else if ((!lastDataReceivedAt || now - lastDataReceivedAt > 6000) && lastRestError) {
+      setConnection("NO LIVE DATA", "error");
+      setDataDetail("Last REST error: " + lastRestError + " · WS: " + (lastSocketError || "reconnecting"));
+    }
+  }, 1000);
+
+  window.addEventListener("resize", drawChart);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden || paused) return;
+    timer();
+    const now = Date.now();
+    if (ws && ws.readyState === WebSocket.OPEN &&
+        now - Math.max(lastWsMessageAt, wsOpenedAt) > 5000) {
+      try { ws.close(); } catch (_) {}
+    }
+    if (!lastWsMessageAt || now - lastWsMessageAt > 4500) pollRestBackup();
+    if (!lastDataReceivedAt || now - lastDataReceivedAt > 8000) connectCoinbaseBackup();
+    sampleCoinbaseBackup();
+  });
+
+  setConnection("LOADING DATA", "stale");
+  setDataDetail("Starting BTC history download and live WebSocket connection…");
+  timer();
+  connect();
+  bootstrapHistory();
 
 })();
 </script>
@@ -923,14 +1036,14 @@ try {
   if (!rowsEl) return;
   const startedAt=Date.now();
   const RANGE_MS = { '5m':300000, '15m':900000, '30m':1800000, '1h':3600000, '4h':14400000, '12h':43200000, '24h':86400000 };
-  const REFRESH_MS = 5000;
+  const REFRESH_MS = 2500;
   const venues = {
-    Binance:{state:'connecting',buckets:new Map(),seen:new Set()},
-    Bybit:{state:'connecting',buckets:new Map(),seen:new Set()},
-    OKX:{state:'connecting',buckets:new Map(),seen:new Set()},
-    Gate:{state:'connecting',buckets:new Map(),seen:new Set()},
-    Bitget:{state:'connecting',buckets:new Map(),seen:new Set()},
-    Hyperliquid:{state:'connecting',buckets:new Map(),seen:new Set()}
+    Binance:{state:'connecting',buckets:new Map(),seen:new Set(),lastMessageAt:0,connectingAt:0},
+    Bybit:{state:'connecting',buckets:new Map(),seen:new Set(),lastMessageAt:0,connectingAt:0},
+    OKX:{state:'connecting',buckets:new Map(),seen:new Set(),lastMessageAt:0,connectingAt:0},
+    Gate:{state:'connecting',buckets:new Map(),seen:new Set(),lastMessageAt:0,connectingAt:0},
+    Bitget:{state:'connecting',buckets:new Map(),seen:new Set(),lastMessageAt:0,connectingAt:0},
+    Hyperliquid:{state:'connecting',buckets:new Map(),seen:new Set(),lastMessageAt:0,connectingAt:0}
   };
   const sockets = {}, timers = {};
   let range='5m';
@@ -966,24 +1079,81 @@ try {
     if(s==='buy'||s==='b')b.buy+=usd;
     else if(s==='sell'||s==='s'||s==='a')b.sell+=usd;
     else return;
-    const cutoff=Math.floor(Date.now()/1000)-86410;
-    for(const k of v.buckets.keys())if(k<cutoff)v.buckets.delete(k);
+
+  }
+  const heartbeatTimers = {};
+  function clearHeartbeat(name){
+    if(heartbeatTimers[name])clearInterval(heartbeatTimers[name]);
+    heartbeatTimers[name]=null;
+  }
+  function startHeartbeat(name,ws){
+    clearHeartbeat(name);
+    const every={Bybit:20000,Gate:20000,OKX:10000,Bitget:30000,Hyperliquid:30000}[name];
+    if(!every)return;
+    heartbeatTimers[name]=setInterval(()=>{
+      if(sockets[name]!==ws||ws.readyState!==WebSocket.OPEN){clearHeartbeat(name);return;}
+      try{
+        if(name==='Bybit')ws.send(JSON.stringify({op:'ping'}));
+        else if(name==='Gate')ws.send(JSON.stringify({time:Math.floor(Date.now()/1000),channel:'futures.ping'}));
+        else if(name==='Bitget')ws.send('ping');
+        else if(name==='Hyperliquid')ws.send(JSON.stringify({method:'ping'}));
+        else if(name==='OKX'&&Date.now()-venues[name].lastMessageAt>=20000)ws.send('ping');
+      }catch(_){try{ws.close();}catch(__){}}
+    },every);
   }
   function connect(name,url,onOpen,onMessage){
     try{
-      if(sockets[name]&&(sockets[name].readyState===0||sockets[name].readyState===1))return;
-      venues[name].state='connecting';status();
-      const ws=new WebSocket(url);sockets[name]=ws;
-      ws.onopen=()=>{venues[name].state='live';status();if(onOpen)onOpen(ws);};
+      if(sockets[name]&&(sockets[name].readyState===WebSocket.CONNECTING||sockets[name].readyState===WebSocket.OPEN))return;
+      clearHeartbeat(name);
+      venues[name].state='connecting';
+      venues[name].connectingAt=Date.now();
+      status();
+      const ws=new WebSocket(url);
+      sockets[name]=ws;
+      ws.onopen=()=>{
+        if(sockets[name]!==ws)return;
+        venues[name].state='live';
+        venues[name].lastMessageAt=Date.now();
+        status();
+        if(onOpen)onOpen(ws);
+        startHeartbeat(name,ws);
+      };
       ws.onmessage=e=>{
+        if(sockets[name]!==ws)return;
+        venues[name].lastMessageAt=Date.now();
         try{
           if(e.data==='ping'){ws.send('pong');return;}
+          if(e.data==='pong')return;
           onMessage(JSON.parse(e.data),ws);
         }catch(_){}
       };
-      ws.onerror=()=>{venues[name].state='error';status();};
-      ws.onclose=()=>{venues[name].state='reconnecting';status();clearTimeout(timers[name]);timers[name]=setTimeout(()=>connectors[name](),5000);};
-    }catch(_){venues[name].state='error';status();clearTimeout(timers[name]);timers[name]=setTimeout(()=>connectors[name](),8000);}
+      ws.onerror=()=>{
+        if(sockets[name]!==ws)return;
+        venues[name].state='error';
+        status();
+        try{ws.close();}catch(_){}
+      };
+      ws.onclose=()=>{
+        if(sockets[name]!==ws)return;
+        clearHeartbeat(name);
+        delete sockets[name];
+        venues[name].state='reconnecting';
+        status();
+        clearTimeout(timers[name]);
+        timers[name]=setTimeout(()=>{
+          timers[name]=null;
+          if(!document.hidden&&connectors[name])connectors[name]();
+        },4000);
+      };
+    }catch(_){
+      venues[name].state='error';
+      status();
+      clearTimeout(timers[name]);
+      timers[name]=setTimeout(()=>{
+        timers[name]=null;
+        if(!document.hidden&&connectors[name])connectors[name]();
+      },6000);
+    }
   }
   const connectors={};
   connectors.Binance=()=>connect('Binance','wss://fstream.binance.com/market/ws/btcusdt@aggTrade',null,d=>{
@@ -999,7 +1169,7 @@ try {
       const res=await fetch('https://www.okx.com/api/v5/public/instruments?instType=SWAP&instId=BTC-USDT-SWAP',{cache:'no-store'});
       const j=await res.json(),x=j&&j.data&&j.data[0],ctVal=Number(x&&x.ctVal),ctMult=Number(x&&x.ctMult||1);
       if(String(j.code)!=='0'||!x||x.ctValCcy!=='BTC'||!Number.isFinite(ctVal)||ctVal<=0||!Number.isFinite(ctMult)||ctMult<=0)throw Error('OKX contract metadata unavailable');
-      connect('OKX','wss://ws.okx.com:8443/ws/v5/public',ws=>ws.send(JSON.stringify({op:'subscribe',args:[{channel:'trades',instId:'BTC-USDT-SWAP'}]})),d=>{
+      connect('OKX','wss://ws.okx.com/ws/v5/public',ws=>ws.send(JSON.stringify({op:'subscribe',args:[{channel:'trades',instId:'BTC-USDT-SWAP'}]})),d=>{
         if(d.arg&&d.arg.channel==='trades'&&Array.isArray(d.data))d.data.forEach(t=>addTrade('OKX',t.side,t.px,Number(t.sz)*ctVal*ctMult,t.ts,t.tradeId));
       });
     }catch(_){venues.OKX.state='error';status();clearTimeout(timers.OKX);timers.OKX=setTimeout(connectOKX,12000);}
@@ -1027,6 +1197,9 @@ try {
   },d=>{
     if(d.channel==='trades'&&Array.isArray(d.data))d.data.forEach(t=>addTrade('Hyperliquid',t.side,t.px,t.sz,t.time,t.tid));
   });
+  // These callbacks must exist because the shared socket handler invokes them after disconnects.
+  connectors.OKX=connectOKX;
+  connectors.Gate=connectGate;
 
   const rowMap=new Map();
   function ensureRow(key){
@@ -1072,9 +1245,38 @@ try {
     range=b.getAttribute('data-r');
     document.querySelectorAll('#tbTabs .tb-tab').forEach(x=>x.classList.toggle('on',x===b));render();
   });
-  Object.values(connectors).forEach(fn=>fn());connectOKX();connectGate();
-  setInterval(()=>{if(!document.hidden)render();},REFRESH_MS);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)render();});
+  Object.values(connectors).forEach(fn=>fn());
+
+  const feedIdleLimit={Binance:30000,Bybit:45000,OKX:45000,Gate:45000,Bitget:65000,Hyperliquid:65000};
+  function refreshFeedHealth(){
+    if(document.hidden)return;
+    const now=Date.now();
+    Object.keys(venues).forEach(name=>{
+      const v=venues[name],ws=sockets[name];
+      if(ws&&ws.readyState===WebSocket.OPEN&&now-(v.lastMessageAt||v.connectingAt)>feedIdleLimit[name]){
+        try{ws.close();}catch(_){}
+      }else if(ws&&ws.readyState===WebSocket.CONNECTING&&now-v.connectingAt>15000){
+        try{ws.close();}catch(_){}
+      }else if((!ws||ws.readyState===WebSocket.CLOSED)&&!timers[name]&&connectors[name]){
+        connectors[name]();
+      }
+    });
+    render();
+  }
+  function pruneOldBuckets(){
+    const cutoff=Math.floor(Date.now()/1000)-86410;
+    Object.values(venues).forEach(v=>{
+      for(const sec of v.buckets.keys())if(sec<cutoff)v.buckets.delete(sec);
+    });
+  }
+  setInterval(refreshFeedHealth,5000);
+  setInterval(pruneOldBuckets,60000);
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden){
+      refreshFeedHealth();
+      render();
+    }
+  });
   render();
 } catch(err){console.error('Live taker table failed:',err);}
 })();

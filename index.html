@@ -1020,15 +1020,14 @@ button{font:inherit}
 
     // Subtle horizontal grid and left/right scales, similar to the reference terminal.
     ctx.font="10px system-ui";ctx.textBaseline="middle";
-    for(let i=0;i<=4;i++){
-      const ratio=i/4,y=top+(bottom-top)*ratio;
-      const signed=maxFlow*(1-ratio);
-      const volumeLabel=ratio<.5?flowAxisMoney(signed):ratio===.5?"$0":flowAxisMoney(-maxFlow*((ratio-.5)/.5));
-      ctx.strokeStyle=ratio===2/4?"#3a424c":"#1c232b";ctx.lineWidth=ratio===.5?1:0.8;
-      ctx.setLineDash(ratio===.5?[]:[3,4]);ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();ctx.setLineDash([]);
-      ctx.fillStyle="#89939e";ctx.textAlign="right";ctx.fillText(volumeLabel,left-8,y);
-      if(maxP>0){const priceTick=maxP-(maxP-minP)*ratio;ctx.fillStyle="#89939e";ctx.textAlign="left";ctx.fillText("$"+priceTick.toLocaleString("en-US",{maximumFractionDigits:0}),right+8,y);}
-    }
+    const tickYs=[top,top+(zero-top)*.5,zero,zero+(bottom-zero)*.5,bottom];
+    const tickValues=[maxFlow,maxFlow*.5,0,-maxFlow*.5,-maxFlow];
+    tickYs.forEach((y,i)=>{
+      ctx.strokeStyle=i===2?"#3a424c":"#1c232b";ctx.lineWidth=i===2?1:0.8;
+      ctx.setLineDash(i===2?[]:[3,4]);ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle="#89939e";ctx.textAlign="right";ctx.fillText(flowAxisMoney(tickValues[i]),left-8,y);
+      if(maxP>0){const ratio=(y-top)/(bottom-top),priceTick=maxP-(maxP-minP)*ratio;ctx.fillStyle="#89939e";ctx.textAlign="left";ctx.fillText("$"+priceTick.toLocaleString("en-US",{maximumFractionDigits:0}),right+8,y);}
+    });
 
     // Positive taker-buy bars and negative taker-sell bars share a zero line.
     rows.forEach((item,index)=>{

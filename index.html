@@ -1245,6 +1245,8 @@ try {
   if (!rowsEl) return;
 
   const REFRESH_MS = 10000;
+  // On the GitHub address the data server lives on the Cloudflare site; on the Cloudflare site it is the same address.
+  const API_BASE = /\.github\.io$/.test(location.hostname) ? 'https://btc-5m-dashboard.barcodeuserlll.workers.dev' : '';
   let range = '5m';
   let seq = 0;
   let hasData = false;
@@ -1332,7 +1334,7 @@ try {
       setMsg('<b>The data server is running, but your CoinGlass API key has not been added yet.</b> Tell me and I will walk you through it one step at a time.');
     } else if (code === 'NOAPI') {
       setStatus('', 'NO DATA SERVER HERE');
-      setMsg('<b>This web address cannot reach the data server.</b> Open the dashboard from your Cloudflare link instead (the one ending in .workers.dev, or your own domain).');
+      setMsg('<b>This web address cannot reach the data server.</b> Open the dashboard from your Cloudflare link instead: <a href="https://btc-5m-dashboard.barcodeuserlll.workers.dev/" style="color:#a879ff">btc-5m-dashboard.barcodeuserlll.workers.dev</a>');
     } else if (code === 'UPSTREAM') {
       setStatus('', hasData ? 'COINGLASS ERROR · SHOWING LAST DATA' : 'COINGLASS ERROR');
       setMsg('CoinGlass said: <b></b>');
@@ -1352,7 +1354,7 @@ try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 12000);
     try {
-      const res = await fetch('/api/taker?range=' + encodeURIComponent(r), { cache: 'no-store', signal: ctrl.signal });
+      const res = await fetch(API_BASE + '/api/taker?range=' + encodeURIComponent(r), { cache: 'no-store', signal: ctrl.signal });
       let body = null;
       try { body = await res.json(); } catch (e) { body = null; }
       if (my !== seq) return;

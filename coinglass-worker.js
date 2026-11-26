@@ -21,7 +21,19 @@ const num = v => {
   return v !== null && v !== "" && v !== undefined && Number.isFinite(n) ? n : null;
 };
 
-export default {
+// Websites allowed to read /api/taker from the browser (your own sites only).
+const ALLOWED_ORIGINS = ["https://lexerito.github.io"];
+
+const withCors = (request, response) => {
+  const origin = request.headers.get("Origin");
+  if (!origin || !ALLOWED_ORIGINS.includes(origin)) return response;
+  const out = new Response(response.body, response);
+  out.headers.set("Access-Control-Allow-Origin", origin);
+  out.headers.set("Vary", "Origin");
+  return out;
+};
+
+const handler = {
   async fetch(request, env) {
     const url = new URL(request.url);
 
@@ -80,5 +92,19 @@ export default {
 
     if (env.ASSETS) return env.ASSETS.fetch(request);
     return reply({ ok: false, code: "NOT_FOUND", error: "Not found" }, 404);
+  }
+};
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    if (url.pathname === "/api/taker" && request.method === "OPTIONS") {
+      return withCors(request, new Response(null, {
+        status: 204,
+        headers: { "Access-Control-Allow-Methods": "GET, OPTIONS", "Access-Control-Max-Age": "600" }
+      }));
+    }
+    const res = await handler.fetch(request, env);
+    return url.pathname === "/api/taker" ? withCors(request, res) : res;
   }
 };

@@ -20,11 +20,15 @@ export default {
       "Access-Control-Allow-Headers": "Content-Type"
     };
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
+    if (url.pathname === "/") {
+      return Response.json({
+        ok: true,
+        service: "CoinGlass BTC futures flow proxy",
+        endpoint: "/api/flow",
+        status: "Worker is running"
+      }, { status: 200, headers });
+    }
     if (url.pathname !== "/api/flow") {
-      if (url.pathname.startsWith("/api/")) {
-        return Response.json({ ok: false, error: "Not found" }, { status: 404, headers });
-      }
-      // Serve the existing dashboard and its static files from the same Worker.
       return Response.json({ ok: false, error: "Not found" }, { status: 404, headers });
     }
     if (request.method !== "GET") {

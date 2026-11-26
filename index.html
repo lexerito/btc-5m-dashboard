@@ -32,7 +32,7 @@ button{font:inherit}
 .metric strong{display:block;margin-top:9px;font-size:clamp(19px,3.3vw,28px);font-weight:950;letter-spacing:-.04em;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .metric.spot strong{color:var(--blue)}
 .metric.twap strong{color:var(--orange)}
-.metric.open strong{color:#e7e4f2}.metric.weighted strong{color:#c59aff}
+.metric.open strong{color:#e7e4f2}
 .metric span{display:block;margin-top:5px;color:#6f6c84;font-size:9px}
 .hero{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;padding:16px 18px 18px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:linear-gradient(100deg,#100f1c,#171025 52%,#0d111b)}
 .hero-label{color:#9d94b3;font-size:9px;font-weight:950;letter-spacing:.16em}
@@ -68,10 +68,38 @@ button{font:inherit}
 .empty{padding:14px;color:#77718d;font-size:10px}
 .note{margin-top:14px;padding:12px 14px;border:1px solid #302a40;border-radius:11px;background:#0d0b16;color:#8d879f;font-size:9px;line-height:1.65}
 .note b{color:#c3b7dc}
+.flow-card{margin-top:14px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(155deg,#11111c,#090a11 78%);box-shadow:0 18px 48px #0008;overflow:hidden}
+.flow-card-head{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 18px;border-bottom:1px solid var(--line);background:#0b0a13}
+.flow-title{font-size:12px;font-weight:950;letter-spacing:.1em;color:#e7e1f3}
+.flow-subtitle{margin-top:5px;font-size:9px;color:#858098;line-height:1.5}
+.flow-status{padding:7px 10px;border:1px solid #59472d;border-radius:99px;background:#1c170f;color:var(--orange);font-size:9px;font-weight:950;letter-spacing:.08em;white-space:nowrap}
+.flow-status.live{color:var(--green);border-color:#23674d;background:#0b211a}
+.flow-status.partial{color:var(--orange);border-color:#70512b;background:#21190e}
+.flow-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--line)}
+.flow-control-label{color:#9c97ad;font-size:9px;font-weight:950;letter-spacing:.1em}
+.flow-select{appearance:none;background:#141320;color:#e5e0ef;border:1px solid #383447;border-radius:8px;padding:8px 28px 8px 10px;font:800 10px system-ui;min-width:82px}
+.flow-toggle{display:inline-flex;align-items:center;gap:7px;color:#c3bdcf;font-size:10px;font-weight:800;cursor:pointer}
+.flow-toggle input{accent-color:#24b99c;width:14px;height:14px}
+.flow-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px 14px}
+.flow-stat{min-width:0;padding:11px 12px;border:1px solid #2c293b;border-radius:10px;background:#10101a}
+.flow-stat small{display:block;color:#858198;font-size:8px;font-weight:950;letter-spacing:.12em}
+.flow-stat strong{display:block;margin-top:7px;font-size:clamp(15px,2.2vw,21px);font-weight:950;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.flow-stat.in strong{color:#22b99b}.flow-stat.out strong{color:#ff4e69}.flow-stat.net strong{color:#d9d3e7}.flow-stat.price strong{color:#f4c64e}
+.flow-chart-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 18px 6px}
+.flow-legend{display:flex;align-items:center;gap:14px;flex-wrap:wrap;color:#a19bad;font-size:9px;font-weight:800}
+.flow-legend span{display:inline-flex;align-items:center;gap:6px}
+.flow-legend i{display:inline-block;width:13px;height:4px;border-radius:3px}
+#flowChart{display:block;width:100%;height:330px}
+.flow-chart-foot{padding:6px 18px 14px;color:#77728b;font-size:9px;line-height:1.55}
+.flow-sources{display:flex;gap:7px;flex-wrap:wrap;padding:0 18px 13px}
+.flow-source{padding:5px 8px;border:1px solid #343043;border-radius:99px;background:#11101a;color:#817c92;font-size:8px;font-weight:900;letter-spacing:.05em}
+.flow-source.live{color:var(--green);border-color:#255b47;background:#0d1e18}
+.flow-source.stale{color:var(--orange);border-color:#654b2b;background:#1d170f}
 @media(max-width:620px){
  body{padding:18px 10px 30px}.header{align-items:flex-start}.brand-title{font-size:11px}.brand-sub{font-size:9px}
  .card-top,.metrics,.hero,.countdown-row,.chart-head,.controls{padding-left:12px;padding-right:12px}
  .metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.metric{padding:10px 9px}.metric strong{font-size:clamp(15px,4.5vw,22px)}.metric small{font-size:8px}
+ .flow-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px}.flow-card-head,.flow-controls{padding-left:12px;padding-right:12px}#flowChart{height:250px}.flow-chart-head{padding-left:12px;padding-right:12px}
  .hero{grid-template-columns:1fr auto;gap:8px}.direction{min-width:112px;padding:12px 10px;font-size:14px}
  #chart{height:220px}.countdown{font-size:20px}
 }
@@ -112,11 +140,6 @@ button{font:inherit}
         <strong id="opening">WAITING</strong>
         <span>Locked at the five-minute boundary</span>
       </div>
-      <div class="metric weighted">
-        <small>WEIGHTED CLOSE PRICE</small>
-        <strong id="weightedClose">--</strong>
-        <span id="weightedDetail">H + L + 2×C ÷ 4</span>
-      </div>
     </section>
 
     <section class="hero">
@@ -145,7 +168,6 @@ button{font:inherit}
         <span><i style="background:#42a5ff"></i>SPOT</span>
         <span><i style="background:#ffad42"></i>60S TWAP</span>
         <span><i style="background:#e8edf7"></i>OPENING</span>
-        <span><i style="background:#c59aff"></i>WEIGHTED CLOSE</span>
       </div>
     </div>
     <canvas id="chart" aria-label="BTC spot, rolling 60-second TWAP and opening TWAP chart"></canvas>
@@ -158,14 +180,49 @@ button{font:inherit}
     </div>
   </main>
 
+  <section class="flow-card" id="flowPanel">
+    <div class="flow-card-head">
+      <div>
+        <div class="flow-title">BTC FUTURES INFLOW / OUTFLOW</div>
+        <div class="flow-subtitle">LIVE TAKER BUY / SELL VOLUME · MULTI-EXCHANGE PUBLIC TRADE FEEDS</div>
+      </div>
+      <div class="flow-status" id="flowStatus">CONNECTING FEEDS…</div>
+    </div>
+    <div class="flow-controls">
+      <span class="flow-control-label">MARKET</span><span class="flow-control-label" style="color:#e0dbea">FUTURES</span>
+      <span class="flow-control-label">ASSET</span><span class="flow-control-label" style="color:#e0dbea">BTC</span>
+      <span class="flow-control-label">INTERVAL</span>
+      <select class="flow-select" id="flowInterval" aria-label="Flow chart interval">
+        <option value="1m">1 minute</option><option value="5m" selected>5 minute</option><option value="15m">15 minute</option>
+      </select>
+      <label class="flow-toggle"><input type="checkbox" id="flowNetToggle"> Netflow</label>
+    </div>
+    <div class="flow-stats">
+      <div class="flow-stat in"><small>TAKER BUY · INFLOW</small><strong id="flowIn">$0</strong></div>
+      <div class="flow-stat out"><small>TAKER SELL · OUTFLOW</small><strong id="flowOut">$0</strong></div>
+      <div class="flow-stat net"><small>NET FLOW</small><strong id="flowNet">$0</strong></div>
+      <div class="flow-stat price"><small>BTC PERP PRICE</small><strong id="flowPrice">--</strong></div>
+    </div>
+    <div class="flow-chart-head">
+      <div class="chart-title" id="flowChartTitle">BTC FUTURES FLOW · LAST 5 HOURS</div>
+      <div class="flow-legend"><span><i style="background:#1bb99b"></i>INFLOW</span><span><i style="background:#ff425e"></i>OUTFLOW</span><span><i style="background:#f2c64b;height:2px"></i>BTC PRICE</span></div>
+    </div>
+    <canvas id="flowChart" aria-label="Live Bitcoin futures inflow and outflow bars with BTC price line"></canvas>
+    <div class="flow-chart-foot" id="flowChartFoot">Waiting for live futures trades. Current five-minute bar updates continuously as trades arrive.</div>
+    <div class="flow-sources">
+      <span class="flow-source" id="flowBinance">BINANCE · CONNECTING</span>
+      <span class="flow-source" id="flowBybit">BYBIT · CONNECTING</span>
+      <span class="flow-source" id="flowHyper">HYPERLIQUID · CONNECTING</span>
+    </div>
+  </section>
+
   <section class="events">
     <div class="events-head">RECENT EVENTS</div>
     <div id="events"><div class="empty">Waiting for the first live Binance update.</div></div>
   </section>
 
   <div class="note">
-    <b>Weighted Close Price:</b> each one-second candle is calculated as (high + low + 2 × close) ÷ 4. The purple line shows the value; its status compares it with a five-candle average to highlight short-term changes. This is the standard public Weighted Close formula, not copied BasisCharts code.
-    <br><b>How this tracker works:</b> it averages the latest 60 unique one-second Binance BTCUSDT candle closes. At a five-minute UTC boundary, it locks that rolling average as the round's opening reference. UP means the current rolling average is at or above that opening reference; DOWN means it is below it.
+<b>How this tracker works:</b> it averages the latest 60 unique one-second Binance BTCUSDT candle closes. At a five-minute UTC boundary, it locks that rolling average as the round's opening reference. UP means the current rolling average is at or above that opening reference; DOWN means it is below it.
     <b>Data sources:</b> Binance BTCUSDT is primary. If Binance cannot be reached, Coinbase BTC-USD is sampled once per second as a backup and is clearly labelled. Switching sources resets the sample buffer; the opening reference is established at the next eligible five-minute boundary.<br><b>Important:</b> neither spot feed is Polymarket's Chainlink settlement TWAP. This tracker does not guarantee the market outcome.
   </div>
 </div>
@@ -356,8 +413,8 @@ button{font:inherit}
 
     const candleTime = Math.floor(now / 1000) * 1000;
     const existing = prices.findIndex(item => item.time === candleTime);
-    if (existing >= 0) Object.assign(prices[existing], {price:coinbasePrice, high:coinbasePrice, low:coinbasePrice, weighted:coinbasePrice});
-    else prices.push({time:candleTime, price:coinbasePrice, high:coinbasePrice, low:coinbasePrice, weighted:coinbasePrice});
+    if (existing >= 0) prices[existing].price = coinbasePrice;
+    else prices.push({time:candleTime, price:coinbasePrice});
     prices.sort((a, b) => a.time - b.time);
     if (prices.length > HISTORY_LIMIT) prices.splice(0, prices.length - HISTORY_LIMIT);
 
@@ -390,7 +447,6 @@ button{font:inherit}
         time:item.time,
         spot:item.price,
         twap:exactWindowEndingAt(item.time),
-        weighted:Number.isFinite(item.weighted) ? item.weighted : item.price,
         opening:opening !== null && marketStart !== null && item.time >= marketStart ? opening : null
       });
     }
@@ -405,13 +461,6 @@ button{font:inherit}
     twap = latest ? exactWindowEndingAt(latest.time) : null;
 
     if (spot !== null) $("spot").textContent = money(spot);
-    const latestWeighted = latest && Number.isFinite(latest.weighted) ? latest.weighted : spot;
-    const weightedWindow = prices.slice(-5).map(item => Number.isFinite(item.weighted) ? item.weighted : item.price);
-    const weightedSmooth = weightedWindow.length ? weightedWindow.reduce((sum, value) => sum + value, 0) / weightedWindow.length : latestWeighted;
-    $("weightedClose").textContent = money(latestWeighted);
-    const weightedUp = latestWeighted >= weightedSmooth;
-    $("weightedDetail").textContent = (weightedUp ? "▲ ABOVE" : "▼ BELOW") + " 5S WEIGHTED BASE";
-    $("weightedDetail").style.color = weightedUp ? "var(--green)" : "var(--red)";
     $("twap").textContent = twap === null ? "COLLECTING" : money(twap);
     $("twapDetail").textContent = prices.length + " stored candles · " +
       (twap === null ? "need 60 consecutive seconds" : "60/60 one-second candles ready");
@@ -486,12 +535,8 @@ button{font:inherit}
     if (!Array.isArray(rows)) return [];
     return rows.map(row => ({
       time:Number(Array.isArray(row) ? row[0] : row.time),
-      open:Number(Array.isArray(row) ? row[1] : row.open),
-      high:Number(Array.isArray(row) ? row[2] : row.high),
-      low:Number(Array.isArray(row) ? row[3] : row.low),
       price:Number(Array.isArray(row) ? row[4] : row.price)
-    })).filter(x => Number.isFinite(x.time) && Number.isFinite(x.price) && x.price > 0)
-      .map(x => ({...x, weighted:(Number.isFinite(x.high) && Number.isFinite(x.low) ? (x.high + x.low + 2*x.price)/4 : x.price)}));
+    })).filter(x => Number.isFinite(x.time) && Number.isFinite(x.price) && x.price > 0);
   }
 
   function acceptRows(rows, source, isSnapshot) {
@@ -648,10 +693,7 @@ button{font:inherit}
 
       const time = Number(k.t);
       const price = Number(k.c);
-      const high = Number(k.h);
-      const low = Number(k.l);
       if (!Number.isFinite(time) || !Number.isFinite(price) || price <= 0) return;
-      const weighted = Number.isFinite(high) && Number.isFinite(low) ? (high + low + 2*price)/4 : price;
       lastWsMessageAt = Date.now();
       lastDataReceivedAt = lastWsMessageAt;
 
@@ -660,8 +702,8 @@ button{font:inherit}
       if (prices.length && time < prices[prices.length - 1].time - 5000) return;
 
       const index = prices.findIndex(x => x.time === time);
-      if (index >= 0) Object.assign(prices[index], {price, high, low, weighted});
-      else prices.push({time, price, high, low, weighted});
+      if (index >= 0) prices[index].price = price;
+      else prices.push({time, price});
       prices.sort((a, b) => a.time - b.time);
       if (prices.length > HISTORY_LIMIT) prices.splice(0, prices.length - HISTORY_LIMIT);
 
@@ -811,8 +853,167 @@ button{font:inherit}
     drawLine("opening", "#e8edf7", 1.5);
     drawLine("twap", "#ffad42", 2.2);
     drawLine("spot", "#42a5ff", 1.8);
-    drawLine("weighted", "#c59aff", 2.1);
   }
+
+
+  // Live BTC futures taker-flow estimate from public exchange WebSockets.
+  const FLOW_INTERVALS = {"1m":60000,"5m":300000,"15m":900000};
+  const FLOW_KEY = "btc5m-live-futures-flow-v1";
+  const FLOW_BARS = 60;
+  const flowSeries = {"1m":[],"5m":[],"15m":[]};
+  const flowMaps = {"1m":new Map(),"5m":new Map(),"15m":new Map()};
+  const flowSeen = new Set(), flowSeenOrder = [];
+  const flowSockets = {binance:null,bybit:null,hyper:null};
+  const flowReconnect = {binance:null,bybit:null,hyper:null};
+  const flowLastMessage = {binance:0,bybit:0,hyper:0};
+  const flowStates = {binance:"connecting",bybit:"connecting",hyper:"connecting"};
+  const flowPrices = {binance:null,bybit:null,hyper:null};
+  const flowPriceAt = {binance:0,bybit:0,hyper:0};
+  let flowSavedAt = 0, flowRenderedAt = 0;
+
+  function flowFmt(n) {
+    if (!Number.isFinite(n)) return "--";
+    const a=Math.abs(n);
+    const v=a>=1e9?(a/1e9).toFixed(2)+"B":a>=1e6?(a/1e6).toFixed(2)+"M":a>=1e3?(a/1e3).toFixed(1)+"K":a.toFixed(0);
+    return (n<0?"-$":"$")+v;
+  }
+  function flowSetState(name,state) {
+    flowStates[name]=state;
+    const ids={binance:"flowBinance",bybit:"flowBybit",hyper:"flowHyper"};
+    const labels={binance:"BINANCE",bybit:"BYBIT",hyper:"HYPERLIQUID"};
+    const el=$(ids[name]);
+    if(el){el.className="flow-source"+(state==="live"?" live":state==="stale"?" stale":"");el.textContent=labels[name]+" · "+state.toUpperCase();}
+    const count=Object.keys(flowStates).filter(k=>flowStates[k]==="live").length;
+    const status=$("flowStatus");
+    if(status){status.className="flow-status "+(count===3?"live":count?"partial":"");status.textContent=count===3?"3 FEEDS LIVE":count+" / 3 FEEDS LIVE";}
+  }
+  function flowDedup(id) {
+    if(!id)return true;
+    if(flowSeen.has(id))return false;
+    flowSeen.add(id);flowSeenOrder.push(id);
+    if(flowSeenOrder.length>15000){flowSeen.delete(flowSeenOrder.shift());}
+    return true;
+  }
+  function flowBucket(interval,time) {
+    const t=Math.floor(time/FLOW_INTERVALS[interval])*FLOW_INTERVALS[interval];
+    let b=flowMaps[interval].get(t);
+    if(!b){
+      b={t,inflow:0,outflow:0,price:null,priceRank:0,priceAt:0,trades:0};
+      flowMaps[interval].set(t,b);flowSeries[interval].push(b);flowSeries[interval].sort((a,c)=>a.t-c.t);
+      if(flowSeries[interval].length>260){flowSeries[interval].splice(0,flowSeries[interval].length-260).forEach(old=>flowMaps[interval].delete(old.t));}
+    }
+    return b;
+  }
+  function flowIngest(source,id,time,price,size,side) {
+    const t=Number(time),p=Number(price),q=Number(size);
+    if(!Number.isFinite(t)||!Number.isFinite(p)||!Number.isFinite(q)||p<=0||q<=0||(side!=="buy"&&side!=="sell"))return;
+    if(!flowDedup(source+":"+(id||[t,p,q,side].join(":"))))return;
+    const usd=p*q,rank=source==="binance"?3:source==="bybit"?2:1;
+    Object.keys(FLOW_INTERVALS).forEach(interval=>{
+      const b=flowBucket(interval,t);
+      if(side==="buy")b.inflow+=usd;else b.outflow+=usd;
+      b.trades++;
+      if(!Number.isFinite(b.price)||rank>=b.priceRank||t-b.priceAt>6000){b.price=p;b.priceRank=rank;b.priceAt=t;}
+    });
+    flowPrices[source]=p;flowPriceAt[source]=Date.now();flowLastMessage[source]=Date.now();flowSetState(source,"live");
+  }
+  function flowRestore() {
+    try{
+      const saved=JSON.parse(localStorage.getItem(FLOW_KEY)||"{}");
+      Object.keys(FLOW_INTERVALS).forEach(interval=>(Array.isArray(saved[interval])?saved[interval]:[]).slice(-260).forEach(x=>{
+        const t=Number(x.t),inflow=Number(x.inflow),outflow=Number(x.outflow),price=Number(x.price);
+        if(!Number.isFinite(t)||!Number.isFinite(inflow)||!Number.isFinite(outflow))return;
+        const b={t,inflow:Math.max(0,inflow),outflow:Math.max(0,outflow),price:Number.isFinite(price)&&price>0?price:null,priceRank:Number(x.priceRank)||0,priceAt:Number(x.priceAt)||0,trades:Number(x.trades)||0};
+        flowSeries[interval].push(b);flowMaps[interval].set(t,b);
+      }));
+    }catch(_){}
+  }
+  function flowSave() {
+    try{
+      if(Date.now()-flowSavedAt<5000)return;
+      flowSavedAt=Date.now();const data={};
+      Object.keys(FLOW_INTERVALS).forEach(k=>data[k]=flowSeries[k].slice(-240));
+      localStorage.setItem(FLOW_KEY,JSON.stringify(data));
+    }catch(_){}
+  }
+  function flowDraw() {
+    const canvas=$("flowChart");if(!canvas)return;
+    const ctx=canvas.getContext("2d");if(!ctx)return;
+    const r=canvas.getBoundingClientRect();if(!r.width||!r.height)return;
+    const d=Math.min(2,window.devicePixelRatio||1),pw=Math.round(r.width*d),ph=Math.round(r.height*d);
+    if(canvas.width!==pw||canvas.height!==ph){canvas.width=pw;canvas.height=ph;}
+    ctx.setTransform(d,0,0,d,0,0);const w=r.width,h=r.height;ctx.clearRect(0,0,w,h);
+    const interval=$("flowInterval").value,duration=FLOW_INTERVALS[interval],current=Math.floor(Date.now()/duration)*duration;
+    const rows=[];
+    for(let i=FLOW_BARS-1;i>=0;i--){const t=current-i*duration;rows.push(flowMaps[interval].get(t)||{t,inflow:0,outflow:0,price:null,trades:0});}
+    const left=12,right=w-12,top=19,bottom=h-29,zero=top+(bottom-top)*.58,upper=zero-top-8,lower=bottom-zero-8;
+    const netMode=$("flowNetToggle").checked;
+    const max=Math.max(1,...rows.map(x=>netMode?Math.abs(x.inflow-x.outflow):Math.max(x.inflow,x.outflow)));
+    const step=(right-left)/rows.length,bw=Math.max(2,step*.62);
+    ctx.strokeStyle="rgba(170,155,205,.13)";ctx.lineWidth=1;
+    for(let i=0;i<=4;i++){const y=top+(bottom-top)*i/4;ctx.beginPath();ctx.moveTo(left,y);ctx.lineTo(right,y);ctx.stroke();}
+    ctx.strokeStyle="rgba(215,208,230,.42)";ctx.beginPath();ctx.moveTo(left,zero);ctx.lineTo(right,zero);ctx.stroke();
+    rows.forEach((x,i)=>{
+      const bx=left+i*step+(step-bw)/2;
+      if(netMode){const n=x.inflow-x.outflow,hh=Math.abs(n)/max*(n>=0?upper:lower);ctx.fillStyle=n>=0?"#1bb99b":"#ff425e";ctx.fillRect(bx,n>=0?zero-hh:zero,bw,hh);}
+      else{ctx.fillStyle="#1bb99b";ctx.fillRect(bx,zero-x.inflow/max*upper,bw,x.inflow/max*upper);ctx.fillStyle="#ff425e";ctx.fillRect(bx,zero,bw,x.outflow/max*lower);}
+    });
+    const valid=rows.filter(x=>Number.isFinite(x.price)&&x.price>0);
+    if(valid.length>1){
+      const min=Math.min(...valid.map(x=>x.price)),maxP=Math.max(...valid.map(x=>x.price)),range=maxP-min||Math.max(maxP*.00015,1);
+      ctx.beginPath();ctx.strokeStyle="#f2c64b";ctx.lineWidth=1.8;ctx.lineJoin="round";ctx.lineCap="round";let drawing=false;
+      rows.forEach((x,i)=>{if(!Number.isFinite(x.price)||x.price<=0){drawing=false;return;}const xx=left+i*step+step/2,yy=top+5+(maxP-x.price)/range*(bottom-top-12);if(!drawing){ctx.moveTo(xx,yy);drawing=true;}else ctx.lineTo(xx,yy);});ctx.stroke();
+    }
+    ctx.font="8px ui-monospace,monospace";ctx.textAlign="center";ctx.fillStyle="#797489";
+    const every=Math.max(1,Math.floor(rows.length/6));
+    rows.forEach((x,i)=>{if(i%every&&i!==rows.length-1)return;ctx.fillText(new Date(x.t).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),left+i*step+step/2,h-12);});
+    const live=flowMaps[interval].get(current),buy=live?live.inflow:0,sell=live?live.outflow:0,net=buy-sell;
+    $("flowIn").textContent=flowFmt(buy);$("flowOut").textContent=flowFmt(sell);$("flowNet").textContent=flowFmt(net);
+    $("flowNet").style.color=net>0?"#1bb99b":net<0?"#ff425e":"#d9d3e7";
+    const price=flowPrices.binance&&Date.now()-flowPriceAt.binance<10000?flowPrices.binance:flowPrices.bybit&&Date.now()-flowPriceAt.bybit<10000?flowPrices.bybit:flowPrices.hyper&&Date.now()-flowPriceAt.hyper<10000?flowPrices.hyper:null;
+    $("flowPrice").textContent=price?"$"+price.toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}):"--";
+    $("flowChartTitle").textContent="BTC FUTURES FLOW · LAST "+(interval==="1m"?"60 MINUTES":interval==="5m"?"5 HOURS":"15 HOURS");
+    $("flowChartFoot").textContent=live&&live.trades?"Current "+interval+" candle is live · "+live.trades.toLocaleString()+" trades counted · data is saved in this browser.":"Waiting for trades in the current "+interval+" candle. Bars update automatically without refreshing.";
+  }
+  function flowRetry(name,fn,delay){if(flowReconnect[name])return;flowReconnect[name]=setTimeout(()=>{flowReconnect[name]=null;fn();},delay||2500);}
+  function flowConnectBinance(){
+    if(flowSockets.binance&&(flowSockets.binance.readyState===1||flowSockets.binance.readyState===0))return;
+    flowSetState("binance","connecting");let ws;
+    try{ws=new WebSocket("wss://fstream.binance.com/market/ws/btcusdt@aggTrade");}catch(_){flowSetState("binance","offline");flowRetry("binance",flowConnectBinance);return;}
+    flowSockets.binance=ws;ws.onopen=()=>{if(flowSockets.binance===ws)flowSetState("binance","live");};
+    ws.onmessage=e=>{if(flowSockets.binance!==ws)return;let m;try{m=JSON.parse(e.data);}catch(_){return;}if(m.e!=="aggTrade")return;flowIngest("binance",m.a,m.T||m.E,m.p,m.q,m.m===true?"sell":"buy");};
+    ws.onerror=()=>{try{ws.close();}catch(_){}};
+    ws.onclose=()=>{if(flowSockets.binance!==ws)return;flowSockets.binance=null;flowSetState("binance","offline");flowRetry("binance",flowConnectBinance,2200);};
+  }
+  function flowConnectBybit(){
+    if(flowSockets.bybit&&(flowSockets.bybit.readyState===1||flowSockets.bybit.readyState===0))return;
+    flowSetState("bybit","connecting");let ws;
+    try{ws=new WebSocket("wss://stream.bybit.com/v5/public/linear");}catch(_){flowSetState("bybit","offline");flowRetry("bybit",flowConnectBybit);return;}
+    flowSockets.bybit=ws;ws.onopen=()=>{if(flowSockets.bybit!==ws)return;try{ws.send(JSON.stringify({op:"subscribe",args:["publicTrade.BTCUSDT"]}));}catch(_){}flowSetState("bybit","live");};
+    ws.onmessage=e=>{if(flowSockets.bybit!==ws)return;let m;try{m=JSON.parse(e.data);}catch(_){return;}if(!Array.isArray(m.data))return;m.data.forEach(t=>flowIngest("bybit",t.i,t.T,t.p,t.v,String(t.S).toLowerCase()));};
+    ws.onerror=()=>{try{ws.close();}catch(_){}};
+    ws.onclose=()=>{if(flowSockets.bybit!==ws)return;flowSockets.bybit=null;flowSetState("bybit","offline");flowRetry("bybit",flowConnectBybit);};
+  }
+  function flowConnectHyper(){
+    if(flowSockets.hyper&&(flowSockets.hyper.readyState===1||flowSockets.hyper.readyState===0))return;
+    flowSetState("hyper","connecting");let ws;
+    try{ws=new WebSocket("wss://api.hyperliquid.xyz/ws");}catch(_){flowSetState("hyper","offline");flowRetry("hyper",flowConnectHyper);return;}
+    flowSockets.hyper=ws;ws.onopen=()=>{if(flowSockets.hyper!==ws)return;try{ws.send(JSON.stringify({method:"subscribe",subscription:{type:"trades",coin:"BTC"}}));}catch(_){}flowSetState("hyper","live");};
+    ws.onmessage=e=>{if(flowSockets.hyper!==ws)return;let m;try{m=JSON.parse(e.data);}catch(_){return;}if(m.channel!=="trades"||!Array.isArray(m.data))return;m.data.forEach(t=>flowIngest("hyper",t.tid||t.hash,t.time,t.px,t.sz,t.side==="B"?"buy":t.side==="A"?"sell":null));};
+    ws.onerror=()=>{try{ws.close();}catch(_){}};
+    ws.onclose=()=>{if(flowSockets.hyper!==ws)return;flowSockets.hyper=null;flowSetState("hyper","offline");flowRetry("hyper",flowConnectHyper);};
+  }
+  $("flowInterval").addEventListener("change",flowDraw);
+  $("flowNetToggle").addEventListener("change",flowDraw);
+  flowRestore();flowDraw();flowConnectBinance();flowConnectBybit();flowConnectHyper();
+  setInterval(()=>{
+    const now=Date.now();
+    ["binance","bybit","hyper"].forEach(n=>{if(flowLastMessage[n]&&now-flowLastMessage[n]>12000&&flowStates[n]==="live"){flowSetState(n,"stale");const ws=flowSockets[n];if(ws&&ws.readyState===1){try{ws.close();}catch(_){}}}});
+    if(flowSockets.bybit&&flowSockets.bybit.readyState===1){try{flowSockets.bybit.send(JSON.stringify({op:"ping"}));}catch(_){}}
+    if(flowSockets.hyper&&flowSockets.hyper.readyState===1){try{flowSockets.hyper.send(JSON.stringify({method:"ping"}));}catch(_){}}
+    flowSave();if(now-flowRenderedAt>350){flowRenderedAt=now;flowDraw();}
+  },500);
+  window.addEventListener("resize",flowDraw);
 
   $("alerts").addEventListener("click", async () => {
     if (!("Notification" in window)) {

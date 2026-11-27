@@ -51,7 +51,7 @@ button{font:inherit}
 .legend{display:flex;gap:13px;flex-wrap:wrap;color:#9893a9;font-size:9px;font-weight:800}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .legend i{width:14px;height:3px;border-radius:4px;display:inline-block}
-#chart{display:block;width:100%;height:280px}
+#chart{display:block;width:100%;height:310px}
 .chart-foot{padding:2px 18px 14px;color:#77728b;font-size:9px;line-height:1.5}
 .controls{display:flex;gap:8px;flex-wrap:wrap;padding:14px 18px;border-top:1px solid var(--line);background:#0b0a13}
 .control{appearance:none;border:1px solid #49425d;border-radius:9px;background:#181525;color:#d5cde7;padding:9px 12px;font-size:9px;font-weight:950;letter-spacing:.08em;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
@@ -145,27 +145,6 @@ button{font:inherit}
  .hero{grid-template-columns:1fr auto;gap:8px}.direction{min-width:112px;padding:12px 10px;font-size:14px}
  #chart{height:220px}.countdown{font-size:20px}
 }
-/* TAKER BUY / SELL table (added section) */
-.tb-tab{appearance:none;background:#141320;color:#bdb7cc;border:1px solid #383447;border-radius:8px;padding:8px 13px;font:800 11px system-ui;letter-spacing:.04em;cursor:pointer}
-.tb-tab:hover{border-color:#5a5470}
-.tb-tab.on{background:#241b3d;border-color:var(--purple);color:#fff}
-.tb-wrap{overflow-x:auto;padding:0 6px 4px}
-.tb-table{width:100%;min-width:640px;border-collapse:collapse;font-variant-numeric:tabular-nums}
-.tb-table th{padding:10px 12px;text-align:right;color:#858198;font-size:9px;font-weight:950;letter-spacing:.1em;border-bottom:1px solid var(--line);white-space:nowrap}
-.tb-table td{padding:13px 12px;text-align:right;font-size:13px;font-weight:700;color:#e7eaf0;border-bottom:1px solid #161922;white-space:nowrap;transition:background .6s}
-.tb-table th:first-child,.tb-table td:first-child{text-align:left}
-.tb-table tbody tr:last-child td{border-bottom:0}
-.tb-table tr.tb-all td{background:#0d0c16;font-weight:900;border-bottom:1px solid var(--line)}
-.tb-table td.tb-buy{color:var(--green)}
-.tb-table td.tb-sell{color:var(--red)}
-.tb-table td.tb-flash-up{background:#35d69a33}
-.tb-table td.tb-flash-down{background:#ff557d33}
-.tb-table td.tb-empty{text-align:center;color:#77728b;font-weight:600;padding:28px 12px}
-.tb-split{height:5px;width:120px;margin-left:auto;border-radius:3px;background:#ff425e;overflow:hidden}
-.tb-split i{display:block;height:100%;width:50%;background:#1bb99b;transition:width .4s}
-.tb-msg{padding:6px 18px 14px;color:#9d97b0;font-size:10px;line-height:1.55}
-.tb-msg b{color:#e7e1f3}
-
 /* Compact TWAP analytics table */
 .twap-analysis{margin-top:14px;border:1px solid #29263b;border-radius:16px;background:linear-gradient(155deg,#11111d,#090a12 80%);overflow:hidden;box-shadow:0 14px 38px #0007}
 .twap-analysis-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 17px;border-bottom:1px solid #29263b;background:#0b0a13}
@@ -248,7 +227,7 @@ button{font:inherit}
     </section>
 
     <div class="chart-head">
-      <div class="chart-title">LIVE PRICE / TWAP TRACK</div>
+      <div class="chart-title">TWAP TREND · SPOT VS 60S AVERAGE</div>
       <div class="legend">
         <span><i style="background:#42a5ff"></i>SPOT</span>
         <span><i style="background:#ffad42"></i>60S TWAP</span>
@@ -256,7 +235,7 @@ button{font:inherit}
       </div>
     </div>
     <canvas id="chart" aria-label="BTC spot, rolling 60-second TWAP and opening TWAP chart"></canvas>
-    <div class="chart-foot" id="chartFoot">The chart updates from unique one-second BTCUSDT candles. Opening reference appears after the next eligible five-minute boundary.</div>
+    <div class="chart-foot" id="chartFoot">Two-minute live view of spot price, rolling 60-second TWAP and the locked five-minute opening reference. The table below measures TWAP slope and acceleration.</div>
 
     <div class="controls">
       <button class="control primary" id="alerts">ENABLE ALERTS</button>

@@ -167,6 +167,37 @@ button{font:inherit}
 .twap-analysis-foot{padding:10px 16px 13px;color:#77728b;font-size:9px;line-height:1.5;border-top:1px solid #211e2c}
 @media(max-width:620px){.twap-analysis-head{padding:13px 11px}.twap-analysis-title{font-size:10px}.twap-analysis-subtitle{font-size:8px}.twap-analysis-bias{font-size:8px;padding:6px 7px}}
 
+
+/* Early pressure engine */
+.prediction-engine{margin-top:14px;border:1px solid #302944;border-radius:16px;background:linear-gradient(150deg,#151322,#0a0b13 78%);overflow:hidden;box-shadow:0 14px 38px #0007}
+.pe-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:15px 17px;border-bottom:1px solid #29263b;background:#0d0c16}
+.pe-title{font-size:12px;font-weight:950;letter-spacing:.11em;color:#eee8fa}
+.pe-sub{margin-top:5px;color:#858098;font-size:9px;letter-spacing:.05em}
+.pe-status{padding:6px 9px;border:1px solid #51485f;border-radius:7px;background:#171321;color:#bdb4d0;font-size:8px;font-weight:950;letter-spacing:.08em;white-space:nowrap}
+.pe-status.live{border-color:#176b50;background:#0b211a;color:#35d69a}.pe-status.partial{border-color:#70512b;background:#21190e;color:#ffbd59}.pe-status.off{border-color:#783047;background:#25101a;color:#ff7895}
+.pe-main{display:grid;grid-template-columns:1.15fr 1fr;gap:12px;padding:14px 16px}
+.pe-call{border:1px solid #29263b;border-radius:12px;background:#0a0a12;padding:13px}
+.pe-call-label{font-size:8px;color:#88839c;font-weight:950;letter-spacing:.12em}
+.pe-call-value{margin-top:8px;font-size:clamp(21px,4vw,30px);font-weight:1000;letter-spacing:.02em;color:#c5bdd6}
+.pe-call-value.up{color:#35d69a}.pe-call-value.down{color:#ff6687}
+.pe-call-note{margin-top:5px;color:#8f8aa0;font-size:9px;line-height:1.5}
+.pe-score{display:flex;justify-content:space-between;gap:10px;align-items:end;margin-top:12px}
+.pe-score strong{font-size:20px;font-variant-numeric:tabular-nums}
+.pe-score small{font-size:8px;color:#858098;letter-spacing:.08em}
+.pe-meter{height:7px;margin-top:8px;border-radius:9px;background:#272333;overflow:hidden}
+.pe-meter-fill{height:100%;width:50%;border-radius:9px;background:linear-gradient(90deg,#ff557d,#a879ff,#35d69a);transition:width .18s ease}
+.pe-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pe-stat{border:1px solid #242235;border-radius:10px;background:#0c0c15;padding:10px}
+.pe-stat small{display:block;color:#827d95;font-size:8px;font-weight:900;letter-spacing:.08em}
+.pe-stat strong{display:block;margin-top:6px;color:#e8e4f1;font-size:15px;font-variant-numeric:tabular-nums}
+.pe-stat span{display:block;margin-top:4px;color:#858098;font-size:8px}
+.pe-reasons{padding:0 16px 13px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.pe-reason{border:1px solid #242235;border-radius:8px;padding:8px 9px;background:#0b0b13;color:#a6a0b5;font-size:8px;line-height:1.45}
+.pe-reason b{display:block;margin-bottom:3px;color:#e0dbea;font-size:8px;letter-spacing:.07em}
+.pe-reason .pos{color:#35d69a}.pe-reason .neg{color:#ff6687}.pe-reason .neu{color:#b2a9c5}
+.pe-foot{padding:10px 16px 13px;border-top:1px solid #211e2c;color:#77728b;font-size:8px;line-height:1.55}
+@media(max-width:620px){.pe-head{padding:13px 11px}.pe-title{font-size:10px}.pe-sub{font-size:8px}.pe-main{grid-template-columns:1fr;padding:11px}.pe-reasons{grid-template-columns:1fr;padding:0 11px 11px}.pe-foot{padding:9px 11px}}
+
 </style>
 </head>
 <body>
@@ -259,6 +290,38 @@ button{font:inherit}
       </table>
     </div>
     <div class="twap-analysis-foot" id="twapAnalysisFoot">Changes are calculated from stored one-second samples. No missing values are filled or fabricated.</div>
+  </section>
+
+
+  <section class="prediction-engine" id="predictionEngine" aria-live="polite">
+    <div class="pe-head">
+      <div>
+        <div class="pe-title">EARLY PRESSURE ENGINE</div>
+        <div class="pe-sub">USD-M FUTURES FLOW · DEPTH · LIVE POLYMARKET CONTRACTS</div>
+      </div>
+      <div class="pe-status" id="peStatus">STARTING FEEDS</div>
+    </div>
+    <div class="pe-main">
+      <div class="pe-call">
+        <div class="pe-call-label">5-MINUTE DIRECTIONAL EDGE · NOT A PROBABILITY</div>
+        <div class="pe-call-value" id="peSignal">WAIT</div>
+        <div class="pe-call-note" id="peNote">Waiting for independent futures and Polymarket data.</div>
+        <div class="pe-score"><div><small>UP PRESSURE INDEX</small><br><strong id="peScore">50 / 100</strong></div><div><small id="peTime">--:-- LEFT</small></div></div>
+        <div class="pe-meter"><div class="pe-meter-fill" id="peMeter"></div></div>
+      </div>
+      <div class="pe-stats">
+        <div class="pe-stat"><small>FUTURES TAKER DELTA · 3S</small><strong id="peFlow">--</strong><span id="peFlowSub">Waiting for trades</span></div>
+        <div class="pe-stat"><small>TOP-10 DEPTH IMBALANCE</small><strong id="peDepth">--</strong><span id="peDepthSub">Waiting for depth snapshot</span></div>
+        <div class="pe-stat"><small>POLYMARKET UP MID</small><strong id="peUp">--</strong><span id="peUpSub">Waiting for active market</span></div>
+        <div class="pe-stat"><small>POLYMARKET DOWN MID</small><strong id="peDown">--</strong><span id="peDownSub">Waiting for active market</span></div>
+      </div>
+    </div>
+    <div class="pe-reasons">
+      <div class="pe-reason"><b>FUTURES FLOW</b><span id="peFlowRead" class="neu">No reading yet</span></div>
+      <div class="pe-reason"><b>FUTURES LIQUIDITY</b><span id="peDepthRead" class="neu">No reading yet</span></div>
+      <div class="pe-reason"><b>POLYMARKET CONFIRMATION</b><span id="peClobRead" class="neu">No reading yet</span></div>
+    </div>
+    <div class="pe-foot" id="peFoot">Connecting to public market-data feeds. The pressure index is an experimental directional score, not a calibrated win probability. Chainlink settlement-reference integration is not included in this first pass.</div>
   </section>
 
   <section class="events">
@@ -1116,5 +1179,269 @@ button{font:inherit}
 
 })();
 </script>
+
+<script>
+(() => {
+  "use strict";
+  const $pe = id => document.getElementById(id);
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const fmtPct = v => (v >= 0 ? "+" : "") + (v * 100).toFixed(1) + "%";
+  const fmtCents = v => Number.isFinite(v) ? (v * 100).toFixed(1) + "¢" : "--";
+  const tradeTape = [];
+  const contractHistory = {up:[], down:[]};
+  let futuresTradeWs = null, futuresDepthWs = null, clobWs = null;
+  let tradeReconnect = null, depthReconnect = null, clobReconnect = null;
+  let futuresTradeAt = 0, futuresDepthAt = 0, clobAt = 0;
+  let buy3 = 0, sell3 = 0, buy1 = 0, sell1 = 0, tradeCount3 = 0;
+  let depthImbalance = null, depthUpdatedAt = 0;
+  let marketSlug = "", marketTokens = null, marketFetchBusy = false;
+  const books = {up:null, down:null};
+  let lastEvalAt = 0;
+
+  function status(text, mode) {
+    const el = $pe("peStatus");
+    el.textContent = text;
+    el.className = "pe-status" + (mode ? " " + mode : "");
+  }
+  function safeJson(raw) {
+    try { return JSON.parse(raw); } catch (_) { return null; }
+  }
+  function setRead(id, text, tone) {
+    const el = $pe(id);
+    el.textContent = text;
+    el.className = tone || "neu";
+  }
+  function bestBook(book) {
+    if (!book || !Array.isArray(book.bids) || !Array.isArray(book.asks)) return null;
+    const bids = book.bids.map(x => ({p:Number(x.price),q:Number(x.size)})).filter(x=>x.p>0&&x.q>0).sort((a,b)=>b.p-a.p);
+    const asks = book.asks.map(x => ({p:Number(x.price),q:Number(x.size)})).filter(x=>x.p>0&&x.q>0).sort((a,b)=>a.p-b.p);
+    if (!bids.length || !asks.length) return null;
+    return {bid:bids[0],ask:asks[0],bids,asks,mid:(bids[0].p+asks[0].p)/2};
+  }
+  function updateContract(assetId, next) {
+    if (!marketTokens) return;
+    const side = assetId === marketTokens.up ? "up" : assetId === marketTokens.down ? "down" : "";
+    if (!side) return;
+    if (next && next.event_type === "book") {
+      books[side] = bestBook(next);
+    } else if (next && next.event_type === "price_change" && Array.isArray(next.price_changes)) {
+      const ch = next.price_changes.find(x => x.asset_id === assetId);
+      if (ch) {
+        const prev = books[side];
+        if (prev) {
+          const bid = Number(ch.best_bid), ask = Number(ch.best_ask);
+          if (bid > 0 && ask > 0) books[side] = {...prev,bid:{...prev.bid,p:bid},ask:{...prev.ask,p:ask},mid:(bid+ask)/2};
+        }
+      }
+    } else if (next && next.event_type === "last_trade_price") {
+      const p = Number(next.price);
+      if (Number.isFinite(p) && p > 0) {
+        const prev = books[side];
+        if (prev) books[side] = {...prev,mid:p};
+      }
+    }
+    if (books[side] && Number.isFinite(books[side].mid)) {
+      const now = Date.now();
+      contractHistory[side].push({t:now,p:books[side].mid});
+      while (contractHistory[side].length && now-contractHistory[side][0].t>15000) contractHistory[side].shift();
+      clobAt = now;
+    }
+  }
+  function connectClob(tokens) {
+    if (clobReconnect) clearTimeout(clobReconnect);
+    try { if (clobWs) clobWs.close(); } catch (_) {}
+    books.up = books.down = null;
+    contractHistory.up.length = contractHistory.down.length = 0;
+    marketTokens = tokens;
+    const socket = new WebSocket("wss://ws-subscriptions-clob.polymarket.com/ws/market");
+    clobWs = socket;
+    socket.onopen = () => {
+      if (clobWs !== socket) return;
+      socket.send(JSON.stringify({assets_ids:[tokens.up,tokens.down],type:"market",custom_feature_enabled:true}));
+      status("FUTURES LIVE · POLY CONNECTING","partial");
+      $pe("peFoot").textContent = "Subscribed to the active Polymarket UP/DOWN token books. Waiting for initial book snapshots.";
+    };
+    socket.onmessage = ev => {
+      if (clobWs !== socket) return;
+      if (ev.data === "PONG") return;
+      const parsed = safeJson(ev.data);
+      if (!parsed) return;
+      const arr = Array.isArray(parsed) ? parsed : [parsed];
+      arr.forEach(msg => {
+        if (msg.event_type === "book") updateContract(msg.asset_id,msg);
+        else if (msg.event_type === "price_change" && Array.isArray(msg.price_changes)) {
+          msg.price_changes.forEach(change => updateContract(change.asset_id,{event_type:"price_change",price_changes:[change]}));
+        } else if (msg.event_type === "last_trade_price") updateContract(msg.asset_id,msg);
+      });
+      evaluate();
+    };
+    socket.onerror = () => { try { socket.close(); } catch (_) {} };
+    socket.onclose = () => {
+      if (clobWs !== socket) return;
+      clobAt = 0;
+      if (marketTokens && !clobReconnect) clobReconnect = setTimeout(() => { clobReconnect=null; if(marketTokens) connectClob(marketTokens); },1800);
+    };
+    const ping = setInterval(() => {
+      if (clobWs !== socket || socket.readyState !== WebSocket.OPEN) { clearInterval(ping); return; }
+      try { socket.send("PING"); } catch (_) {}
+    },10000);
+  }
+  async function loadActiveMarket() {
+    const start = Math.floor(Date.now()/300000)*300;
+    const slug = "btc-updown-5m-" + start;
+    if (slug === marketSlug || marketFetchBusy) return;
+    marketFetchBusy = true;
+    marketSlug = slug;
+    marketTokens = null;
+    try {
+      const response = await fetch("https://gamma-api.polymarket.com/markets?slug="+encodeURIComponent(slug),{cache:"no-store"});
+      if (!response.ok) throw new Error("Gamma API HTTP "+response.status);
+      const rows = await response.json();
+      const market = Array.isArray(rows) ? rows[0] : rows;
+      if (!market) throw new Error("Active 5-minute market not listed yet");
+      const parseArray = value => Array.isArray(value) ? value : JSON.parse(value || "[]");
+      const ids = parseArray(market.clobTokenIds);
+      const outcomes = parseArray(market.outcomes).map(x=>String(x).toLowerCase());
+      const upIndex = outcomes.findIndex(x=>x==="up" || x.includes("up"));
+      const downIndex = outcomes.findIndex(x=>x==="down" || x.includes("down"));
+      if (ids.length < 2 || upIndex < 0 || downIndex < 0) throw new Error("Could not map UP/DOWN token IDs");
+      if (slug !== marketSlug) return;
+      $pe("peFoot").textContent = "Active market loaded: "+(market.question || slug)+". Waiting for live order-book snapshots.";
+      connectClob({up:String(ids[upIndex]),down:String(ids[downIndex])});
+    } catch (error) {
+      status("POLYMARKET UNAVAILABLE","partial");
+      $pe("peFoot").textContent = "Could not load the active Polymarket contract: "+(error.message || String(error))+". Futures signals will remain WAIT until contract confirmation is available.";
+      marketSlug = "";
+    } finally { marketFetchBusy = false; }
+  }
+  function connectFuturesTrades() {
+    try {
+      const socket = new WebSocket("wss://fstream.binance.com/market/ws/btcusdt@aggTrade");
+      futuresTradeWs = socket;
+      socket.onmessage = ev => {
+        if (futuresTradeWs !== socket) return;
+        const msg = safeJson(ev.data);
+        const d = msg && msg.data ? msg.data : msg;
+        if (!d || d.e !== "aggTrade") return;
+        const p = Number(d.p), q = Number(d.q);
+        if (!(p>0&&q>0)) return;
+        const now = Date.now(), notional = p*q;
+        const takerBuy = d.m === false;
+        tradeTape.push({t:now,n:notional,buy:takerBuy});
+        while (tradeTape.length && now-tradeTape[0].t>12000) tradeTape.shift();
+        futuresTradeAt = now;
+        evaluate();
+      };
+      socket.onerror = () => { try { socket.close(); } catch (_) {} };
+      socket.onclose = () => {
+        if (futuresTradeWs !== socket) return;
+        futuresTradeAt = 0;
+        if (!tradeReconnect) tradeReconnect = setTimeout(()=>{tradeReconnect=null;connectFuturesTrades();},1500);
+      };
+    } catch (_) {
+      if (!tradeReconnect) tradeReconnect = setTimeout(()=>{tradeReconnect=null;connectFuturesTrades();},2500);
+    }
+  }
+  function connectFuturesDepth() {
+    try {
+      const socket = new WebSocket("wss://fstream.binance.com/public/ws/btcusdt@depth10@100ms");
+      futuresDepthWs = socket;
+      socket.onmessage = ev => {
+        if (futuresDepthWs !== socket) return;
+        const msg = safeJson(ev.data);
+        const d = msg && msg.data ? msg.data : msg;
+        if (!d || (!Array.isArray(d.b) && !Array.isArray(d.bids))) return;
+        const bids = d.b || d.bids, asks = d.a || d.asks || [];
+        const bidN = bids.slice(0,10).reduce((sum,x)=>sum+Number(x[0])*Number(x[1]),0);
+        const askN = asks.slice(0,10).reduce((sum,x)=>sum+Number(x[0])*Number(x[1]),0);
+        const total = bidN+askN;
+        if (total>0) {
+          depthImbalance = (bidN-askN)/total;
+          depthUpdatedAt = Date.now();
+          evaluate();
+        }
+      };
+      socket.onerror = () => { try { socket.close(); } catch (_) {} };
+      socket.onclose = () => {
+        if (futuresDepthWs !== socket) return;
+        futuresDepthAt = 0;
+        if (!depthReconnect) depthReconnect = setTimeout(()=>{depthReconnect=null;connectFuturesDepth();},1500);
+      };
+      socket.onopen = () => { futuresDepthAt = Date.now(); };
+    } catch (_) {
+      if (!depthReconnect) depthReconnect = setTimeout(()=>{depthReconnect=null;connectFuturesDepth();},2500);
+    }
+  }
+  function windowFlow(now, ms) {
+    let buy=0,sell=0,count=0;
+    for (let i=tradeTape.length-1;i>=0;i--) {
+      const t=tradeTape[i];
+      if (now-t.t>ms) break;
+      if (t.buy) buy+=t.n; else sell+=t.n;
+      count++;
+    }
+    return {buy,sell,count,ratio:(buy+sell)>0?(buy-sell)/(buy+sell):0,delta:buy-sell,total:buy+sell};
+  }
+  function trend5(history, now) {
+    if (!history || history.length<2) return null;
+    const old=history.find(x=>now-x.t>=3500);
+    const last=history[history.length-1];
+    if (!old || now-last.t>5000) return null;
+    return clamp((last.p-old.p)/0.035,-1,1);
+  }
+  function evaluate() {
+    const now=Date.now();
+    if (now-lastEvalAt<180) return;
+    lastEvalAt=now;
+    const f1=windowFlow(now,1000), f3=windowFlow(now,3000);
+    const flowFresh=f3.count>=4 && now-futuresTradeAt<2500;
+    const depthFresh=depthImbalance!==null && now-depthUpdatedAt<2500;
+    const up=books.up, down=books.down;
+    const clobFresh=up&&down&&now-clobAt<5000;
+    const flowScore=flowFresh ? clamp(f3.ratio*0.72+f1.ratio*0.28,-1,1) : null;
+    const depthScore=depthFresh ? clamp(depthImbalance*3.2,-1,1) : null;
+    const upTrend=clobFresh ? trend5(contractHistory.up,now) : null;
+    const downTrend=clobFresh ? trend5(contractHistory.down,now) : null;
+    const contractScore=upTrend!==null&&downTrend!==null ? clamp((upTrend-downTrend)/2,-1,1) : null;
+    const available=[flowScore,depthScore,contractScore].filter(x=>x!==null);
+    const weighted=(flowScore!==null?flowScore*.55:0)+(depthScore!==null?depthScore*.25:0)+(contractScore!==null?contractScore*.20:0);
+    const weights=(flowScore!==null?.55:0)+(depthScore!==null?.25:0)+(contractScore!==null?.20:0);
+    const score=weights>0?weighted/weights:0;
+    const confirmations=[flowScore,depthScore,contractScore].filter(x=>x!==null&&Math.sign(x)===Math.sign(score)&&Math.abs(x)>.12).length;
+    const ready=flowFresh&&depthFresh&&clobFresh&&available.length===3;
+    const side=ready&&confirmations>=2&&score>=.22?"UP":ready&&confirmations>=2&&score<=-.22?"DOWN":"WAIT";
+    const index=Math.round(50+score*50);
+    $pe("peScore").textContent=index+" / 100";
+    $pe("peMeter").style.width=index+"%";
+    $pe("peFlow").textContent=flowFresh?fmtPct(f3.ratio):"--";
+    $pe("peFlowSub").textContent=flowFresh?"3s net taker notional · "+f3.count+" trades":"Need fresh futures trades";
+    $pe("peDepth").textContent=depthFresh?fmtPct(depthImbalance):"--";
+    $pe("peDepthSub").textContent=depthFresh?"Bid vs ask notional · top 10 levels":"Waiting for depth stream";
+    $pe("peUp").textContent=up?fmtCents(up.mid):"--";
+    $pe("peDown").textContent=down?fmtCents(down.mid):"--";
+    $pe("peUpSub").textContent=up?"Best bid "+fmtCents(up.bid.p)+" · ask "+fmtCents(up.ask.p):"Waiting for UP book";
+    $pe("peDownSub").textContent=down?"Best bid "+fmtCents(down.bid.p)+" · ask "+fmtCents(down.ask.p):"Waiting for DOWN book";
+    const signal=$pe("peSignal");
+    signal.textContent=side==="WAIT"?"WAIT":side+" PRESSURE";
+    signal.className="pe-call-value"+(side==="UP"?" up":side==="DOWN"?" down":"");
+    $pe("peNote").textContent=ready?(side==="WAIT"?"Signals are mixed or too weak. No confirmed edge.":confirmations+" of 3 independent readings agree. Check the remaining settlement window before acting."):"Waiting for all three live feeds before issuing a directional call.";
+    setRead("peFlowRead",flowScore===null?"Waiting for fresh trades":flowScore>.12?"Aggressive buyers leading":flowScore<-.12?"Aggressive sellers leading":"Taker flow is balanced",flowScore===null?"neu":flowScore>.12?"pos":flowScore<-.12?"neg":"neu");
+    setRead("peDepthRead",depthScore===null?"Waiting for top-10 depth":depthScore>.12?"More bid liquidity visible":depthScore<-.12?"More ask liquidity visible":"Depth is balanced",depthScore===null?"neu":depthScore>.12?"pos":depthScore<-.12?"neg":"neu");
+    setRead("peClobRead",contractScore===null?"Waiting for 5s contract trend":contractScore>.12?"UP contract strengthening":contractScore<-.12?"DOWN contract strengthening":"Contracts are not confirming",contractScore===null?"neu":contractScore>.12?"pos":contractScore<-.12?"neg":"neu");
+    const left=Math.max(0,300-(Math.floor(now/1000)%300));
+    $pe("peTime").textContent=String(Math.floor(left/60)).padStart(2,"0")+":"+String(left%60).padStart(2,"0")+" LEFT";
+    if (ready) status("3 FEEDS LIVE","live");
+    else if (flowFresh||depthFresh||clobFresh) status("PARTIAL · SYNCING","partial");
+    else status("CONNECTING FEEDS","off");
+  }
+
+  connectFuturesTrades();
+  connectFuturesDepth();
+  loadActiveMarket();
+  setInterval(loadActiveMarket,3000);
+  setInterval(evaluate,250);
+})();
+</script>
+
 </body>
 </html>

@@ -278,9 +278,12 @@ button{font:inherit}
 
   const STREAM_NAME = "btcusdt@trade";
   const WS_URLS = [
-    "wss://data-stream.binance.vision:443/ws/" + STREAM_NAME,
     "wss://stream.binance.com:443/ws/" + STREAM_NAME,
-    "wss://stream.binance.com:9443/ws/" + STREAM_NAME
+    "wss://stream.binance.com:9443/ws/" + STREAM_NAME,
+    "wss://data-stream.binance.vision:443/ws/" + STREAM_NAME,
+    "wss://stream.binance.com:443/ws/btcusdt@kline_1s",
+    "wss://stream.binance.com:9443/ws/btcusdt@kline_1s",
+    "wss://data-stream.binance.vision:443/ws/btcusdt@kline_1s"
   ];
   const REST_BASES = [
     "https://data-api.binance.vision",
@@ -799,7 +802,7 @@ button{font:inherit}
       wsOpenedAt = Date.now();
       lastSocketError = "";
       setConnection("WEBSOCKET CONNECTED", "live");
-      setDataDetail(new URL(url).hostname + " · waiting for first real-time BTC trade");
+      setDataDetail(new URL(url).hostname + " · waiting for Binance trade stream or 1-second candle backup");
     };
 
     socket.onmessage = event => {
@@ -807,19 +810,23 @@ button{font:inherit}
       let message;
       try { message = JSON.parse(event.data); } catch (_) { return; }
       const payload = message && message.data ? message.data : message;
-      const price = Number(payload && payload.p);
-      const tradeTime = Number(payload && (payload.T || payload.E));
-      if (!Number.isFinite(tradeTime) || !Number.isFinite(price) || price <= 0) return;
+      const kline = payload && payload.k;
+      const isTrade = payload && payload.e === "trade" && payload.p !== undefined;
+      const price = Number(isTrade ? payload.p : (kline && kline.c));
+      const sourceTime = Number(isTrade ? (payload.T || payload.E) : (kline && (kline.T || kline.t)));
+      if (!Number.isFinite(sourceTime) || !Number.isFinite(price) || price <= 0) return;
       lastWsMessageAt = Date.now();
       lastDataReceivedAt = lastWsMessageAt;
 
       if (paused) return;
       clearCoinbaseForBinance();
-      latestBinanceTradePrice = price;
-      latestBinanceTradeAt = lastWsMessageAt;
+      if (isTrade) {
+        latestBinanceTradePrice = price;
+        latestBinanceTradeAt = lastWsMessageAt;
+      }
 
-      // Store one representative trade price per second for TWAP calculations.
-      // The blue spot price itself follows every individual trade.
+      // Keep the one-second sample history for TWAP. The blue spot readout
+      // follows every raw trade when available, or each candle update on fallback.
       const sampleTime = Math.floor(Date.now() / 1000) * 1000;
       if (prices.length && sampleTime < prices[prices.length - 1].time - 5000) return;
       const index = prices.findIndex(x => x.time === sampleTime);
@@ -833,9 +840,10 @@ button{font:inherit}
         tradeUiTimer = setTimeout(() => {
           tradeUiTimer = null;
           const newMarket = refreshMarketReference(false);
-          lastDataSource = "BINANCE REAL-TIME TRADE STREAM · " + new URL(url).hostname;
+          const streamType = isTrade ? "REAL-TIME TRADE STREAM" : "1S CANDLE FALLBACK";
+          lastDataSource = "BINANCE " + streamType + " · " + new URL(url).hostname;
           update(newMarket, lastDataSource);
-          setConnection("LIVE · BINANCE TRADES", "live");
+          setConnection(isTrade ? "LIVE · BINANCE TRADES" : "LIVE · BINANCE 1S BACKUP", "live");
         }, 120);
       }
     };
@@ -853,7 +861,7 @@ button{font:inherit}
       connectTimer = null;
       if (!paused) {
         setConnection("RECONNECTING", "stale");
-        setDataDetail("Trade stream unavailable · trying another Binance endpoint; REST backup remains active");
+        setDataDetail("Trade feed unavailable · rotating through trade and 1-second candle feeds; REST backup remains active");
         scheduleReconnect(900);
       }
     };
@@ -881,7 +889,7 @@ button{font:inherit}
       acceptRows(rows, "BINANCE REST LIVE BACKUP", false);
       if (!lastWsMessageAt || Date.now() - lastWsMessageAt > 4500) {
         setConnection("REST BACKUP · UPDATING", "stale");
-        setDataDetail("Trade stream not delivering updates · REST polling " + new URL(restBase).hostname + " every 1 second");
+        setDataDetail("Binance WebSocket quiet · REST polling " + new URL(restBase).hostname + " every 1 second");
       }
     } catch (error) {
       lastRestError = error && error.message ? error.message : String(error);
@@ -1067,7 +1075,7 @@ button{font:inherit}
     const now = Date.now();
     if (ws && ws.readyState === WebSocket.OPEN &&
         now - Math.max(lastWsMessageAt, wsOpenedAt) > 8000) {
-      lastSocketError = "Connected but no fresh BTC trades arrived";
+      lastSocketError = "Connected but no fresh BTC updates arrived";
       try { ws.close(); } catch (_) {}
     }
     if (ws && ws.readyState === WebSocket.CLOSED && !reconnectTimer) {
